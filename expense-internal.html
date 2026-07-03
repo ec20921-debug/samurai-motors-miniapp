@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>経費入力 / ចំណាយ</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --gold: #c9a84c;
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --green: #00897B;
+  --red: #c62828;
+  --radius: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans Khmer','Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+}
+.wrap { max-width: 520px; margin: 0 auto; }
+
+.title {
+  text-align:center;
+  font-size: 18px; font-weight: 700;
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--gold), #e8d5a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle {
+  text-align:center; font-size: 12px; color: var(--text-dim);
+  margin-bottom: 16px;
+}
+.who {
+  text-align:center;
+  font-size:13px; color: var(--text);
+  padding: 10px 0 14px;
+}
+.who strong { color: var(--gold); }
+
+.field {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.field label {
+  display:block;
+  font-size: 13px; font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.field .req { color: #ff5252; font-size: 11px; margin-left: 4px; }
+.field .hint {
+  font-size: 10px; color: var(--text-dim);
+  margin-top: 6px;
+}
+.field input[type=date],
+.field input[type=text],
+.field input[type=number],
+.field select,
+.field textarea {
+  width:100%;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px; font-family: inherit; font-size: 14px;
+}
+.field textarea { resize: vertical; min-height: 70px; }
+.field input[type=date] { color-scheme: dark; }
+
+.row { display:flex; gap:10px; }
+.row .field { flex:1; margin-bottom: 0; }
+.row-wrap { margin-bottom: 12px; }
+
+/* 立替トグル */
+.toggle-group {
+  display:flex; gap: 8px; margin-top: 6px;
+}
+.toggle-btn {
+  flex:1; padding: 12px; text-align:center;
+  background: var(--bg); color: var(--text-dim);
+  border: 1.5px solid var(--border); border-radius: 8px;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.toggle-btn.active {
+  background: linear-gradient(135deg, var(--gold), #e8d5a3);
+  color: #1a1a1a; border-color: var(--gold);
+}
+.toggle-btn:active { transform: scale(0.98); }
+
+/* 立替時のみ表示 */
+.reimburse-only { display:none; }
+.reimburse-only.show { display:block; }
+
+/* 金額＋通貨の特殊レイアウト */
+.amount-row {
+  display:flex; gap: 8px;
+}
+.amount-row .amount-input { flex:1; }
+.amount-row .currency-select { width: 90px; }
+
+/* 写真 */
+.photo-zone {
+  background: var(--card);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+  text-align:center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.photo-zone:active { border-color: var(--gold); }
+.photo-zone .ph-icon { font-size: 32px; margin-bottom: 6px; }
+.photo-zone .ph-label { font-size: 13px; color: var(--text); margin-bottom: 3px; }
+.photo-zone .ph-hint  { font-size: 10px; color: var(--text-dim); }
+.photo-zone.has-photo { border-style: solid; border-color: var(--green); padding: 10px; }
+.photo-zone img { max-width:100%; max-height: 240px; border-radius: 8px; }
+.photo-zone .ph-actions { display:flex; gap: 8px; margin-top: 8px; }
+.photo-zone .ph-actions button {
+  flex:1;
+  padding: 8px; border: none; border-radius: 6px;
+  font-size: 12px; cursor: pointer; color:#fff;
+  font-family: inherit;
+}
+.btn-retake { background: #424242; }
+.btn-remove { background: var(--red); }
+
+.submit-wrap { margin-top: 16px; }
+.big-btn {
+  width: 100%;
+  padding: 18px 16px;
+  border: none; border-radius: var(--radius);
+  font-size: 16px; font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s;
+  font-family: inherit;
+  background: linear-gradient(135deg, #2E7D32, #43A047);
+}
+.big-btn:active { transform: scale(0.98); }
+.big-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 30px;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--card); color: var(--text);
+  padding: 12px 20px; border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 13px; max-width: 90%;
+  transition: transform 0.3s;
+  z-index: 9999;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.err { border-color: var(--red); }
+.toast.ok  { border-color: var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="title">💰 経費入力</div>
+  <div class="subtitle">ការចំណាយ / Expense Entry</div>
+
+  <div class="who" id="whoLine">読み込み中…</div>
+
+  <div class="field">
+    <label>📅 取引日 / កាលបរិច្ឆេទ</label>
+    <input type="date" id="inputDate">
+    <div class="hint">通常は今日。レシートの日付を入れてOK</div>
+  </div>
+
+  <div class="field">
+    <label>💵 金額 <span class="req">* 必須</span></label>
+    <div class="amount-row">
+      <input type="number" id="inputAmount" class="amount-input" step="0.01" min="0" placeholder="例: 4.50">
+      <select id="inputCurrency" class="currency-select">
+        <option value="USD">USD</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>📝 品目・摘要 <span class="req">* 必須</span></label>
+    <input type="text" id="inputDesc" placeholder="例: A4コピー用紙 1束">
+  </div>
+
+  <div class="field">
+    <label>🗂 勘定科目</label>
+    <select id="inputCategory">
+      <option value="">-- 選択してください --</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>🏪 取引先 / អ្នកលក់</label>
+    <input type="text" id="inputVendor" placeholder="例: Aeon Mall">
+    <div class="hint">任意</div>
+  </div>
+
+  <!-- 立替区分トグル -->
+  <div class="field">
+    <label>💳 支払い区分 / ការទូទាត់</label>
+    <div class="toggle-group">
+      <button type="button" class="toggle-btn active" id="btnPayCompany" data-type="会社直払い">
+        🏢 会社直払い
+      </button>
+      <button type="button" class="toggle-btn" id="btnPayReimburse" data-type="立替">
+        💸 立替（精算必要）
+      </button>
+    </div>
+    <div class="hint">会社カード・会社口座で直接払った場合は「会社直払い」。自分のお金で立て替えた場合は「立替」。</div>
+  </div>
+
+  <!-- 立替時のみ表示：精算先 -->
+  <div class="field reimburse-only" id="fldReimburseTo">
+    <label>👤 精算先（誰から払ってもらう？） <span class="req">* 立替時は必須</span></label>
+    <select id="inputReimburseTo">
+      <option value="">-- 選択してください --</option>
+    </select>
+    <div class="hint">デフォルト：飯泉さん</div>
+  </div>
+
+  <!-- 立替時のみ表示：精算期限 -->
+  <div class="field reimburse-only" id="fldReimburseDue">
+    <label>⏰ 精算期限</label>
+    <input type="date" id="inputReimburseDue">
+    <div class="hint">デフォルトは +3日。変更しなくてOK</div>
+  </div>
+
+  <!-- レシート写真 -->
+  <div class="photo-zone" id="photoZone">
+    <div class="ph-icon">📸</div>
+    <div class="ph-label">レシート写真を追加 / រូបវិក័យប័ត្រ</div>
+    <div class="ph-hint">タップしてカメラ / 写真を選択（任意）</div>
+  </div>
+  <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+
+  <div class="field">
+    <label>🗒 メモ</label>
+    <textarea id="inputMemo" placeholder="例: オフィス備品、経理処理は今月中"></textarea>
+    <div class="hint">任意</div>
+  </div>
+
+  <div class="submit-wrap">
+    <button class="big-btn" id="btnSubmit">📤 経費を登録 / ដាក់ស្នើ</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  GAS URL / chatId
+// ═══════════════════════════════════════════
+var GAS_URL = '';
+var currentChatId = '';
+var currentStaff = null;
+var currentPhotoBase64 = '';
+var currentPhotoMime   = '';
+var currentPhotoName   = '';
+var currentPaymentType = '会社直払い'; // '会社直払い' | '立替'
+var REIMBURSE_DUE_DEFAULT_DAYS = 3;
+
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('gas'))    GAS_URL = urlParams.get('gas');
+if (urlParams.get('chatId')) currentChatId = urlParams.get('chatId');
+
+if (!GAS_URL && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+  GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
+}
+if (!currentChatId && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
+}
+
+function postJson(payload) {
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function(r) { return r.json(); });
+}
+
+// ═══════════════════════════════════════════
+//  初期化
+// ═══════════════════════════════════════════
+function init() {
+  var line = document.getElementById('whoLine');
+  if (!currentChatId) { line.textContent = '⚠️ chatId 取得失敗'; return; }
+  if (!GAS_URL)       { line.textContent = '⚠️ GAS URL 未設定'; return; }
+
+  // 日付初期値
+  document.getElementById('inputDate').value = formatDateLocal(new Date());
+
+  // whoami
+  postJson({ action: 'whoami', chatId: currentChatId })
+    .then(function(d) {
+      if (d.ok && d.staff) {
+        currentStaff = d.staff;
+        line.innerHTML = '👤 <strong>' + esc(d.staff.nameJp) + '</strong> (' + esc(d.staff.nameEn) + ')';
+      } else {
+        line.innerHTML = '⚠️ スタッフマスター未登録<br>' +
+                         '<span style="font-size:11px;color:#ff8c8c">chat_id = ' + esc(currentChatId) + '</span><br>' +
+                         '<span style="font-size:10px;color:var(--text-dim)">このIDをスタッフマスターに追加してください</span>';
+      }
+    });
+
+  // カテゴリ・通貨・精算先候補
+  postJson({ action: 'expense_meta' })
+    .then(function(d) {
+      if (!d.ok) return;
+      var catSel = document.getElementById('inputCategory');
+      (d.categories || []).forEach(function(c) {
+        var opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        catSel.appendChild(opt);
+      });
+      var curSel = document.getElementById('inputCurrency');
+      curSel.innerHTML = '';
+      (d.currencies || ['USD']).forEach(function(c) {
+        var opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        curSel.appendChild(opt);
+      });
+      // 精算先候補（デフォルトは先頭 = 飯泉）
+      var reimSel = document.getElementById('inputReimburseTo');
+      var candidates = d.reimburseCandidates || ['飯泉'];
+      reimSel.innerHTML = '';
+      candidates.forEach(function(c, i) {
+        var opt = document.createElement('option');
+        opt.value = c; opt.textContent = c;
+        if (i === 0) opt.selected = true;
+        reimSel.appendChild(opt);
+      });
+      if (d.reimburseDueDefaultDays) REIMBURSE_DUE_DEFAULT_DAYS = Number(d.reimburseDueDefaultDays);
+      // 精算期限のデフォルト値
+      var due = new Date();
+      due.setDate(due.getDate() + REIMBURSE_DUE_DEFAULT_DAYS);
+      document.getElementById('inputReimburseDue').value = formatDateLocal(due);
+    });
+}
+
+// ═══════════════════════════════════════════
+//  立替トグル
+// ═══════════════════════════════════════════
+function setPaymentType(type) {
+  currentPaymentType = type;
+  var btnC = document.getElementById('btnPayCompany');
+  var btnR = document.getElementById('btnPayReimburse');
+  btnC.classList.toggle('active', type === '会社直払い');
+  btnR.classList.toggle('active', type === '立替');
+  var show = type === '立替';
+  document.getElementById('fldReimburseTo').classList.toggle('show', show);
+  document.getElementById('fldReimburseDue').classList.toggle('show', show);
+}
+document.getElementById('btnPayCompany').addEventListener('click', function() {
+  setPaymentType('会社直払い');
+});
+document.getElementById('btnPayReimburse').addEventListener('click', function() {
+  setPaymentType('立替');
+});
+
+// ═══════════════════════════════════════════
+//  写真アップロード
+// ═══════════════════════════════════════════
+document.getElementById('photoZone').addEventListener('click', function() {
+  document.getElementById('photoInput').click();
+});
+document.getElementById('photoInput').addEventListener('change', function(ev) {
+  var file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  if (file.size > 8 * 1024 * 1024) {
+    toast('画像が大きすぎます（8MB以下）', 'err');
+    return;
+  }
+
+  // ダウンスケール（長辺1280px・JPEG85% 相当）→ base64
+  compressImage(file, 1280, 0.85).then(function(result) {
+    currentPhotoBase64 = result.base64;
+    currentPhotoMime   = 'image/jpeg';
+    currentPhotoName   = file.name.replace(/\.[^.]+$/, '') || 'receipt';
+
+    var zone = document.getElementById('photoZone');
+    zone.className = 'photo-zone has-photo';
+    zone.innerHTML =
+      '<img src="' + result.dataUrl + '" alt="receipt">' +
+      '<div class="ph-actions">' +
+        '<button type="button" class="btn-retake" id="btnRetake">📸 撮り直し</button>' +
+        '<button type="button" class="btn-remove" id="btnRemove">🗑 削除</button>' +
+      '</div>';
+    document.getElementById('btnRetake').addEventListener('click', function(e) {
+      e.stopPropagation();
+      document.getElementById('photoInput').click();
+    });
+    document.getElementById('btnRemove').addEventListener('click', function(e) {
+      e.stopPropagation();
+      clearPhoto();
+    });
+  }).catch(function(err) {
+    toast('画像処理失敗: ' + err.message, 'err');
+  });
+});
+
+function clearPhoto() {
+  currentPhotoBase64 = '';
+  currentPhotoMime   = '';
+  currentPhotoName   = '';
+  document.getElementById('photoInput').value = '';
+  var zone = document.getElementById('photoZone');
+  zone.className = 'photo-zone';
+  zone.innerHTML =
+    '<div class="ph-icon">📸</div>' +
+    '<div class="ph-label">レシート写真を追加 / រូបវិក័យប័ត្រ</div>' +
+    '<div class="ph-hint">タップしてカメラ / 写真を選択（任意）</div>';
+}
+
+function compressImage(file, maxDim, quality) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else if (h >= w && h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL('image/jpeg', quality);
+        var base64 = dataUrl.split(',')[1];
+        resolve({ dataUrl: dataUrl, base64: base64 });
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  提出
+// ═══════════════════════════════════════════
+document.getElementById('btnSubmit').addEventListener('click', function() {
+  var amount = Number(document.getElementById('inputAmount').value || 0);
+  var desc   = document.getElementById('inputDesc').value.trim();
+  var category = document.getElementById('inputCategory').value;
+  var currency = document.getElementById('inputCurrency').value;
+  var vendor   = document.getElementById('inputVendor').value.trim();
+  var memo     = document.getElementById('inputMemo').value.trim();
+  var date     = document.getElementById('inputDate').value;
+
+  if (!amount || amount <= 0) { toast('金額を入力してください', 'err'); return; }
+  if (!desc)                  { toast('品目・摘要は必須です', 'err'); return; }
+
+  // 立替時は精算先が必須
+  var reimburseTo  = '';
+  var reimburseDue = '';
+  if (currentPaymentType === '立替') {
+    reimburseTo = document.getElementById('inputReimburseTo').value;
+    reimburseDue = document.getElementById('inputReimburseDue').value;
+    if (!reimburseTo) { toast('立替の場合は精算先を選んでください', 'err'); return; }
+  }
+
+  var btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  var orig = btn.textContent;
+  btn.textContent = '送信中…（写真あり：少し時間がかかります）';
+
+  postJson({
+    action: 'expense_submit',
+    chatId: currentChatId,
+    transactionDate: date,
+    description: desc,
+    amount: amount,
+    currency: currency,
+    vendor: vendor,
+    category: category,
+    memo: memo,
+    photoBase64: currentPhotoBase64,
+    photoMime:   currentPhotoMime,
+    photoName:   currentPhotoName,
+    paymentType:      currentPaymentType,
+    reimburseTo:      reimburseTo,
+    reimburseDueDate: reimburseDue
+  })
+    .then(function(d) {
+      btn.disabled = false;
+      btn.textContent = orig;
+      if (d.ok) {
+        var msg = '✅ 経費登録完了: ' + d.expenseId;
+        if (d.paymentType === '立替' && d.reimburseTo) {
+          msg += '（' + d.reimburseTo + ' さん精算 / 期限 ' + (d.reimburseDue || '') + '）';
+        }
+        toast(msg, 'ok');
+        // フォームリセット
+        document.getElementById('inputAmount').value = '';
+        document.getElementById('inputDesc').value = '';
+        document.getElementById('inputVendor').value = '';
+        document.getElementById('inputMemo').value = '';
+        document.getElementById('inputCategory').value = '';
+        clearPhoto();
+        setPaymentType('会社直払い'); // 既定に戻す
+      } else {
+        var errMsg = '⚠️ ' + (d.error || 'エラー');
+        if (d.error === 'STAFF_NOT_FOUND') {
+          errMsg = '⚠️ スタッフマスター未登録です\nchat_id = ' + (d.chatId || currentChatId) +
+                   '\nこのIDをスタッフマスターに追加してください';
+        }
+        toast(errMsg, 'err');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = orig;
+      toast('通信エラー: ' + err.message, 'err');
+    });
+});
+
+// ═══════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════
+function formatDateLocal(d) {
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + day;
+}
+var toastTimer = null;
+function toast(msg, kind) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() {
+    t.className = 'toast ' + (kind || '');
+  }, 3000);
+}
+function esc(s) {
+  return String(s||'').replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+// 起動
+init();
+</script>
+</body>
+</html>

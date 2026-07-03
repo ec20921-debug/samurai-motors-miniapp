@@ -1,0 +1,2599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Samurai Motors - Booking</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Leaflet は Step 3 (場所選択) 進入時に動的ロード(初期ロード短縮) -->
+<link rel="preconnect" href="https://unpkg.com/" crossorigin>
+<link rel="preconnect" href="https://script.google.com/" crossorigin>
+<style>
+:root {
+  /* 深黒ベース + シャンパンゴールドの高級感パレット (2026-05-06 premium upgrade) */
+  --bg: #050505;
+  --bg-soft: #0a0a0a;
+  --card: #131313;
+  --card-hover: #1a1a1a;
+  --border: #1f1f1f;
+  --border-soft: #161616;
+  --accent: #b91229;            /* refined deep red, samurai */
+  --gold: #c9a85c;              /* champagne gold */
+  --gold-bright: #e3c878;       /* highlight gold */
+  --gold-muted: #8a7843;
+  --gold-soft: rgba(201,168,92,0.10);
+  --gold-strong: rgba(201,168,92,0.22);
+  --silver: #c0c0c0;
+  --text: #f0f0f0;
+  --text-dim: #888;
+  --text-label: #aaa;
+  --success: #2ecc71;
+  --success-bg: rgba(46,204,113,0.15);
+  --blue: #3498db;
+  --radius: 10px;
+  --serif: 'Cinzel', 'Noto Serif', Georgia, serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  font-family: 'Noto Sans','Noto Sans Khmer', sans-serif;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(201,168,92,0.06) 0%, transparent 60%),
+    radial-gradient(circle at 50% 100%, rgba(185,18,41,0.04) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+  background-attachment: fixed;
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ───────── ヘッダー (Premium serif、ゴールド divider) ───────── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(180deg, rgba(5,5,5,0.96) 0%, rgba(5,5,5,0.85) 100%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 12px;
+  display: flex; align-items: center; gap: 12px;
+  position: relative;
+}
+.header::after {
+  content: '';
+  position: absolute; left: 50%; bottom: -1px;
+  width: 80px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  transform: translateX(-50%);
+}
+.back-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text); font-size: 20px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+  transition: all 0.2s;
+}
+.back-btn:active { background: var(--card-hover); border-color: var(--gold); }
+.back-btn.hidden { visibility: hidden; }
+.header-title { flex: 1; min-width: 0; text-align: center; }
+.header-title h1 {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.header-title p {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+}
+
+/* ───────── プログレスバー ───────── */
+.progress {
+  display:flex; gap:4px; padding: 8px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.progress-step {
+  flex:1; height:3px; border-radius:2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.progress-step.done { background: var(--gold); }
+.progress-step.current { background: var(--accent); }
+.progress-label {
+  display:flex; justify-content:space-between; padding: 2px 16px 0;
+  font-size:9px; color:var(--text-dim);
+}
+
+/* ───────── コンテナ ───────── */
+.container {
+  padding: 16px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 120px;
+}
+.view { display:none; animation: fadeIn 0.25s ease; }
+.view.active { display:block; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+/* Premium serif、巨大英字 + 金ヘアライン (Armor Tokyo + 高級カタログ調) */
+.view-title {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  letter-spacing: 3px;
+  line-height: 1.2;
+  color: var(--text);
+  text-transform: uppercase;
+  position: relative;
+  padding-bottom: 14px;
+}
+.view-title::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 48px; height: 1px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+.view-title .km {
+  display: block;
+  font-family: 'Noto Sans Khmer', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 400;
+  margin-top: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.view-desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+}
+
+/* ───────── セクションタイトル ───────── */
+.section-title {
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-label);
+  margin: 24px 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+}
+.section-title:first-child { margin-top: 0; }
+.section-title .km {
+  font-family: 'Noto Sans Khmer', sans-serif;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left: 8px;
+}
+
+/* ───────── 選択カード (Premium: gradient bg + gold hairline + inner glow) ───────── */
+.card-list { display: flex; flex-direction: column; gap: 12px; }
+.choice-card {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.choice-card:active { transform: scale(0.98); }
+.choice-card:hover {
+  border-color: var(--gold-muted);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.choice-card.selected {
+  border-color: var(--gold);
+  background:
+    linear-gradient(135deg, rgba(201,168,92,0.08) 0%, rgba(201,168,92,0.02) 100%),
+    var(--card);
+  box-shadow:
+    inset 0 0 24px rgba(201,168,92,0.06),
+    0 6px 20px rgba(201,168,92,0.10),
+    0 2px 8px rgba(0,0,0,0.3);
+}
+.choice-card.selected::after {
+  content: '✓';
+  position: absolute; top: 12px; right: 12px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #000;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+  box-shadow: 0 2px 6px rgba(201,168,92,0.4);
+}
+
+.plan-card .plan-letter {
+  display: inline-block;
+  width: 36px; height: 36px; line-height: 34px; text-align: center;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--serif);
+  border-radius: 50%;
+  font-weight: 600; font-size: 16px;
+  margin-right: 12px; vertical-align: middle;
+  letter-spacing: 0;
+}
+.plan-card .plan-name {
+  display: inline-block; vertical-align: middle;
+  font-family: var(--serif);
+  font-size: 17px; font-weight: 600; color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.plan-card .plan-desc {
+  font-size: 12px; color: var(--text-dim);
+  margin-top: 10px; line-height: 1.6;
+  letter-spacing: 0.2px;
+}
+.plan-card .plan-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+.plan-card .plan-price {
+  font-family: var(--serif);
+  font-size: 22px; font-weight: 600; color: var(--gold);
+  letter-spacing: 1px;
+}
+.plan-card .plan-duration {
+  font-size: 11px; color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+.plan-card .plan-fee-note {
+  margin-top: 6px; font-size: 10px; color: var(--text-dim); text-align: right;
+  letter-spacing: 0.3px;
+  font-style: italic;
+}
+
+/* ───────── オプションカード (Menu v2: GLASS add-on) ───────── */
+.option-card {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.option-card:active { transform: scale(0.98); }
+.option-card:hover { border-color: var(--gold-muted); }
+.option-card.selected {
+  border-color: var(--gold);
+  background:
+    linear-gradient(135deg, rgba(201,168,92,0.08) 0%, rgba(201,168,92,0.02) 100%),
+    var(--card);
+  box-shadow:
+    inset 0 0 24px rgba(201,168,92,0.06),
+    0 6px 20px rgba(201,168,92,0.10);
+}
+.option-card.selected::after {
+  content: '✓';
+  position: absolute; top: 10px; right: 12px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #000;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+  box-shadow: 0 2px 6px rgba(201,168,92,0.4);
+}
+.option-card .option-info { flex: 1; padding-right: 30px; }
+.option-card .option-name {
+  font-family: var(--serif);
+  font-size: 14px; font-weight: 600; color: var(--gold);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.option-card .option-name-km {
+  font-size: 10px; color: var(--text-dim); font-weight: 400;
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+}
+.option-card .option-desc {
+  font-size: 11px; color: var(--text-dim);
+  margin-top: 8px; line-height: 1.6;
+  letter-spacing: 0.2px;
+}
+.option-card .option-price {
+  font-family: var(--serif);
+  font-size: 18px; font-weight: 600; color: var(--gold);
+  margin-left: 12px; white-space: nowrap;
+  letter-spacing: 1px;
+}
+
+/* ───────── Required / Optional バッジ (refined) ───────── */
+.badge-required, .badge-optional {
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 8px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  vertical-align: middle;
+}
+.badge-required {
+  background: rgba(185,18,41,0.15);
+  color: #f48fa1;
+  border: 1px solid rgba(185,18,41,0.4);
+}
+.badge-optional {
+  background: var(--gold-soft);
+  color: var(--gold);
+  border: 1px solid rgba(201,168,92,0.4);
+}
+
+/* セクションタイトルのステップ番号 (Roman feel: gold ring + serif) */
+.section-title .step-num {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  border-radius: 50%;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 10px;
+  font-weight: 600;
+  margin-right: 12px;
+  letter-spacing: 0;
+}
+
+/* ───────── 車種サイズカード (Premium gradient + 細部ゴールド) ───────── */
+.size-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.size-card {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 12px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.size-card:active { transform: scale(0.97); }
+.size-card.selected {
+  border-color: var(--gold);
+  background:
+    linear-gradient(135deg, rgba(201,168,92,0.08) 0%, rgba(201,168,92,0.02) 100%),
+    var(--card);
+  box-shadow:
+    inset 0 0 24px rgba(201,168,92,0.06),
+    0 6px 20px rgba(201,168,92,0.10);
+}
+.size-card.selected::after {
+  content: '✓';
+  position: absolute; top: 8px; right: 8px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #000;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px;
+  box-shadow: 0 2px 6px rgba(201,168,92,0.4);
+}
+.size-card .size-icon {
+  margin-bottom: 12px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.size-card .vehicle-svg {
+  width: 64px;
+  height: auto;
+  color: var(--gold);
+  transition: color 0.25s;
+  filter: drop-shadow(0 2px 4px rgba(201,168,92,0.15));
+}
+.size-card.selected .vehicle-svg { color: var(--gold-bright); }
+.size-card .size-label {
+  font-family: var(--serif);
+  font-size: 14px; font-weight: 600; color: var(--text);
+  margin-bottom: 3px;
+  letter-spacing: 1px;
+}
+.size-card .size-km {
+  font-size: 11px; color: var(--text-dim);
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+.size-card .size-examples {
+  font-size: 10px; color: var(--text-dim);
+  line-height: 1.6;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 10px;
+  margin-top: 4px;
+  letter-spacing: 0.2px;
+}
+.size-card .size-hint {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 9px; font-weight: 600;
+  color: var(--gold);
+  background: var(--gold-soft);
+  padding: 3px 10px;
+  border-radius: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid rgba(201,168,92,0.2);
+}
+
+/* ───────── 日付ピッカー (Premium typography) ───────── */
+.date-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+}
+.date-cell {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 4px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+.date-cell:active { transform: scale(0.96); }
+.date-cell:hover { border-color: var(--gold-muted); }
+.date-cell.selected {
+  border-color: var(--gold);
+  background:
+    linear-gradient(135deg, rgba(201,168,92,0.12) 0%, rgba(201,168,92,0.04) 100%),
+    var(--card);
+  box-shadow: 0 6px 18px rgba(201,168,92,0.15), inset 0 0 16px rgba(201,168,92,0.05);
+}
+.date-cell .d-day {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.date-cell .d-num {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 4px;
+  letter-spacing: 0;
+  line-height: 1;
+}
+.date-cell .d-month {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+/* Today: 控えめゴールドドット (旧:赤縁から差し替え) */
+.date-cell.today::before {
+  content: '';
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px rgba(201,168,92,0.6);
+}
+.date-cell.selected .d-day,
+.date-cell.selected .d-month { color: var(--gold); }
+.date-cell.selected .d-num {
+  color: var(--gold-bright);
+  text-shadow: 0 0 12px rgba(201,168,92,0.4);
+}
+.date-cell.closed {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: rgba(255,255,255,0.015);
+  box-shadow: none;
+}
+.date-cell.closed:active { transform: none; }
+.date-cell.closed .d-num,
+.date-cell.closed .d-day,
+.date-cell.closed .d-month { color: var(--text-dim); }
+.date-cell .d-closed {
+  font-size: 8px;
+  color: rgba(248,113,113,0.7);
+  margin-top: 4px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+/* 祝日: 営業はする(押せる)、ただし情報ラベルだけ控えめにゴールドで表示 */
+.date-cell .d-holiday {
+  font-size: 8px;
+  color: var(--gold);
+  margin-top: 4px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+/* ───────── 時間スロット (Premium serif numerals) ───────── */
+.time-section { margin-top: 24px; }
+.slot-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.slot-cell {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 4px;
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+.slot-cell:active { transform: scale(0.96); }
+.slot-cell:hover { border-color: var(--gold-muted); color: var(--gold); }
+.slot-cell.selected {
+  border-color: var(--gold);
+  background:
+    linear-gradient(135deg, rgba(201,168,92,0.14) 0%, rgba(201,168,92,0.04) 100%),
+    var(--card);
+  color: var(--gold-bright);
+  text-shadow: 0 0 12px rgba(201,168,92,0.4);
+  box-shadow: 0 6px 18px rgba(201,168,92,0.18), inset 0 0 16px rgba(201,168,92,0.06);
+}
+.slot-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.3px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: rgba(255,255,255,0.01);
+}
+.slot-empty::before {
+  content: '◇';
+  display: block;
+  font-size: 22px;
+  color: var(--gold-muted);
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+.duration-info {
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 14px;
+  padding: 8px;
+  background: var(--gold-soft);
+  border: 1px solid rgba(201,168,92,0.18);
+  border-radius: 6px;
+}
+
+/* ───────── 場所入力 ───────── */
+.field { margin-bottom:14px; }
+.field label {
+  display:block; font-size:13px; font-weight:600;
+  color:var(--text-label); margin-bottom:6px;
+}
+.field label .req { color:var(--accent); margin-left:3px; font-size:11px; }
+.field label .km { color:var(--text-dim); font-size:11px; margin-left:4px; font-weight:400; }
+.field textarea {
+  width:100%; padding:13px 14px;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius); color:var(--text);
+  font-size:16px; font-family:inherit;
+  transition: border-color 0.2s;
+  min-height:80px; resize:vertical;
+}
+.field textarea:focus { outline:none; border-color:var(--gold); }
+.field textarea::placeholder { color:#555; }
+.hint { font-size:11px; color:var(--text-dim); margin-top:4px; }
+
+/* ───────── サービスタイプ タブ (2026-05-20: 店舗/出張切替) ───────── */
+.service-type-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.svc-tab {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  text-align: center;
+  line-height: 1.4;
+}
+.svc-tab:hover {
+  border-color: var(--gold-muted);
+  color: var(--text);
+}
+.svc-tab.active {
+  background: linear-gradient(135deg, var(--gold-muted) 0%, var(--gold) 100%);
+  border-color: var(--gold-bright);
+  color: #1a1410;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+.svc-tab .svc-tab-main {
+  font-size: 14px;
+  letter-spacing: 0.8px;
+}
+.svc-tab .km {
+  font-size: 10px;
+  opacity: 0.85;
+}
+
+/* 店舗カード */
+.store-card {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--gold-muted);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  text-align: center;
+  margin-bottom: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(212, 175, 55, 0.15);
+}
+.store-card-icon {
+  font-size: 42px;
+  margin-bottom: 8px;
+}
+.store-card-title {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.store-card-subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+.store-map-btn {
+  display: inline-block;
+  background: var(--gold);
+  color: #1a1410;
+  padding: 10px 22px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+.store-map-btn:hover {
+  background: var(--gold-bright);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+}
+.store-card-note {
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 10px 14px;
+  background: rgba(212, 175, 55, 0.08);
+  border-radius: 6px;
+  line-height: 1.5;
+}
+
+/* ───────── 確認画面 (Editorial summary card) ───────── */
+.summary-card {
+  background:
+    linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.02);
+  position: relative;
+}
+.summary-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 24px; right: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-muted), transparent);
+}
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+.summary-row:last-child { border-bottom: none; padding-bottom: 0; }
+.summary-row .label {
+  color: var(--text-dim);
+  flex-shrink: 0;
+  margin-right: 12px;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+.summary-row .value {
+  color: var(--text);
+  text-align: right;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+.summary-row.total {
+  margin-top: 6px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--gold-muted);
+  border-bottom: none;
+  position: relative;
+}
+.summary-row.total .label {
+  font-family: var(--serif);
+  color: var(--gold);
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.summary-row.total .value {
+  font-family: var(--serif);
+  color: var(--gold-bright);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 16px rgba(201,168,92,0.35);
+}
+
+/* ───────── ボタン ───────── */
+.action-area {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 16px 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  background: linear-gradient(transparent, rgba(5,5,5,0.95) 30%, var(--bg) 70%);
+  z-index: 100;
+}
+.btn {
+  width: 100%;
+  padding: 16px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--serif);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: 480px;
+  margin: 0 auto;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+}
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.35; pointer-events: none; }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, #8a0e1f 100%);
+  color: #fff;
+  box-shadow: 0 6px 22px rgba(185,18,41,0.35), inset 0 1px 0 rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.btn-gold {
+  background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold) 50%, #a08940 100%);
+  color: #000;
+  box-shadow: 0 6px 22px rgba(201,168,92,0.40), inset 0 1px 0 rgba(255,255,255,0.3);
+  border: 1px solid rgba(0,0,0,0.2);
+  font-weight: 700;
+}
+.btn-secondary {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* ───────── 完了画面 (Brand celebration) ───────── */
+.success-seal {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  margin: 40px auto 24px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(201,168,92,0.18) 0%, transparent 70%),
+    var(--card);
+  border: 1px solid var(--gold);
+  box-shadow:
+    0 0 0 6px rgba(201,168,92,0.06),
+    0 0 0 1px rgba(201,168,92,0.18) inset,
+    0 16px 32px rgba(0,0,0,0.5);
+  animation: successSealEnter 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes successSealEnter {
+  0%   { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(1.08) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.success-seal::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 1px dashed rgba(201,168,92,0.25);
+  animation: successSealRing 18s linear infinite;
+}
+@keyframes successSealRing { to { transform: rotate(360deg); } }
+.success-seal-mark {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 0 12px rgba(201,168,92,0.45))
+    drop-shadow(0 0 4px rgba(201,168,92,0.25));
+  display: block;
+}
+.success-title {
+  text-align: center;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.success-subtitle {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+  line-height: 1.7;
+  letter-spacing: 0.5px;
+}
+.success-subtitle .km {
+  display: block;
+  font-family: 'Noto Sans Khmer', sans-serif;
+  margin-top: 4px;
+  opacity: 0.75;
+}
+
+/* ───────── 担当者カード(Reserved 画面) ───────── */
+.specialist-card {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.specialist-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  display: flex; align-items: center; justify-content: center;
+  color: #000;
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: 17px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(201,168,92,0.3);
+}
+.specialist-info { flex: 1; min-width: 0; }
+.specialist-label {
+  font-family: var(--serif);
+  font-size: 9px; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 1.5px;
+  margin-bottom: 2px;
+}
+.specialist-name {
+  font-family: var(--serif);
+  font-size: 15px; font-weight: 600;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+.specialist-meta {
+  font-size: 10px; color: var(--text-dim);
+  margin-top: 2px;
+  letter-spacing: 0.3px;
+}
+
+/* ───────── What Happens Next タイムライン ───────── */
+.timeline-card {
+  margin-top: 14px;
+  padding: 18px 18px 14px;
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.timeline-title {
+  font-family: var(--serif);
+  font-size: 11px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 14px;
+  position: relative;
+  padding-bottom: 8px;
+}
+.timeline-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 32px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 0;
+  position: relative;
+}
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 28px;
+  bottom: -8px;
+  width: 1px;
+  background: var(--border);
+}
+.timeline-dot {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 1px solid var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.timeline-text {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+  padding-top: 2px;
+}
+.timeline-text .lead {
+  font-weight: 600;
+  color: var(--gold-bright);
+  font-family: var(--serif);
+  letter-spacing: 0.5px;
+}
+.timeline-text .km {
+  display: block;
+  font-family: 'Noto Sans Khmer', sans-serif;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  opacity: 0.7;
+}
+
+/* ───────── 決済案内カード(完了画面) ───────── */
+.payment-notice {
+  margin-top: 18px;
+  padding: 16px 18px;
+  background:
+    linear-gradient(135deg, rgba(201,168,92,0.06) 0%, rgba(201,168,92,0.02) 100%),
+    var(--card);
+  border: 1px solid var(--gold-muted);
+  border-radius: var(--radius);
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.payment-notice-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(201,168,92,0.35));
+}
+.payment-notice-body {
+  flex: 1;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+.payment-notice-body .ttl {
+  font-family: var(--serif);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+.payment-notice-body .em { color: var(--gold-bright); font-weight: 600; }
+.payment-notice-body .km {
+  display: block;
+  font-family: 'Noto Sans Khmer', sans-serif;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  letter-spacing: 0.3px;
+}
+
+/* ───────── トースト (Premium notification) ───────── */
+.toast {
+  position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-8px);
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  color: var(--text);
+  padding: 12px 22px;
+  border-radius: 28px;
+  border: 1px solid var(--gold-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 300;
+  max-width: 88%;
+  text-align: center;
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(201,168,92,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error {
+  border-color: rgba(248,113,113,0.5);
+  box-shadow:
+    0 12px 28px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(248,113,113,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* ───────── キャンペーンバナー (Menu v2: GRAND OPENING -30%) ───────── */
+.campaign-banner {
+  margin: 4px 0 24px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, var(--accent) 0%, #6e0d18 100%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 6px 20px rgba(185,18,41,0.32), inset 0 1px 0 rgba(255,255,255,0.10);
+  position: relative;
+  overflow: hidden;
+}
+.campaign-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -50%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+  animation: bannerSweep 3.6s ease-in-out infinite;
+}
+@keyframes bannerSweep { 0%, 30% { left: -50%; } 70%, 100% { left: 150%; } }
+.campaign-banner .label {
+  font-family: var(--serif);
+  letter-spacing: 2.5px;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 11px;
+  position: relative; z-index: 1;
+}
+.campaign-banner .label-km {
+  display: block;
+  font-family: 'Noto Sans Khmer', sans-serif;
+  font-size: 9px;
+  color: rgba(255,255,255,0.7);
+  margin-top: 3px;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  font-weight: 400;
+}
+.campaign-banner .discount {
+  font-family: var(--serif);
+  font-weight: 700;
+  color: var(--gold-bright);
+  font-size: 22px;
+  letter-spacing: 1.5px;
+  text-shadow: 0 2px 6px rgba(201,168,92,0.4);
+  position: relative; z-index: 1;
+}
+
+/* ───────── 割引価格表示 ───────── */
+.price-original {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-decoration: line-through;
+  margin-right: 6px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+.price-discount {
+  color: var(--gold-bright);
+}
+
+/* ───────── ローダー (Premium splash 兼用) ───────── */
+.loader {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ───────── スロットロード演出 (Premium themed, CSS only) ───────── */
+/* Step 2 で日付タップ → スロット取得中の待ち時間を「SAMURAI MOTORS が波打つ + 金の刀の閃き」で演出 */
+.slot-loader {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 50px 20px;
+  text-align: center;
+  animation: splashFadeIn 0.4s ease;
+}
+.slot-loader-brand {
+  font-family: var(--serif);
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: var(--gold);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+  user-select: none;
+}
+.slot-loader-brand span {
+  display: inline-block;
+  animation: sloLetterWave 1.8s ease-in-out infinite;
+}
+.slot-loader-brand .space { width: 8px; animation: none; }
+.slot-loader-brand span:nth-child(1)  { animation-delay: 0.00s; }
+.slot-loader-brand span:nth-child(2)  { animation-delay: 0.07s; }
+.slot-loader-brand span:nth-child(3)  { animation-delay: 0.14s; }
+.slot-loader-brand span:nth-child(4)  { animation-delay: 0.21s; }
+.slot-loader-brand span:nth-child(5)  { animation-delay: 0.28s; }
+.slot-loader-brand span:nth-child(6)  { animation-delay: 0.35s; }
+.slot-loader-brand span:nth-child(7)  { animation-delay: 0.42s; }
+.slot-loader-brand span:nth-child(9)  { animation-delay: 0.49s; }
+.slot-loader-brand span:nth-child(10) { animation-delay: 0.56s; }
+.slot-loader-brand span:nth-child(11) { animation-delay: 0.63s; }
+.slot-loader-brand span:nth-child(12) { animation-delay: 0.70s; }
+.slot-loader-brand span:nth-child(13) { animation-delay: 0.77s; }
+.slot-loader-brand span:nth-child(14) { animation-delay: 0.84s; }
+@keyframes sloLetterWave {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.55; text-shadow: none; }
+  30% { transform: translateY(-4px); opacity: 1; text-shadow: 0 0 12px rgba(201,168,92,0.55); }
+}
+.slot-loader-katana {
+  width: 160px; height: 1px;
+  background: var(--border);
+  position: relative;
+  margin: 0 auto 20px;
+  overflow: hidden;
+  border-radius: 1px;
+}
+.slot-loader-katana::after {
+  content: '';
+  position: absolute; left: -40%; top: 0;
+  width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+  animation: sloKatanaSweep 1.6s ease-in-out infinite;
+}
+@keyframes sloKatanaSweep { to { left: 100%; } }
+.slot-loader-sub {
+  font-family: var(--serif);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-top: 4px;
+  line-height: 1.7;
+}
+.slot-loader-sub .km {
+  display: block;
+  font-family: 'Noto Sans Khmer', sans-serif;
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  opacity: 0.65;
+  margin-top: 2px;
+}
+
+/* ───────── 予約確定中 オーバーレイ (Premium ceremonial) ───────── */
+.submit-overlay {
+  position: fixed; inset: 0;
+  z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 50%, rgba(5,5,5,0.92) 0%, rgba(0,0,0,0.96) 70%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.submit-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.submit-overlay .slot-loader { padding: 0; }
+.submit-overlay .slot-loader-brand { font-size: 20px; }
+.submit-overlay .slot-loader-katana { width: 200px; }
+
+/* Premium 起動スプラッシュ */
+.splash {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 80px 24px 40px;
+  text-align: center;
+  animation: splashFadeIn 0.5s ease;
+}
+@keyframes splashFadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+.splash-logo {
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: rgba(201,168,92,0.04);
+  padding: 10px;
+  margin-bottom: 28px;
+  animation: splashPulse 2.4s ease-in-out infinite;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+@keyframes splashPulse {
+  0%, 100% { box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 0 rgba(201,168,92,0.35); }
+  50%      { box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 14px rgba(201,168,92,0); }
+}
+.splash-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.splash-tagline {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  margin-bottom: 36px;
+}
+.splash-tagline-km {
+  display: block;
+  font-family: 'Noto Sans Khmer', sans-serif;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+}
+.splash-bar {
+  width: 120px; height: 1px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+  border-radius: 1px;
+}
+.splash-bar::after {
+  content: '';
+  position: absolute; left: -40%; top: 0;
+  width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: splashSweep 1.6s ease-in-out infinite;
+}
+@keyframes splashSweep { to { left: 100%; } }
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="header">
+  <button class="back-btn hidden" id="backBtn" onclick="goBack()">‹</button>
+  <div class="header-title">
+    <h1 id="headerTitle">Samurai Motors</h1>
+    <p>Japanese-style Mobile Car Wash / សេវាលាងឡានបែបជប៉ុន</p>
+  </div>
+</div>
+
+<!-- プログレスバー（4ステップ） -->
+<div class="progress" id="progress" style="display:none;">
+  <div class="progress-step" data-step="1"></div>
+  <div class="progress-step" data-step="2"></div>
+  <div class="progress-step" data-step="3"></div>
+  <div class="progress-step" data-step="4"></div>
+</div>
+
+<div class="container">
+
+  <!-- Premium 起動スプラッシュ -->
+  <div class="view active" id="view-loading">
+    <div class="splash">
+      <img class="splash-logo" src="logo.png" alt="Samurai Motors" loading="eager">
+      <div class="splash-title">Samurai Motors</div>
+      <div class="splash-tagline">
+        Premium Japanese Quality Car Care
+        <span class="splash-tagline-km">សេវាលាងឡានបែបជប៉ុនកម្រិតខ្ពស់</span>
+      </div>
+      <div class="splash-bar"></div>
+    </div>
+  </div>
+
+  <!-- Step 1: 車種サイズ + SAMURAI WASH (必須) + SAMURAI GLASS (任意) — Menu v2 -->
+  <div class="view" id="view-plan">
+    <div class="view-title">
+      Book Your Wash
+      <span class="km">កក់លាងឡានរបស់អ្នក</span>
+    </div>
+    <div class="view-desc">Premium Japanese quality car care, delivered to you.</div>
+
+    <!-- キャンペーンバナー (有効時のみ表示) -->
+    <div class="campaign-banner" id="campaignBanner" style="display:none;">
+      <div>
+        <div class="label" id="campaignLabel">★ GRAND OPENING</div>
+        <div class="label-km" id="campaignLabelKm"></div>
+      </div>
+      <div class="discount" id="campaignDiscount">-30% OFF</div>
+    </div>
+
+    <!-- 1. Vehicle Size (FIRST so prices reflect correctly) -->
+    <div class="section-title"><span class="step-num">1</span>Vehicle Size <span class="km">ទំហំឡាន</span></div>
+    <div class="size-grid">
+      <div class="size-card" id="sizeSedan" onclick="selectSize('セダン以下')">
+        <div class="size-icon">
+          <svg class="vehicle-svg sedan" viewBox="0 0 80 32" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M4 22 L8 17 Q11 14 16 13 L22 6 Q24 5 28 5 L46 5 Q50 5 52 6 L58 13 Q67 14 70 17 L74 22"/>
+            <circle cx="18" cy="22" r="3.5"/>
+            <circle cx="60" cy="22" r="3.5"/>
+            <line x1="36" y1="6" x2="36" y2="13" stroke-width="1" opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="size-label">Sedan & smaller</div>
+        <div class="size-km">រថយន្តតូច និង តូចជាង</div>
+        <div class="size-examples">
+          Camry, Civic, Corolla,<br>Vios, Prius, March...
+        </div>
+        <div class="size-hint">↓ Smaller</div>
+      </div>
+      <div class="size-card" id="sizeSuv" onclick="selectSize('SUV以上')">
+        <div class="size-icon">
+          <svg class="vehicle-svg suv" viewBox="0 0 80 32" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
+            <!-- SUV: 短ボンネット + 長キャビン + 後部斜めウィンドウ + 大径ホイール -->
+            <path d="M4 22 L8 16 L12 14 L19 5 L55 5 L62 14 L72 16 L76 22"/>
+            <line x1="12" y1="14" x2="62" y2="14" stroke-width="1" opacity="0.4"/>
+            <!-- ルーフレール (SUV 識別) -->
+            <line x1="22" y1="3.2" x2="27" y2="3.2" stroke-width="1.3" opacity="0.55"/>
+            <line x1="47" y1="3.2" x2="52" y2="3.2" stroke-width="1.3" opacity="0.55"/>
+            <!-- 大径ホイール -->
+            <circle cx="18" cy="22" r="4.5"/>
+            <circle cx="60" cy="22" r="4.5"/>
+          </svg>
+        </div>
+        <div class="size-label">SUV & larger</div>
+        <div class="size-km">SUV និង ធំជាង</div>
+        <div class="size-examples">
+          Highlander, CRV, RAV4,<br>Fortuner, Alphard, Pickup...
+        </div>
+        <div class="size-hint">↑ Larger</div>
+      </div>
+    </div>
+
+    <!-- 2. SAMURAI WASH (toggle) -->
+    <div class="section-title"><span class="step-num">2</span>SAMURAI WASH <span class="km">លាងសម្អាត</span></div>
+    <div class="card-list" id="planList"></div>
+
+    <!-- 3. SAMURAI GLASS -->
+    <div class="section-title"><span class="step-num">3</span>SAMURAI GLASS <span class="km">ស្រោបកញ្ចក់</span></div>
+    <div class="card-list" id="optionList"></div>
+
+    <!-- 注意ヒント -->
+    <div style="margin-top:14px; padding:10px 12px; font-size:11px; color:var(--text-dim); text-align:center; border:1px dashed var(--border); border-radius:var(--radius); letter-spacing:0.3px;">
+      Pick at least one — WASH or GLASS (or both)<br>
+      <span class="km" style="opacity:0.7;">ជ្រើសរើសយ៉ាងតិច 1 — WASH ឬ GLASS</span>
+    </div>
+  </div>
+
+  <!-- Step 2: 日付 + 時間 -->
+  <div class="view" id="view-datetime">
+    <div class="view-title">
+      Select Date & Time
+      <span class="km">ជ្រើសរើសកាលបរិច្ឆេទ និង ម៉ោង</span>
+    </div>
+    <div class="view-desc">Pick a date, then choose a time slot.</div>
+
+    <div class="section-title">Date <span class="km">កាលបរិច្ឆេទ</span></div>
+    <div class="date-grid" id="dateGrid"></div>
+
+    <div class="time-section" id="timeSection" style="display:none;">
+      <div class="section-title">Time <span class="km">ម៉ោង</span></div>
+      <div id="slotContainer"></div>
+    </div>
+  </div>
+
+  <!-- Step 3: 場所 -->
+  <div class="view" id="view-location">
+    <div class="view-title">
+      Your Location
+      <span class="km">ទីតាំងរបស់អ្នក</span>
+    </div>
+
+    <!-- サービスタイプ タブ切替 (2026-05-20: 店舗作業オプション追加) -->
+    <div class="service-type-tabs">
+      <button type="button" class="svc-tab active" data-svctype="出張" onclick="selectServiceType('出張')">
+        🚗 <span class="svc-tab-main">Delivery</span><br>
+        <span class="km">ដឹកជញ្ជូន</span>
+      </button>
+      <button type="button" class="svc-tab" data-svctype="店舗" onclick="selectServiceType('店舗')">
+        🏪 <span class="svc-tab-main">In-store</span><br>
+        <span class="km">នៅហាង</span>
+      </button>
+    </div>
+
+    <!-- 出張モード: 地図 + ピン留め -->
+    <div id="locationDelivery" class="location-mode">
+      <div class="view-desc">Tap the map to set your car wash location<br><span class="km">ចុចផែនទីដើម្បីកំណត់ទីតាំង</span></div>
+
+      <div id="leafletMap" style="width:100%; height:clamp(360px, 58vh, 500px); border-radius:var(--radius); border:1px solid var(--border); margin-bottom:10px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);"></div>
+      <div style="font-size:11px; color:var(--text-dim); margin-bottom:16px; text-align:center; letter-spacing:0.3px;" id="coordsText">📍 Tap the map to set your location</div>
+
+      <div style="font-size:13px; color:var(--text-dim); text-align:center; padding:8px 16px; background:var(--card); border-radius:var(--radius); border:1px solid var(--border);">
+        Parking details can be shared via chat after booking<br>
+        <span class="km">ព័ត៌មានលម្អិតអំពីកន្លែងចតអាចផ្ញើតាម chat បន្ទាប់ពីកក់</span>
+      </div>
+    </div>
+
+    <!-- 店舗モード: 事務所カード -->
+    <div id="locationInStore" class="location-mode" style="display:none;">
+      <div class="view-desc">Bring your car to our office — no delivery fee<br><span class="km">នាំរថយន្តមកការិយាល័យ — មិនមានថ្លៃដឹកជញ្ជូន</span></div>
+
+      <div class="store-card">
+        <div class="store-card-icon">🏪</div>
+        <div class="store-card-title">Samurai Motors Office</div>
+        <div class="store-card-subtitle"><span class="km">ការិយាល័យ Samurai Motors</span></div>
+
+        <!-- 固定地図(店舗位置を表示するだけ、タップ等で外部遷移しない) -->
+        <div id="storeMapEl" style="width:100%; height:220px; border-radius:var(--radius); border:1px solid var(--border); margin:14px 0; background:#1a1410;"></div>
+
+        <div class="store-card-note">
+          ✅ No delivery fee saved<br>
+          <span class="km">មិនមានថ្លៃដឹកជញ្ជូន</span><br>
+          <span style="opacity:0.75; font-size:11px;">📍 Map link will be sent via Telegram after booking</span><br>
+          <span style="opacity:0.75; font-size:11px;" class="km">តំណផែនទីនឹងផ្ញើតាម Telegram បន្ទាប់ពីការកក់</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: 確認 -->
+  <div class="view" id="view-confirm">
+    <div class="view-title">
+      Confirm Booking
+      <span class="km">បញ្ជាក់ការកក់</span>
+    </div>
+    <div class="view-desc">Please review and confirm.</div>
+    <div class="summary-card" id="summaryCard"></div>
+  </div>
+
+  <!-- 完了 (Brand celebration) -->
+  <div class="view" id="view-success">
+    <div class="success-seal">
+      <img class="success-seal-mark" src="logo.png" alt="Samurai Motors">
+    </div>
+    <div class="success-title">Reserved</div>
+    <div class="success-subtitle">
+      Thank you. Your slot is sealed.
+      <span class="km">អរគុណ! ការកក់របស់អ្នកត្រូវបានបញ្ជាក់</span>
+    </div>
+    <div class="summary-card" id="successSummary"></div>
+
+    <!-- 担当者カード -->
+    <div class="specialist-card">
+      <div class="specialist-avatar">R</div>
+      <div class="specialist-info">
+        <div class="specialist-label">Your Specialist</div>
+        <div class="specialist-name">Run Kosal</div>
+        <div class="specialist-meta">Field-trained · Premium care</div>
+      </div>
+    </div>
+
+    <!-- What Happens Next タイムライン -->
+    <div class="timeline-card">
+      <div class="timeline-title">What Happens Next</div>
+      <div class="timeline-item">
+        <div class="timeline-dot">⏰</div>
+        <div class="timeline-text">
+          <span class="lead">1 hour before arrival</span> — Run Kosal will send you a Telegram reminder with map link.
+          <span class="km">មុនពេលមកដល់ 1 ម៉ោង — យើងនឹងផ្ញើសារ Telegram រំលឹក និង Map</span>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot">📷</div>
+        <div class="timeline-text">
+          <span class="lead">Service begins</span> — Before photos delivered via Telegram (4 angles).
+          <span class="km">ការងារចាប់ផ្តើម — រូបថតមុនលាងផ្ញើតាម Telegram</span>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot">✨</div>
+        <div class="timeline-text">
+          <span class="lead">Completion</span> — After photos + QR for payment.
+          <span class="km">បញ្ចប់ — រូបថតបន្ទាប់ + QR Code សម្រាប់បង់ប្រាក់</span>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot">🙏</div>
+        <div class="timeline-text">
+          <span class="lead">After 24 hours</span> — We'd love your feedback.
+          <span class="km">24 ម៉ោងក្រោយ — យើងសង្ឃឹមស្ទង់មតិ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 決済案内 -->
+    <div class="payment-notice">
+      <div class="payment-notice-icon">💳</div>
+      <div class="payment-notice-body">
+        <span class="ttl">Payment / ការបង់ប្រាក់</span>
+        After service completion, we will send you a <span class="em">QR code via Telegram</span>.
+        Please make payment using that QR code.
+        <span class="km">បន្ទាប់ពីលាងសម្អាតរួច យើងនឹងផ្ញើ QR Code តាម Telegram។ សូមបង់ប្រាក់តាម QR Code នោះ។</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- アクションボタン -->
+<div class="action-area" id="actionArea" style="display:none;">
+  <button class="btn btn-primary" id="actionBtn" onclick="handleNext()">Next / បន្ទាប់</button>
+</div>
+
+<!-- 提出中オーバーレイ (確定ボタン押下時の premium ceremony) -->
+<div class="submit-overlay" id="submitOverlay">
+  <div class="slot-loader">
+    <div class="slot-loader-brand">
+      <span>S</span><span>A</span><span>M</span><span>U</span><span>R</span><span>A</span><span>I</span><span class="space">&nbsp;</span><span>M</span><span>O</span><span>T</span><span>O</span><span>R</span><span>S</span>
+    </div>
+    <div class="slot-loader-katana"></div>
+    <div class="slot-loader-sub">Sealing your reservation<span class="km">កំពុងបញ្ជាក់ការកក់...</span></div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  設定
+// ═══════════════════════════════════════════
+
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
+
+// ═══════════════════════════════════════════
+//  状態管理
+// ═══════════════════════════════════════════
+
+var state = {
+  chatId: '',
+  username: '',
+  customerName: '',
+  customer: null,
+  plans: [],
+  options: [],                  // Menu v2: GLASS add-on一覧 (booking_initから取得)
+  campaign: null,               // Menu v2: { active, percent, nameEn, nameKm } or null
+  selectedPlan: null,
+  selectedGlassOption: null,    // Menu v2: 'GLASS_3' / 'GLASS_ALL' / null
+  selectedSize: '',
+  selectedDate: '',
+  selectedSlot: '',
+  selectedDuration: 0,
+  selectedLocation: '',
+  serviceType: '出張',           // '出張' (default) or '店舗' — 店舗作業は出張料 $0
+  currentView: 'view-loading',
+  history: []
+};
+
+// 店舗（事務所）情報
+var STORE_INFO = {
+  nameEn: 'Samurai Motors Office',
+  nameKm: 'ការិយាល័យ Samurai Motors',
+  mapsUrl: 'https://maps.app.goo.gl/wEHuqw2fry4QJQ5y6',
+  locationLabel: '🏪 Samurai Motors Office (Store)'
+};
+
+var STEPS = ['view-plan', 'view-datetime', 'view-location', 'view-confirm'];
+
+// ═══════════════════════════════════════════
+//  初期化
+// ═══════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+    if (Telegram.WebApp.initDataUnsafe) {
+      var u = Telegram.WebApp.initDataUnsafe.user;
+      if (u) {
+        state.chatId = u.id.toString();
+        state.username = u.username || '';
+        state.customerName = [u.first_name || '', u.last_name || ''].join(' ').trim();
+      }
+    }
+  }
+
+  // 開発用パラメータ
+  var urlParams = new URLSearchParams(window.location.search);
+  var gasParam = urlParams.get('gas');
+  if (gasParam) GAS_URL = gasParam;
+  var devChatId = urlParams.get('chatId');
+  if (devChatId && !state.chatId) state.chatId = devChatId;
+
+  if (!state.chatId) {
+    showToast('Please open from Telegram', true);
+    return;
+  }
+
+  loadInit();
+});
+
+// ═══════════════════════════════════════════
+//  API
+// ═══════════════════════════════════════════
+
+function loadInit() {
+  var url = GAS_URL + '?action=booking_init&chatId=' + encodeURIComponent(state.chatId)
+          + '&name=' + encodeURIComponent(state.customerName)
+          + '&username=' + encodeURIComponent(state.username);
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.status !== 'ok') throw new Error(res.message || 'Init failed');
+      state.customer = res.customer;
+      state.plans = res.plans || [];
+      state.options = res.options || [];                       // Menu v2: GLASS add-on
+      state.campaign = res.campaign || null;                   // Menu v2: キャンペーン情報
+      state.dispatchFee = res.dispatchFee || { sedan: 2, suv: 2 };
+      // 単一プラン(WASH のみ)の場合は自動選択(操作削減)
+      if (state.plans.length === 1) state.selectedPlan = state.plans[0].letter;
+      // 新規顧客の場合、自動登録
+      if (!state.customer && state.customerName) {
+        return autoRegister().then(function() { showView('view-plan'); });
+      }
+      if (!state.customer) state.customerName = 'Guest';
+      else state.customerName = state.customer.name;
+      showView('view-plan');
+    })
+    .catch(function(err) {
+      showToast('Loading error: ' + err.message, true);
+    });
+}
+
+function autoRegister() {
+  return postJson('booking_register_customer', {
+    chatId: state.chatId,
+    name: state.customerName,
+    username: state.username
+  }).then(function(res) {
+    if (res.status === 'ok') state.customer = res.customer;
+  }).catch(function() {});
+}
+
+function postJson(action, data) {
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action: action }, data))
+  }).then(function(r) { return r.json(); });
+}
+
+// ═══════════════════════════════════════════
+//  ナビゲーション
+// ═══════════════════════════════════════════
+
+function showView(viewId) {
+  if (state.currentView && state.currentView !== viewId && state.currentView !== 'view-loading') {
+    state.history.push(state.currentView);
+  }
+
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+  document.getElementById(viewId).classList.add('active');
+  state.currentView = viewId;
+
+  // 戻るボタン
+  document.getElementById('backBtn').classList.toggle('hidden',
+    state.history.length === 0 || viewId === 'view-success' || viewId === 'view-loading');
+
+  // プログレスバー
+  updateProgress(viewId);
+
+  // 各viewの初期化
+  if (viewId === 'view-plan') {
+    // キャンペーンバナー表示
+    if (state.campaign && state.campaign.active && state.campaign.percent > 0) {
+      var banner = document.getElementById('campaignBanner');
+      var label  = document.getElementById('campaignLabel');
+      var labKm  = document.getElementById('campaignLabelKm');
+      var disc   = document.getElementById('campaignDiscount');
+      if (banner) banner.style.display = 'flex';
+      if (label) label.textContent = '★ ' + (state.campaign.nameEn || 'Campaign');
+      if (labKm) labKm.textContent = state.campaign.nameKm || '';
+      if (disc)  disc.textContent  = '-' + state.campaign.percent + '% OFF';
+    }
+    renderPlans();
+    renderOptions();
+  }
+  if (viewId === 'view-datetime') renderDates();
+  if (viewId === 'view-location') {
+    setTimeout(function() { initLocationMap(); }, 100);
+  }
+  if (viewId === 'view-confirm') renderSummary();
+
+  // ボタン更新
+  updateActionButton();
+
+  window.scrollTo(0, 0);
+}
+
+function goBack() {
+  if (state.history.length === 0) return;
+  var prev = state.history.pop();
+  // 直接表示（履歴に積まない）
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+  document.getElementById(prev).classList.add('active');
+  state.currentView = prev;
+  document.getElementById('backBtn').classList.toggle('hidden', state.history.length === 0);
+  updateProgress(prev);
+  updateActionButton();
+  window.scrollTo(0, 0);
+}
+
+function updateProgress(viewId) {
+  var progressDiv = document.getElementById('progress');
+  var stepIdx = STEPS.indexOf(viewId);
+  if (stepIdx < 0) {
+    progressDiv.style.display = 'none';
+    return;
+  }
+  progressDiv.style.display = 'flex';
+  document.querySelectorAll('.progress-step').forEach(function(el, i) {
+    el.classList.remove('done', 'current');
+    if (i < stepIdx) el.classList.add('done');
+    else if (i === stepIdx) el.classList.add('current');
+  });
+}
+
+function updateActionButton() {
+  var btn = document.getElementById('actionBtn');
+  var area = document.getElementById('actionArea');
+  area.style.display = '';
+  btn.classList.remove('btn-primary', 'btn-gold', 'btn-secondary');
+
+  switch (state.currentView) {
+    case 'view-plan':
+      btn.textContent = 'Next / បន្ទាប់';
+      // Menu v2.1 (2026-05-08): WASH か GLASS のどちらか1つ以上 + 車種選択 で next 可
+      btn.disabled = !state.selectedSize || (!state.selectedPlan && !state.selectedGlassOption);
+      btn.classList.add('btn-primary');
+      break;
+    case 'view-datetime':
+      btn.textContent = 'Next / បន្ទាប់';
+      btn.disabled = !state.selectedDate || !state.selectedSlot;
+      btn.classList.add('btn-primary');
+      break;
+    case 'view-location':
+      btn.textContent = 'Next / បន្ទាប់';
+      btn.classList.add('btn-primary');
+      break;
+    case 'view-confirm':
+      btn.textContent = '✓ Confirm Booking / បញ្ជាក់ការកក់';
+      btn.classList.add('btn-gold');
+      break;
+    case 'view-success':
+      btn.textContent = 'Close / បិទ';
+      btn.classList.add('btn-secondary');
+      break;
+    default:
+      area.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  Step 1: プラン + 車種サイズ
+// ═══════════════════════════════════════════
+
+function renderPlans() {
+  var container = document.getElementById('planList');
+  container.innerHTML = '';
+  // キャンペーン割引(案a: サービスのみ -X%)
+  var campActive = state.campaign && state.campaign.active && state.campaign.percent > 0;
+  state.plans.forEach(function(plan) {
+    var card = document.createElement('div');
+    card.className = 'choice-card plan-card';
+    if (state.selectedPlan === plan.letter) card.classList.add('selected');
+    // 車種サイズに応じて価格表示を変える
+    var priceDisplay;
+    if (state.selectedSize) {
+      var origPrice = state.selectedSize === 'SUV以上' ? plan.priceSuv : plan.priceSedan;
+      if (campActive) {
+        var discPrice = (origPrice * (1 - state.campaign.percent/100)).toFixed(2);
+        priceDisplay = '<span class="price-original">$' + origPrice + '</span><span class="price-discount">$' + discPrice + '</span>';
+      } else {
+        priceDisplay = '$' + origPrice;
+      }
+    } else {
+      priceDisplay = '$' + plan.priceSedan + ' ~ $' + plan.priceSuv;
+    }
+    var durationDisplay = state.selectedSize === 'SUV以上'
+      ? plan.durationSuv + 'min'
+      : state.selectedSize === 'セダン以下'
+        ? plan.durationSedan + 'min'
+        : plan.durationSedan + '~' + plan.durationSuv + 'min';
+    // 出張料は「料金設定シート」の値を動的取得（state.dispatchFee）
+    var feeForCard = state.selectedSize === 'SUV以上'
+      ? (state.dispatchFee && state.dispatchFee.suv) || 0
+      : state.selectedSize === 'セダン以下'
+        ? (state.dispatchFee && state.dispatchFee.sedan) || 0
+        : (state.dispatchFee && state.dispatchFee.sedan) || 0;
+    var feeNote = feeForCard
+      ? '<div class="plan-fee-note">+ $' + feeForCard + ' Delivery fee / + $' + feeForCard + ' ថ្លៃដឹកជញ្ជូន</div>'
+      : '';
+    card.innerHTML =
+      '<div>'
+      + '<span class="plan-letter">' + plan.letter + '</span>'
+      + '<span class="plan-name">' + escapeHtml(plan.name) + '</span>'
+      + '</div>'
+      + '<div class="plan-desc">' + escapeHtml(plan.descEn || plan.desc || plan.jp || '') + '</div>'
+      + '<div class="plan-meta">'
+      + '<div class="plan-duration">⏱ ' + durationDisplay + '</div>'
+      + '<div class="plan-price">' + priceDisplay + '</div>'
+      + '</div>'
+      + feeNote;
+    // Menu v2.1 (2026-05-08): WASH カードもトグル動作(タップで選択/解除)
+    card.onclick = function() {
+      if (state.selectedPlan === plan.letter) {
+        selectPlan(null); // 再タップで解除
+      } else {
+        selectPlan(plan.letter);
+      }
+    };
+    container.appendChild(card);
+  });
+}
+
+function selectPlan(letter) {
+  state.selectedPlan = letter; // letter or null
+  renderPlans();
+  renderOptions(); // GLASS 側の表示更新(WASH 解除でも GLASS は残せる)
+  updateActionButton();
+}
+
+function selectSize(size) {
+  state.selectedSize = size;
+  // UIの更新
+  document.getElementById('sizeSedan').classList.toggle('selected', size === 'セダン以下');
+  document.getElementById('sizeSuv').classList.toggle('selected', size === 'SUV以上');
+  // 価格をプラン・オプションに反映
+  renderPlans();
+  renderOptions();
+  updateActionButton();
+}
+
+// ═══════════════════════════════════════════
+//  Step 1-c: SAMURAI GLASS オプション (Menu v2)
+// ═══════════════════════════════════════════
+
+function renderOptions() {
+  var container = document.getElementById('optionList');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Menu v2.1 (2026-05-12 fix): 車種未選択でも GLASS カードを表示・選択可。
+  // 価格は範囲表示(セダン〜SUV)、車種選択後に確定値+割引適用へ更新。
+  var sizeSelected = !!state.selectedSize;
+  var campActive = state.campaign && state.campaign.active && state.campaign.percent > 0;
+
+  (state.options || []).forEach(function(opt) {
+    var card = document.createElement('div');
+    card.className = 'choice-card option-card';
+    if (state.selectedGlassOption === opt.code) card.classList.add('selected');
+
+    var duration;
+    var priceHtml;
+    if (!sizeSelected) {
+      // 車種未選択: 範囲価格(割引前)・時間範囲
+      priceHtml = '+$' + opt.priceSedan + ' ~ +$' + opt.priceSuv;
+      duration = opt.durationSedan + '~' + opt.durationSuv;
+    } else {
+      var price = state.selectedSize === 'SUV以上' ? opt.priceSuv : opt.priceSedan;
+      duration = state.selectedSize === 'SUV以上' ? opt.durationSuv : opt.durationSedan;
+      if (campActive) {
+        var discPrice = (price * (1 - state.campaign.percent/100)).toFixed(2);
+        priceHtml = '<span class="price-original">+$' + price + '</span><span class="price-discount">+$' + discPrice + '</span>';
+      } else {
+        priceHtml = '+$' + price;
+      }
+    }
+
+    card.innerHTML =
+      '<div class="option-info">'
+      + '<div class="option-name">' + escapeHtml(opt.nameEn || opt.code) + '</div>'
+      + '<div class="option-name-km">' + escapeHtml(opt.nameKm || '') + '</div>'
+      + '<div class="option-desc">+' + duration + 'min · ' + escapeHtml(opt.description || '') + '</div>'
+      + '</div>'
+      + '<div class="option-price">' + priceHtml + '</div>';
+    // トグル動作: 既に選択中なら解除、未選択なら選択
+    card.onclick = function() {
+      if (state.selectedGlassOption === opt.code) {
+        selectGlassOption(null);
+      } else {
+        selectGlassOption(opt.code);
+      }
+    };
+    container.appendChild(card);
+  });
+
+  // ヒント表示: 状態に応じてメッセージを変える
+  var hint = document.createElement('div');
+  hint.style.cssText = 'text-align:center; padding:10px 4px 0; color:var(--text-dim); font-size:11px; line-height:1.5;';
+  if (state.selectedGlassOption) {
+    hint.innerHTML = '✓ Tap the selected option again to remove<br><span style="opacity:0.6">ចុចម្តងទៀតដើម្បីដកចេញ</span>';
+  } else {
+    hint.innerHTML = 'Glass coating is optional — skip or tap to add<br><span style="opacity:0.6">ស្រោបកញ្ចក់គឺជាជម្រើសបន្ថែម</span>';
+  }
+  container.appendChild(hint);
+}
+
+function selectGlassOption(code) {
+  state.selectedGlassOption = code;
+  renderOptions();
+  updateActionButton();
+}
+
+// ═══════════════════════════════════════════
+//  Step 2: 日付 + 時間
+// ═══════════════════════════════════════════
+
+function renderDates() {
+  var container = document.getElementById('dateGrid');
+  container.innerHTML = '';
+  // カンボジア時間(UTC+7)
+  var now = new Date();
+  var offset = 7 * 60;
+  var today = new Date(now.getTime() + (offset + now.getTimezoneOffset()) * 60000);
+  today.setHours(0, 0, 0, 0);
+
+  var dayEn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var monthEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  // 定休日（0=日曜）
+  var CLOSED_DAYS = [0];
+
+  // カンボジア祝日（YYYY-MM-DD）— GAS 側 CAMBODIA_HOLIDAYS と同期すること
+  var CAMBODIA_HOLIDAYS = {
+    '2026-01-01': 'New Year',
+    '2026-01-07': 'Victory Day',
+    '2026-03-08': "Women's Day",
+    '2026-04-14': 'Khmer New Year',
+    '2026-04-15': 'Khmer New Year',
+    '2026-04-16': 'Khmer New Year',
+    '2026-05-01': 'Labour Day',
+    '2026-05-08': 'Royal Ploughing',
+    '2026-05-13': "King's Birthday",
+    '2026-05-14': "King's Birthday",
+    '2026-05-15': "King's Birthday",
+    '2026-06-18': "Queen Mother",
+    '2026-09-24': 'Constitution Day',
+    '2026-10-10': 'Pchum Ben',
+    '2026-10-11': 'Pchum Ben',
+    '2026-10-12': 'Pchum Ben',
+    '2026-10-15': 'King Father Day',
+    '2026-10-29': 'Coronation Day',
+    '2026-10-31': 'King Father',
+    '2026-11-09': 'Independence',
+    '2026-11-23': 'Water Festival',
+    '2026-11-24': 'Water Festival',
+    '2026-11-25': 'Water Festival',
+    '2027-01-01': 'New Year',
+    '2027-01-07': 'Victory Day',
+    '2027-03-08': "Women's Day"
+  };
+
+  for (var i = 0; i < 12; i++) {
+    var d = new Date(today.getTime() + i * 86400000);
+    var dateStr = formatDate(d);
+    // 2026-05-06 Daisuke 判断: 日曜だけ休み、祝日は通常営業
+    var isClosed   = CLOSED_DAYS.indexOf(d.getDay()) >= 0;       // 日曜のみ
+    var holidayName = CAMBODIA_HOLIDAYS[dateStr] || '';            // 情報ラベルのみに使用
+
+    var cell = document.createElement('div');
+    cell.className = 'date-cell';
+    if (i === 0) cell.classList.add('today');
+    if (state.selectedDate === dateStr) cell.classList.add('selected');
+    if (isClosed) cell.classList.add('closed');
+    cell.innerHTML =
+      '<div class="d-day">' + dayEn[d.getDay()] + '</div>'
+      + '<div class="d-num">' + d.getDate() + '</div>'
+      + '<div class="d-month">' + monthEn[d.getMonth()] + '</div>'
+      + (isClosed
+          ? '<div class="d-closed">Closed</div>'
+          : (holidayName ? '<div class="d-holiday" title="' + escapeHtml(holidayName) + '">Holiday</div>' : ''));
+    if (!isClosed) {
+      cell.onclick = (function(ds) {
+        return function() { selectDate(ds); };
+      })(dateStr);
+    }
+    container.appendChild(cell);
+  }
+
+  // 時間セクション表示
+  if (state.selectedDate) {
+    document.getElementById('timeSection').style.display = '';
+    loadTimeSlots();
+  } else {
+    document.getElementById('timeSection').style.display = 'none';
+  }
+}
+
+function selectDate(dateStr) {
+  state.selectedDate = dateStr;
+  state.selectedSlot = '';
+  renderDates();
+  updateActionButton();
+}
+
+function loadTimeSlots() {
+  var container = document.getElementById('slotContainer');
+  // Premium themed loader: SAMURAI MOTORS の文字が波打つ + ゴールドの刀閃きライン
+  container.innerHTML =
+    '<div class="slot-loader">'
+    + '<div class="slot-loader-brand">'
+    +   '<span>S</span><span>A</span><span>M</span><span>U</span><span>R</span><span>A</span><span>I</span>'
+    +   '<span class="space">&nbsp;</span>'
+    +   '<span>M</span><span>O</span><span>T</span><span>O</span><span>R</span><span>S</span>'
+    + '</div>'
+    + '<div class="slot-loader-katana"></div>'
+    + '<div class="slot-loader-sub">Finding the perfect time<span class="km">កំពុងស្វែងរកម៉ោងល្អបំផុត</span></div>'
+    + '</div>';
+
+  // Menu v2.1: plan が null(GLASS-only)でも空文字で送る、glassOption も渡す
+  var url = GAS_URL + '?action=booking_slots'
+    + '&date=' + encodeURIComponent(state.selectedDate)
+    + '&plan=' + encodeURIComponent(state.selectedPlan || '')
+    + '&vehicleType=' + encodeURIComponent(state.selectedSize)
+    + '&glassOption=' + encodeURIComponent(state.selectedGlassOption || '')
+    + '&options=';
+
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.status !== 'ok') throw new Error(res.message || 'Failed to load');
+      state.selectedDuration = res.durationMin;
+      renderSlots(res.slots, res.durationMin, res.debug);
+    })
+    .catch(function(err) {
+      container.innerHTML = '<div class="slot-empty">Error: ' + escapeHtml(err.message) + '</div>';
+    });
+}
+
+function renderSlots(slots, durationMin, debug) {
+  var container = document.getElementById('slotContainer');
+  if (!slots || slots.length === 0) {
+    var debugInfo = debug ? '<br><small style="color:#999">[' + debug + ']</small>' : '';
+    container.innerHTML = '<div class="slot-empty">No availability on this date<br>គ្មានទំនេរទេ<br><br>Please select another date' + debugInfo + '</div>';
+    return;
+  }
+
+  var html = '';
+  if (durationMin) {
+    html += '<div class="duration-info">⏱ Duration: ~' + durationMin + 'min / រយៈពេល ~' + durationMin + ' នាទី</div>';
+  }
+  html += '<div class="slot-grid">';
+  for (var i = 0; i < slots.length; i++) {
+    var s = slots[i];
+    var sel = state.selectedSlot === s ? ' selected' : '';
+    html += '<div class="slot-cell' + sel + '" onclick="selectSlot(\'' + s + '\')">' + s + '</div>';
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function selectSlot(time) {
+  state.selectedSlot = time;
+  document.querySelectorAll('.slot-cell').forEach(function(c) {
+    c.classList.toggle('selected', c.textContent === time);
+  });
+  updateActionButton();
+}
+
+// ═══════════════════════════════════════════
+//  Step 4: 確認画面
+// ═══════════════════════════════════════════
+
+function renderSummary() {
+  // Menu v2.1 (2026-05-08): plan が null(GLASS-only)も対応
+  var plan = state.selectedPlan ? state.plans.find(function(p) { return p.letter === state.selectedPlan; }) : null;
+  var planName = plan ? plan.name : '';
+  // 基本料金 (WASH) — plan が null なら 0
+  var basePrice = plan
+    ? ((state.selectedSize === 'SUV以上') ? plan.priceSuv : plan.priceSedan)
+    : 0;
+  // GLASS オプション
+  var glassOpt = state.selectedGlassOption
+    ? state.options.find(function(o) { return o.code === state.selectedGlassOption; })
+    : null;
+  var glassPrice = glassOpt
+    ? ((state.selectedSize === 'SUV以上') ? glassOpt.priceSuv : glassOpt.priceSedan)
+    : 0;
+  // 出張料(料金設定シート由来、ハードコードしない)
+  // 2026-05-20: 店舗作業は出張料 $0
+  var isInStore = (state.serviceType === '店舗');
+  var baseFee = (state.selectedSize === 'SUV以上')
+    ? ((state.dispatchFee && state.dispatchFee.suv) || 0)
+    : ((state.dispatchFee && state.dispatchFee.sedan) || 0);
+  var fee = isInStore ? 0 : baseFee;
+  // キャンペーン割引(案a: サービスのみ -X%)
+  var serviceSubtotal = basePrice + glassPrice;
+  var camp = state.campaign;
+  var campActive = camp && camp.active && camp.percent > 0;
+  var discount = campActive ? Math.round(serviceSubtotal * camp.percent) / 100 : 0;
+  var serviceAfter = serviceSubtotal - discount;
+  var total = serviceAfter + fee;
+  var sizeLabel = (state.selectedSize === 'SUV以上') ? 'SUV & larger' : 'Sedan & smaller';
+
+  var html = '';
+  // Service ラベル: plan のみ / glass のみ / plan + glass のいずれでも表示
+  if (plan && glassOpt) {
+    html += summaryRow('Service', escapeHtml(planName));
+    html += summaryRow('+ Add-on', escapeHtml(glassOpt.nameEn));
+  } else if (plan) {
+    html += summaryRow('Service', escapeHtml(planName));
+  } else if (glassOpt) {
+    html += summaryRow('Service', 'SAMURAI GLASS — ' + escapeHtml(glassOpt.nameEn));
+  }
+  html += summaryRow('Vehicle', sizeLabel);
+  html += summaryRow('Date', state.selectedDate);
+  html += summaryRow('Time', state.selectedSlot + ' (~' + state.selectedDuration + 'min)');
+  html += summaryRow('Location', escapeHtml(state.selectedLocation));
+  // 料金内訳: WASH / GLASS / [Subtotal / Discount / After] / Delivery / Total
+  if (plan) {
+    html += summaryRow(escapeHtml(planName), '$' + basePrice.toFixed(2));
+  }
+  if (glassOpt) {
+    html += summaryRow('+ ' + escapeHtml(glassOpt.nameEn), '$' + glassPrice.toFixed(2));
+  }
+  if (campActive) {
+    html += summaryRow('Service subtotal', '$' + serviceSubtotal.toFixed(2));
+    html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">★ ' + escapeHtml(camp.nameEn || 'Campaign') + ' (-' + camp.percent + '%)</div><div class="value" style="color:var(--gold-bright)">-$' + discount.toFixed(2) + '</div></div>';
+  }
+  // 出張: Delivery fee 表示 / 店舗: In-store ラベル + $0
+  if (isInStore) {
+    html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">🏪 In-store / នៅហាង</div><div class="value" style="color:var(--gold-bright)">$0.00 (saved $' + baseFee.toFixed(2) + ')</div></div>';
+  } else {
+    html += summaryRow('🚚 Delivery fee / ថ្លៃដឹកជញ្ជូន', '$' + fee.toFixed(2));
+  }
+  html += '<div class="summary-row total"><div class="label">Total / សរុប</div><div class="value">$' + total.toFixed(2) + '</div></div>';
+
+  document.getElementById('summaryCard').innerHTML = html;
+}
+
+function summaryRow(label, value) {
+  return '<div class="summary-row"><div class="label">' + label + '</div><div class="value">' + value + '</div></div>';
+}
+
+// ═══════════════════════════════════════════
+//  「次へ」ボタン処理
+// ═══════════════════════════════════════════
+
+function handleNext() {
+  switch (state.currentView) {
+    case 'view-plan':
+      // Menu v2.1: 車種 必須 + (WASH か GLASS のどちらか1つ以上)
+      if (!state.selectedSize) {
+        showToast('Please select vehicle size', true);
+        return;
+      }
+      if (!state.selectedPlan && !state.selectedGlassOption) {
+        showToast('Please select SAMURAI WASH or SAMURAI GLASS (at least one)', true);
+        return;
+      }
+      showView('view-datetime');
+      break;
+
+    case 'view-datetime':
+      if (!state.selectedDate || !state.selectedSlot) {
+        showToast('Please select date and time', true);
+        return;
+      }
+      showView('view-location');
+      break;
+
+    case 'view-location':
+      // 店舗作業の場合は地図ピン留め不要、出張作業の場合はピン留め必須
+      if (state.serviceType === '店舗') {
+        state.selectedLocation = STORE_INFO.locationLabel + ' ' + STORE_INFO.mapsUrl;
+      } else {
+        if (!savedCoords) {
+          showToast('Please set your location on the map', true);
+          return;
+        }
+        var mapsUrl = 'https://www.google.com/maps?q=' + savedCoords.lat + ',' + savedCoords.lng;
+        state.selectedLocation = '📍 ' + mapsUrl;
+      }
+      showView('view-confirm');
+      break;
+
+    case 'view-confirm':
+      submitBooking();
+      break;
+
+    case 'view-success':
+      if (window.Telegram && Telegram.WebApp) Telegram.WebApp.close();
+      break;
+  }
+}
+
+var bookingSubmitted = false; // 二重送信防止フラグ
+
+function submitBooking() {
+  // 二重送信防止
+  if (bookingSubmitted) {
+    showToast('Booking already submitted', false);
+    return;
+  }
+
+  // 顧客未登録の場合の簡易対応
+  var customerId = state.customer ? state.customer.customerId : state.chatId;
+
+  var payload = {
+    chatId: state.chatId,
+    name: state.customerName,
+    username: state.username,
+    customerId: customerId,
+    vehicleId: '',
+    vehicleType: state.selectedSize,
+    planLetter: state.selectedPlan,
+    glassOption: state.selectedGlassOption,   // Menu v2: 'GLASS_3' / 'GLASS_ALL' / null
+    optionIds: [],                            // 旧フィールド(後方互換維持)
+    date: state.selectedDate,
+    startTime: state.selectedSlot,
+    location: state.selectedLocation,
+    serviceType: state.serviceType            // '出張' or '店舗' (2026-05-20)
+  };
+
+  bookingSubmitted = true; // 送信開始で即座にフラグを立てる
+  setBtnLoading(true);
+  postJson('booking_create', payload).then(function(res) {
+    setBtnLoading(false);
+    if (res.status !== 'ok') {
+      bookingSubmitted = false; // エラー時はリセット
+      showToast(res.message || 'Booking failed', true);
+      if (res.slots) {
+        state.selectedSlot = '';
+        showView('view-datetime');
+        renderSlots(res.slots);
+      }
+      return;
+    }
+    // 重複送信だった場合もOKとして処理（サーバー側で既存予約を返す）
+    document.getElementById('successSummary').innerHTML =
+      summaryRow('Booking ID', res.bookingId)
+      + summaryRow('Date & Time', state.selectedDate + ' ' + state.selectedSlot + ' - ' + res.endTime)
+      + '<div class="summary-row total"><div class="label">Total</div><div class="value">$' + res.amount + '</div></div>';
+    state.history = [];
+    showView('view-success');
+  }).catch(function(err) {
+    setBtnLoading(false);
+    bookingSubmitted = false; // エラー時はリセット
+    showToast('Booking error: ' + err.message, true);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  GPS位置情報
+// ═══════════════════════════════════════════
+
+var savedCoords = null;
+
+// Leafletマップ関連
+var leafletMap = null;
+var leafletMarker = null;
+var leafletLoadPromise = null;
+
+/**
+ * Leaflet を必要時に動的ロード(初期ロード短縮)
+ *  - CSS と JS を並列に <head> へ inject
+ *  - 同じ Promise を再利用(2回目以降は即時)
+ */
+function loadLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (leafletLoadPromise) return leafletLoadPromise;
+  leafletLoadPromise = new Promise(function(resolve, reject) {
+    // CSS
+    if (!document.querySelector('link[data-leaflet]')) {
+      var css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      css.setAttribute('data-leaflet', '1');
+      document.head.appendChild(css);
+    }
+    // JS
+    var script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.async = true;
+    script.onload = function() { resolve(); };
+    script.onerror = function() { reject(new Error('Leaflet load failed')); };
+    document.head.appendChild(script);
+  });
+  return leafletLoadPromise;
+}
+
+// ═══════════════════════════════════════════
+//  サービスタイプ タブ切替 (2026-05-20)
+// ═══════════════════════════════════════════
+
+function selectServiceType(type) {
+  if (type !== '出張' && type !== '店舗') return;
+  state.serviceType = type;
+
+  // タブの active 切替
+  var tabs = document.querySelectorAll('.svc-tab');
+  for (var i = 0; i < tabs.length; i++) {
+    if (tabs[i].getAttribute('data-svctype') === type) {
+      tabs[i].classList.add('active');
+    } else {
+      tabs[i].classList.remove('active');
+    }
+  }
+
+  // モード切替: 地図 or 店舗カード
+  var deliveryEl = document.getElementById('locationDelivery');
+  var inStoreEl = document.getElementById('locationInStore');
+  if (type === '店舗') {
+    if (deliveryEl) deliveryEl.style.display = 'none';
+    if (inStoreEl) inStoreEl.style.display = 'block';
+    // 店舗マップを初期化(初回のみ)
+    setTimeout(function() { initStoreMap(); }, 100);
+  } else {
+    if (deliveryEl) deliveryEl.style.display = 'block';
+    if (inStoreEl) inStoreEl.style.display = 'none';
+    // 出張モードに戻った時、地図がまだ初期化されていなければ初期化
+    // 既に初期化済みでも invalidateSize で再描画(display:none → block 切替対策)
+    setTimeout(function() {
+      initLocationMap();
+      if (leafletMap) leafletMap.invalidateSize();
+    }, 100);
+  }
+}
+
+// 店舗マップ用(固定座標で表示・操作不要)
+var storeMap = null;
+var STORE_COORDS = { lat: 11.5848188, lng: 104.8993556 };
+
+function initStoreMap() {
+  if (storeMap) {
+    // 既に初期化済みなら invalidateSize で再描画のみ
+    storeMap.invalidateSize();
+    return;
+  }
+  var el = document.getElementById('storeMapEl');
+  if (!el) return;
+  loadLeaflet().then(function() {
+    storeMap = L.map(el, {
+      zoomControl: false,
+      scrollWheelZoom: false,
+      dragging: false,
+      doubleClickZoom: false,
+      touchZoom: false,
+      keyboard: false,
+      tap: false
+    }).setView([STORE_COORDS.lat, STORE_COORDS.lng], 17);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(storeMap);
+    L.marker([STORE_COORDS.lat, STORE_COORDS.lng]).addTo(storeMap);
+    setTimeout(function() { storeMap.invalidateSize(); }, 300);
+  }).catch(function(err) {
+    if (window.console) console.log('Store map load error:', err);
+  });
+}
+
+function initLocationMap() {
+  if (leafletMap) return; // 初期化済み
+  var el = document.getElementById('leafletMap');
+  if (!el) return;
+  // 動的ロード後に初期化(初回のみ Leaflet をDL)
+  loadLeaflet().then(function() { initLocationMapAfterLoad_(); }).catch(function(err) {
+    Logger.log && Logger.log('Leaflet load error: ' + err);
+    showToast('Map load failed. Please retry.', true);
+  });
+}
+
+function initLocationMapAfterLoad_() {
+  var el = document.getElementById('leafletMap');
+  if (!el) return;
+
+  // プノンペン中心で初期化(GPS取得まではフォールバック)
+  leafletMap = L.map(el, { zoomControl: false }).setView([11.5564, 104.9282], 13);
+  L.control.zoom({ position: 'topright' }).addTo(leafletMap);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(leafletMap);
+
+  // タップで場所を指定
+  leafletMap.on('click', function(e) {
+    setMapPin(e.latlng.lat, e.latlng.lng);
+  });
+
+  // 少し遅延してサイズ修正（表示切替時の問題対策）
+  setTimeout(function() { leafletMap.invalidateSize(); }, 300);
+
+  // ── 🆕 (2026-05-20) 現在地を自動取得してピン設置 ──
+  // ユーザーが微調整するだけで済むよう、開いた瞬間に GPS で現在地に
+  // ピンを落とす。失敗時はプノンペン中心のままで、タップ操作にフォールバック。
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        // 既に手動でピンを置いていなければ、現在地にピン設置
+        if (!savedCoords) {
+          setMapPin(pos.coords.latitude, pos.coords.longitude);
+        }
+      },
+      function(err) {
+        // 失敗時は何もしない(タップで設定できるのでUXは維持)
+        if (window.console && console.log) {
+          console.log('GPS auto-acquire failed:', err && err.message);
+        }
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }
+}
+
+function setMapPin(lat, lng) {
+  savedCoords = { lat: lat.toFixed(6), lng: lng.toFixed(6) };
+  if (leafletMarker) {
+    leafletMarker.setLatLng([lat, lng]);
+  } else {
+    leafletMarker = L.marker([lat, lng], { draggable: true }).addTo(leafletMap);
+    // ピンをドラッグで移動可能
+    leafletMarker.on('dragend', function(e) {
+      var pos = e.target.getLatLng();
+      savedCoords = { lat: pos.lat.toFixed(6), lng: pos.lng.toFixed(6) };
+      updateCoordsText();
+    });
+  }
+  leafletMap.setView([lat, lng], 16);
+  updateCoordsText();
+}
+
+function updateCoordsText() {
+  if (!savedCoords) return;
+  var mapsUrl = 'https://www.google.com/maps?q=' + savedCoords.lat + ',' + savedCoords.lng;
+  document.getElementById('coordsText').innerHTML = '📍 ' + savedCoords.lat + ', ' + savedCoords.lng
+    + ' — <a href="' + mapsUrl + '" target="_blank" style="color:var(--blue)">Open in Google Maps</a>';
+}
+
+function shareLocation() {
+  var btn = document.getElementById('gpsBtn');
+  btn.textContent = '📍 Getting location... / កំពុងរកទីតាំង...';
+  btn.disabled = true;
+
+  if (!navigator.geolocation) {
+    showToast('GPS not supported on this device', true);
+    btn.textContent = '📍 Use My Current Location / ប្រើទីតាំងបច្ចុប្បន្ន';
+    btn.disabled = false;
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      setMapPin(pos.coords.latitude, pos.coords.longitude);
+      btn.textContent = '✅ Location set! / ទីតាំងបានកំណត់!';
+      btn.disabled = false;
+      showToast('📍 Location set successfully!');
+    },
+    function(err) {
+      btn.textContent = '📍 Use My Current Location / ប្រើទីតាំងបច្ចុប្បន្ន';
+      btn.disabled = false;
+      if (err.code === 1) {
+        showToast('Please allow location access', true);
+      } else {
+        showToast('Could not get location. Please tap the map.', true);
+      }
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+// ═══════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════
+
+function setBtnLoading(loading) {
+  var btn = document.getElementById('actionBtn');
+  var overlay = document.getElementById('submitOverlay');
+  if (loading) {
+    btn.disabled = true;
+    btn.dataset.originalText = btn.textContent;
+    btn.textContent = '...';
+    if (overlay) overlay.classList.add('show');
+  } else {
+    btn.disabled = false;
+    if (btn.dataset.originalText) btn.textContent = btn.dataset.originalText;
+    if (overlay) overlay.classList.remove('show');
+  }
+}
+
+function showToast(msg, isError) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 3500);
+}
+
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDate(d) {
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + dd;
+}
+</script>
+</body>
+</html>

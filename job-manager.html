@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samurai Motors - ការគ្រប់គ្រងការងារ</title>
+<!-- Telegram Web App SDK -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --accent: #c8102e;
+  --accent-soft: rgba(200,16,46,0.15);
+  --gold: #c9a84c;
+  --gold-soft: rgba(201,168,76,0.12);
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --text-label: #bbb;
+  --success: #2ecc71;
+  --success-bg: rgba(46,204,113,0.12);
+  --blue: #3498db;
+  --blue-bg: rgba(52,152,219,0.12);
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans Khmer','Noto Sans JP',sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  position: sticky; top:0; z-index:100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.logo { width:40px; height:40px; border-radius:10px; overflow:hidden; flex-shrink:0; }
+.logo img { width:100%; height:100%; object-fit:cover; }
+.header h1 { font-size:15px; letter-spacing:0.5px; }
+.header p { font-size:11px; color:var(--text-dim); margin-top:1px; }
+
+/* Progress bar */
+.progress { display:flex; gap:4px; padding:12px 16px; }
+.progress-dot {
+  flex:1; height:4px; border-radius:2px;
+  background: var(--border);
+  transition: background 0.3s;
+}
+.progress-dot.active { background: var(--gold); }
+.progress-dot.done { background: var(--success); }
+
+/* Step labels */
+.step-label {
+  text-align:center; padding:0 16px 12px;
+  font-size:13px; color:var(--text-dim);
+}
+.step-label strong { color:var(--gold); }
+
+/* Container */
+.container { padding:0 16px 120px; max-width:480px; margin:0 auto; }
+
+/* Steps */
+.step { display:none; }
+.step.active { display:block; }
+
+/* Section */
+.section { margin-bottom:18px; }
+.section-title {
+  display:flex; align-items:center; gap:8px;
+  margin-bottom:12px; padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+  font-size:14px; font-weight:600; color:var(--gold);
+}
+
+/* Fields */
+.field { margin-bottom:12px; }
+.field label {
+  display:block; font-size:13px; font-weight:600;
+  color:var(--text-label); margin-bottom:5px;
+}
+.field label .jp { font-size:11px; font-weight:400; color:var(--text-dim); margin-left:3px; }
+.field label .req { color:var(--accent); margin-left:3px; font-size:11px; }
+.field input, .field select, .field textarea {
+  width:100%; padding:12px 14px;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius); color:var(--text);
+  font-size:16px; font-family:inherit;
+  transition: border-color 0.2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline:none; border-color:var(--gold);
+}
+.field input::placeholder, .field textarea::placeholder { color:#555; }
+.field select {
+  -webkit-appearance:none; appearance:none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; padding-right:36px;
+}
+.field textarea { min-height:70px; resize:vertical; }
+
+/* Plan grid */
+.plan-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.plan-option { position:relative; }
+.plan-option input[type="radio"], .plan-option input[type="checkbox"] { position:absolute; opacity:0; width:0; height:0; }
+.plan-option label.plan-card {
+  display:flex; flex-direction:column; align-items:center;
+  padding:12px 8px; background:var(--card);
+  border:1.5px solid var(--border); border-radius:var(--radius);
+  cursor:pointer; transition:all 0.2s; margin:0;
+}
+.plan-option input:checked + label.plan-card { border-color:var(--gold); background:var(--gold-soft); }
+.plan-name-jp { font-size:16px; font-weight:700; color:var(--gold); }
+.plan-price { font-size:11px; color:var(--text-dim); margin-top:2px; }
+
+/* Vehicle type selector（クメール語＋日本語、サイズ感が分かる） */
+.vehicle-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.vehicle-option { position:relative; }
+.vehicle-option input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+.vehicle-option label.vehicle-card {
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  padding:10px 8px; background:var(--card);
+  border:1.5px solid var(--border); border-radius:var(--radius);
+  cursor:pointer; transition:all 0.2s; margin:0;
+  text-align:center; line-height:1.25;
+}
+.vehicle-option input:checked + label.vehicle-card { border-color:var(--gold); background:var(--gold-soft); color:var(--gold); }
+.vehicle-name-km { font-size:13px; font-weight:700; }
+.vehicle-name-jp { font-size:11px; color:var(--text-dim); }
+
+/* GPS row */
+.gps-row { display:flex; gap:8px; }
+.gps-row input { flex:1; }
+.gps-btn {
+  flex-shrink:0; width:48px; height:48px;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius); color:var(--gold);
+  font-size:20px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* Photo grid */
+.photo-section-label {
+  font-size:14px; font-weight:600; color:var(--text-label);
+  margin-bottom:8px;
+}
+.photo-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:8px;
+  margin-bottom:16px;
+}
+.photo-slot {
+  position:relative; aspect-ratio:4/3;
+  background:var(--card); border:1.5px dashed var(--border);
+  border-radius:var(--radius); overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column; cursor:pointer;
+}
+.photo-slot.has-photo { border-style:solid; border-color:var(--success); }
+.photo-slot img {
+  position:absolute; inset:0;
+  width:100%; height:100%; object-fit:cover;
+}
+.photo-slot .photo-label {
+  font-size:11px; color:var(--text-dim); margin-top:4px;
+}
+.photo-slot .photo-icon { font-size:24px; opacity:0.5; }
+.photo-slot .photo-remove {
+  position:absolute; top:4px; right:4px;
+  width:24px; height:24px; border-radius:50%;
+  background:rgba(0,0,0,0.7); color:#fff;
+  border:none; font-size:14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  z-index:2;
+}
+.photo-slot input[type="file"] {
+  position:absolute; inset:0; opacity:0; cursor:pointer;
+  width:100%; height:100%;
+}
+
+/* Timer display */
+.timer-display {
+  text-align:center; padding:24px 16px;
+  background:var(--card); border-radius:var(--radius);
+  margin-bottom:16px;
+}
+.timer-display .timer-label {
+  font-size:13px; color:var(--text-dim); margin-bottom:8px;
+}
+.timer-display .timer-value {
+  font-size:48px; font-weight:700; font-family:var(--font-mono,monospace);
+  color:var(--gold); letter-spacing:2px;
+}
+.timer-display.running { border:1.5px solid var(--success); }
+.timer-display.running .timer-value { color:var(--success); }
+
+/* Timestamp cards */
+.timestamp-card {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 16px; background:var(--card);
+  border-radius:var(--radius); margin-bottom:8px;
+}
+.timestamp-card .ts-label { font-size:13px; color:var(--text-dim); }
+.timestamp-card .ts-value { font-size:14px; font-weight:600; }
+.timestamp-card .ts-value.pending { color:var(--text-dim); font-style:italic; font-weight:400; }
+
+/* Action buttons */
+.action-area {
+  position:fixed; bottom:0; left:0; right:0;
+  padding:10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  background:linear-gradient(transparent, var(--bg) 20%);
+  z-index:100;
+}
+.action-row { display:flex; gap:8px; max-width:480px; margin:0 auto; }
+.btn {
+  flex:1; padding:14px; border:none; border-radius:var(--radius);
+  font-size:16px; font-weight:700; font-family:inherit;
+  cursor:pointer; transition:all 0.2s;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn:active { transform:scale(0.98); }
+.btn:disabled { opacity:0.4; pointer-events:none; }
+.btn-primary { background:var(--accent); color:#fff; box-shadow:0 4px 16px rgba(200,16,46,0.3); }
+.btn-secondary { background:var(--card); color:var(--text); border:1.5px solid var(--border); }
+.btn-success { background:var(--success); color:#fff; box-shadow:0 4px 16px rgba(46,204,113,0.3); }
+.btn-start { background:#e67e22; color:#fff; box-shadow:0 4px 16px rgba(230,126,34,0.3); font-size:18px; }
+.btn-end { background:var(--accent); color:#fff; box-shadow:0 4px 16px rgba(200,16,46,0.3); font-size:18px; }
+
+/* Summary */
+.summary-row {
+  display:flex; justify-content:space-between;
+  padding:8px 0; border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.summary-row .s-label { color:var(--text-dim); }
+.summary-row .s-value { font-weight:600; text-align:right; max-width:60%; }
+.summary-photos {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
+  margin:8px 0 16px;
+}
+.summary-photos img {
+  width:100%; aspect-ratio:4/3; object-fit:cover;
+  border-radius:6px;
+}
+
+/* Modal */
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.7); z-index:200;
+  align-items:center; justify-content:center;
+  padding:20px; backdrop-filter:blur(4px);
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background:var(--card); border-radius:20px;
+  padding:36px 28px; text-align:center;
+  max-width:320px; width:100%;
+  animation: modalIn 0.3s ease;
+}
+@keyframes modalIn { from{transform:scale(0.9);opacity:0;} to{transform:scale(1);opacity:1;} }
+.modal h2 { font-size:20px; margin-bottom:6px; }
+.modal p { font-size:13px; color:var(--text-dim); margin-bottom:20px; }
+.modal button {
+  padding:14px 28px; background:var(--gold); color:#000;
+  border:none; border-radius:var(--radius);
+  font-size:16px; font-weight:700; font-family:inherit; cursor:pointer;
+}
+
+/* Toast */
+.toast {
+  position:fixed; top:80px; left:50%; transform:translateX(-50%);
+  background:#333; color:#fff; padding:10px 20px;
+  border-radius:8px; font-size:14px; z-index:999;
+  opacity:0; transition:opacity 0.3s;
+}
+.toast.show { opacity:1; }
+
+.hint { font-size:11px; color:var(--text-dim); margin-top:4px; }
+
+/* Booking integration */
+.booking-banner {
+  display:flex; align-items:center; gap:10px;
+  padding:14px 16px; margin-bottom:18px;
+  background:var(--gold-soft); border:1.5px solid var(--gold);
+  border-radius:var(--radius); cursor:pointer;
+  transition:all 0.2s;
+}
+.booking-banner:active { transform:scale(0.98); }
+.booking-banner .bb-icon { font-size:22px; }
+.booking-banner .bb-text { flex:1; font-size:14px; font-weight:600; color:var(--gold); }
+.booking-banner .bb-arrow { font-size:18px; color:var(--gold); }
+
+.booking-linked {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px; margin-bottom:18px;
+  background:var(--success-bg); border:1.5px solid var(--success);
+  border-radius:var(--radius);
+}
+.booking-linked .bl-icon { font-size:18px; }
+.booking-linked .bl-info { flex:1; font-size:12px; line-height:1.4; }
+.booking-linked .bl-info strong { color:var(--success); font-size:13px; display:block; margin-bottom:2px; }
+.booking-linked .bl-clear {
+  background:transparent; border:none; color:var(--text-dim);
+  font-size:18px; cursor:pointer; padding:4px 8px;
+}
+
+/* Booking picker modal */
+.bp-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.85); z-index:300;
+  padding:20px; backdrop-filter:blur(6px);
+  overflow-y:auto;
+}
+.bp-overlay.show { display:block; }
+.bp-modal {
+  max-width:480px; margin:20px auto;
+  background:var(--card); border-radius:16px;
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+.bp-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px; border-bottom:1px solid var(--border);
+  position:sticky; top:0; background:var(--card); z-index:1;
+}
+.bp-header h2 { font-size:16px; color:var(--gold); }
+.bp-close {
+  background:transparent; border:none; color:var(--text-dim);
+  font-size:24px; cursor:pointer; padding:0 4px;
+}
+.bp-body { padding:14px 16px; }
+.bp-empty {
+  text-align:center; padding:40px 20px;
+  color:var(--text-dim); font-size:13px;
+}
+.bp-empty .be-icon { font-size:36px; margin-bottom:10px; opacity:0.5; }
+.bp-day-label {
+  font-size:12px; font-weight:700; color:var(--gold);
+  margin:14px 0 8px; padding-left:4px;
+}
+.bp-day-label:first-child { margin-top:0; }
+.bp-card {
+  background:var(--bg); border:1.5px solid var(--border);
+  border-radius:var(--radius); padding:12px 14px;
+  margin-bottom:8px; cursor:pointer;
+  transition:all 0.2s;
+}
+.bp-card:active { transform:scale(0.98); }
+.bp-card.linked { border-color:var(--gold); background:var(--gold-soft); }
+.bp-card.done { opacity:0.5; }
+.bp-card-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.bp-time { font-size:15px; font-weight:700; color:var(--gold); }
+.bp-amount { font-size:13px; font-weight:700; color:var(--success); }
+.bp-name { font-size:14px; font-weight:600; color:var(--text); margin-bottom:3px; }
+.bp-info { font-size:12px; color:var(--text-dim); line-height:1.4; }
+.bp-status {
+  display:inline-block; padding:2px 8px; border-radius:10px;
+  font-size:10px; font-weight:700; margin-top:6px;
+}
+.bp-status.pending { background:rgba(52,152,219,0.2); color:var(--blue); }
+.bp-status.done { background:var(--success-bg); color:var(--success); }
+.bp-status.driving { background:rgba(230,126,34,0.2); color:#e67e22; }
+.bp-loading { text-align:center; padding:30px; color:var(--text-dim); font-size:13px; }
+.bp-refresh {
+  background:var(--card); border:1px solid var(--border);
+  color:var(--gold); padding:6px 12px; border-radius:8px;
+  font-size:12px; cursor:pointer; font-family:inherit;
+}
+
+/* Step 0: ダッシュボード（チャットリスト風） */
+.dashboard-header {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:12px;
+}
+.dashboard-header h2 { font-size:16px; color:var(--gold); }
+.dash-refresh-btn {
+  background:var(--card); border:1px solid var(--border);
+  color:var(--gold); padding:6px 14px; border-radius:8px;
+  font-size:12px; cursor:pointer; font-family:inherit;
+}
+.dash-manual-btn {
+  display:flex; align-items:center; gap:12px;
+  width:100%; padding:14px 16px;
+  background:var(--card); border:1.5px dashed var(--border);
+  border-radius:var(--radius); color:var(--text-dim);
+  font-size:14px; font-family:inherit; cursor:pointer;
+  text-align:left; margin-top:4px;
+  transition:all 0.2s;
+}
+.dash-manual-btn:active { border-color:var(--gold); color:var(--gold); transform:scale(0.98); }
+.dash-stat-row {
+  display:flex; gap:8px; margin-bottom:12px;
+}
+.dash-stat {
+  flex:1; background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:10px 8px; text-align:center;
+}
+.dash-stat .ds-num { font-size:20px; font-weight:700; color:var(--gold); }
+.dash-stat .ds-label { font-size:10px; color:var(--text-dim); margin-top:2px; }
+.dash-empty {
+  text-align:center; padding:60px 20px; color:var(--text-dim);
+}
+.dash-empty .de-icon { font-size:48px; margin-bottom:12px; opacity:0.4; }
+.dash-empty p { font-size:13px; }
+
+/* チャットリストアイテム */
+.chat-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 14px; margin-bottom:4px;
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); cursor:pointer;
+  transition:all 0.2s;
+}
+.chat-item:active { transform:scale(0.98); border-color:var(--gold); }
+.chat-item.done { opacity:0.5; }
+.chat-avatar {
+  width:48px; height:48px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; font-weight:700; color:#fff; flex-shrink:0;
+  text-transform:uppercase;
+}
+.chat-body { flex:1; min-width:0; }
+.chat-name {
+  font-size:14px; font-weight:700; color:var(--text);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.chat-preview {
+  font-size:12px; color:var(--text-dim); margin-top:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.chat-meta {
+  display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0;
+}
+.chat-time { font-size:11px; color:var(--text-dim); }
+.chat-badge {
+  display:inline-block; min-width:20px; padding:1px 6px;
+  border-radius:10px; font-size:10px; font-weight:700;
+  text-align:center;
+}
+.chat-badge.pending { background:rgba(52,152,219,0.25); color:var(--blue); }
+.chat-badge.driving { background:rgba(230,126,34,0.25); color:#e67e22; }
+.chat-badge.done { background:var(--success-bg); color:var(--success); }
+.chat-amount { font-size:13px; font-weight:700; color:var(--success); }
+
+/* 戻るボタン */
+.back-to-list-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  background:transparent; border:1px solid var(--border);
+  color:var(--text-dim); padding:6px 12px; border-radius:8px;
+  font-size:12px; cursor:pointer; font-family:inherit;
+  margin-bottom:14px;
+}
+.back-to-list-btn:active { border-color:var(--gold); color:var(--gold); }
+
+/* 顧客スレッドページ */
+.thread-booking-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:14px 16px; margin-bottom:12px;
+}
+.thread-booking-row {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:6px;
+}
+.thread-booking-id { font-size:11px; color:var(--text-dim); }
+.thread-booking-amount { font-size:16px; font-weight:700; color:var(--success); }
+.thread-booking-detail { font-size:13px; color:var(--text-dim); line-height:1.6; }
+.thread-start-job-btn {
+  display:block; width:100%; padding:18px 16px;
+  background:linear-gradient(135deg, var(--gold) 0%, #FFD700 100%);
+  color:#1a1410; border:2px solid #FFD700;
+  border-radius:var(--radius); font-size:16px; font-weight:800;
+  font-family:inherit; cursor:pointer; text-align:center;
+  margin-top:14px; letter-spacing:0.4px; line-height:1.4;
+  box-shadow:0 4px 18px rgba(255,215,0,0.4);
+  transition:all 0.2s ease;
+}
+.thread-start-job-btn:active { transform:scale(0.97); box-shadow:0 2px 8px rgba(255,215,0,0.3); }
+
+/* チャットエリア */
+.chat-area {
+  display:flex; flex-direction:column; gap:6px;
+  margin-bottom:12px; min-height:100px;
+}
+.chat-bubble {
+  max-width:80%; padding:10px 14px;
+  border-radius:14px; font-size:13px; line-height:1.5;
+  word-break:break-word;
+}
+.chat-bubble.incoming {
+  background:var(--card); border:1px solid var(--border);
+  align-self:flex-start;
+  border-bottom-left-radius:4px;
+}
+.chat-bubble.outgoing {
+  background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.3);
+  align-self:flex-end;
+  border-bottom-right-radius:4px;
+}
+.chat-bubble .cb-time {
+  font-size:10px; color:var(--text-dim); margin-top:4px;
+  text-align:right;
+}
+.chat-bubble .cb-sender {
+  font-size:10px; color:var(--gold); margin-bottom:2px; font-weight:600;
+}
+.chat-input-row {
+  display:flex; gap:8px; padding:10px 0;
+  position:sticky; bottom:0; background:var(--bg);
+  border-top:1px solid var(--border); margin-top:auto;
+}
+.chat-input {
+  flex:1; padding:10px 14px;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:20px; color:var(--text);
+  font-size:14px; font-family:inherit;
+  outline:none;
+}
+.chat-input:focus { border-color:var(--gold); }
+.chat-send-btn {
+  width:42px; height:42px; border-radius:50%;
+  background:var(--gold); border:none; color:#000;
+  font-size:18px; cursor:pointer; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.chat-send-btn:active { opacity:0.7; }
+.chat-send-btn:disabled { opacity:0.3; cursor:default; }
+.chat-loading { text-align:center; padding:20px; color:var(--text-dim); font-size:12px; }
+.chat-empty { text-align:center; padding:30px; color:var(--text-dim); font-size:12px; }
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><img src="logo.png" alt="Samurai Motors"></div>
+  <div>
+    <h1>SAMURAI MOTORS</h1>
+    <p>ការគ្រប់គ្រងការងារ（ジョブ管理）</p>
+  </div>
+</div>
+
+<div class="progress" id="progressBar"></div>
+<div class="step-label" id="stepLabel"></div>
+
+<div class="container">
+
+  <!-- ==================== STEP 0: ダッシュボード（チャットリスト風） ==================== -->
+  <div class="step" id="step0">
+    <div class="dashboard-header">
+      <h2>📋 ថ្ងៃនេះ（今日）</h2>
+      <button class="dash-refresh-btn" onclick="loadDashboardBookings()">🔄 更新</button>
+    </div>
+    <div class="dash-stat-row" id="dashStats">
+      <div class="dash-stat"><div class="ds-num" id="statTotal">-</div><div class="ds-label">សរុប<br><span style="opacity:0.6;font-size:9px">合計</span></div></div>
+      <div class="dash-stat"><div class="ds-num" id="statPending">-</div><div class="ds-label">រង់ចាំ<br><span style="opacity:0.6;font-size:9px">待機中</span></div></div>
+      <div class="dash-stat"><div class="ds-num" id="statDone">-</div><div class="ds-label">បានបញ្ចប់<br><span style="opacity:0.6;font-size:9px">完了</span></div></div>
+    </div>
+    <div id="dashboardBody">
+      <div class="bp-loading">⏳ កំពុងផ្ទុក...（読み込み中...）</div>
+    </div>
+    <button class="dash-manual-btn" onclick="startCampaignFlow()"
+            style="background:#1a6b3a; border:2px solid #c9a84c; color:#fff; margin-bottom:10px;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#c9a84c;color:#1a6b3a;font-size:18px;">💰</span>
+      <span style="font-weight:500;">កំណត់ត្រាការលក់（キャンペーン売上入力）</span>
+    </button>
+    <button class="dash-manual-btn" onclick="startManualEntry()">
+      <span style="font-size:22px;">✍️</span>
+      <span>បញ្ចូលដោយដៃ（手動で新規登録）</span>
+    </button>
+  </div>
+
+  <!-- ==================== CAMPAIGN: 手動特価キャンペーン予約 ==================== -->
+  <div class="step" id="stepCampaign">
+    <button class="back-to-list-btn" onclick="backToList()">‹ ត្រឡប់ទៅបញ្ជី（一覧に戻る）</button>
+    <div class="section">
+      <div class="section-title">💰 ការកក់ពិសេស（キャンペーン売上入力）</div>
+      <p class="hint" style="margin-bottom:12px;">📢 キャンペーンの入金を記録します（売上に計上されます）</p>
+      <div class="field">
+        <label>ការផ្តល់ពិសេស <span class="jp">（キャンペーン）</span><span class="req">*</span></label>
+        <select id="campaignSelect"><option value="">— ⏳ —</option></select>
+        <p class="hint" id="campaignHint">⏳ កំពុងផ្ទុក...（読み込み中...）</p>
+      </div>
+      <div class="field">
+        <label>ទឹកប្រាក់ទទួល <span class="jp">（入金額 USD）</span><span class="req">*</span></label>
+        <select id="saleAmount">
+          <option value="" disabled selected>— ជ្រើសរើស / 選択 —</option>
+          <option value="5">$5</option>
+          <option value="10">$10</option>
+          <option value="15">$15</option>
+          <option value="20">$20</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 顧客・車両 -->
+    <div class="section">
+      <div class="section-title">👤 ព័ត៌មានអតិថិជន（顧客・車両）</div>
+      <div class="field">
+        <label>ឈ្មោះអតិថិជន <span class="jp">（顧客名）</span><span class="req">*</span></label>
+        <input type="text" id="campaignName" placeholder="ឧ. Sok Chanthy">
+      </div>
+      <div class="field">
+        <label>លេខទូរស័ព្ទ <span class="jp">（電話番号）</span></label>
+        <input type="tel" id="salePhone" placeholder="ឧ. 012 345 678">
+        <p class="hint">🔁 次回の来店判定・リマインドに使います</p>
+      </div>
+      <div class="field">
+        <label>ប្រភេទរថយន្ត <span class="jp">（車種）</span></label>
+        <input type="text" id="saleCarModel" placeholder="ឧ. Toyota Camry">
+      </div>
+      <div class="field">
+        <label>ស្លាកលេខ <span class="jp">（ナンバー）</span></label>
+        <input type="text" id="salePlate" placeholder="ឧ. 2A-1234">
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== THREAD: 顧客スレッド ==================== -->
+  <div class="step" id="stepThread">
+    <button class="back-to-list-btn" onclick="backToList()">‹ ត្រឡប់ទៅបញ្ជី（一覧に戻る）</button>
+    <div id="threadBookingCard" class="thread-booking-card"></div>
+    <div id="chatArea" class="chat-area">
+      <div class="chat-loading">⏳ チャット読み込み中...</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" type="text" placeholder="メッセージを入力... / វាយសារ..." onkeydown="if(event.key==='Enter')sendChatMessage()">
+      <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">➤</button>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 1: Customer Info ==================== -->
+  <div class="step" id="step1">
+    <!-- 戻るボタン（スレッドからの場合はスレッドへ、それ以外は一覧へ） -->
+    <button class="back-to-list-btn" onclick="goBackFromStep1()">‹ ថយក្រោយ（戻る）</button>
+    <!-- 紐付け中の予約表示 -->
+    <div id="bookingLinked" class="booking-linked" style="display:none;">
+      <span class="bl-icon">🔗</span>
+      <div class="bl-info">
+        <strong id="blTitle">予約紐付け中</strong>
+        <span id="blDetail"></span>
+      </div>
+      <button type="button" class="bl-clear" onclick="clearBookingSelection()" title="解除">×</button>
+    </div>
+    <div class="section">
+      <div class="section-title">👤 ព័ត៌មានអតិថិជន（顧客情報）</div>
+      <div class="field">
+        <label>ឈ្មោះអតិថិជន <span class="jp">（顧客名）</span><span class="req">*</span></label>
+        <input type="text" id="name" placeholder="ឧ. Sok Chanthy">
+      </div>
+      <div class="field">
+        <label>លេខទូរស័ព្ទ <span class="jp">（電話番号）</span></label>
+        <input type="tel" id="phone" placeholder="ឧ. 012 345 678">
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">📍 ទីតាំង（場所）</div>
+      <!-- 2026-06-07 簡素化: GPS現在地ボタンを主役に。建物名select等は
+           非表示で残す（JS参照を壊さないため）。入力負荷を最小化。 -->
+      <div class="field">
+        <button type="button" id="gpsBtn" style="width:100%;padding:16px;font-size:16px;font-weight:600;border:none;border-radius:12px;background:#c9302c;color:#fff;cursor:pointer;">
+          📍 យកទីតាំងបច្ចុប្បន្ន（現在地を取得）
+        </button>
+        <p class="hint" id="gpsHint" style="margin-top:8px;">👆 ចុចដើម្បីយកទីតាំង GPS（タップでGPS取得）</p>
+      </div>
+      <div class="field">
+        <label>លេខបន្ទប់ / ជាន់ <span class="jp">（部屋番号 / 階・任意）</span></label>
+        <input type="text" id="room" placeholder="ឧ. 12F - 1203">
+      </div>
+      <!-- 非表示（互換のため要素は残す） -->
+      <select id="building" style="display:none;"><option value="other" selected>other</option></select>
+      <input type="text" id="buildingOther" style="display:none;">
+      <div id="buildingOtherField" style="display:none;"></div>
+      <input type="text" id="mapUrl" style="display:none;">
+    </div>
+    <div class="section">
+      <div class="section-title">🚗 ព័ត៌មានរថយន្ត（車両情報）</div>
+      <div class="field">
+        <label>ម៉ាក / ម៉ូដែល <span class="jp">（車種）</span></label>
+        <input type="text" id="carModel" placeholder="ឧ. Toyota Camry, Lexus RX350">
+      </div>
+      <div class="field">
+        <label>ស្លាកលេខ <span class="jp">（ナンバープレート）</span></label>
+        <input type="text" id="plate" placeholder="ឧ. 2A-1234">
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">⭐ គម្រោងសេវាកម្ម（サービスプラン）</div>
+      <div class="vehicle-grid">
+        <div class="vehicle-option">
+          <input type="radio" name="vehicleType" id="vehSedan" value="セダン" checked>
+          <label class="vehicle-card" for="vehSedan">
+            <span class="vehicle-name-km">🚙 សេដាន ឬ តូចជាង</span>
+            <span class="vehicle-name-jp">セダン以下（小型）</span>
+          </label>
+        </div>
+        <div class="vehicle-option">
+          <input type="radio" name="vehicleType" id="vehSuv" value="SUV">
+          <label class="vehicle-card" for="vehSuv">
+            <span class="vehicle-name-km">🚘 SUV ឬ ធំជាង</span>
+            <span class="vehicle-name-jp">SUV以上（大型）</span>
+          </label>
+        </div>
+      </div>
+      <!-- Menu v2.1 (2026-05-08): WASH 任意化。タップで選択解除でき GLASS 単体予約も可 -->
+      <div class="plan-grid">
+        <div class="plan-option">
+          <input type="checkbox" name="plan" id="planW" value="SAMURAI WASH (W)" checked>
+          <label class="plan-card" for="planW">
+            <span class="plan-name-jp">SAMURAI WASH</span>
+            <span class="plan-price">$12 / $15</span>
+          </label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:8px; margin-bottom:6px;">👆 ចុចដើម្បីបិទ/បើក（タップで選択解除可）｜+ SAMURAI GLASS（オプション・任意）</p>
+      <div class="plan-grid">
+        <div class="plan-option">
+          <input type="radio" name="glassOption" id="glassNone" value="" checked>
+          <label class="plan-card" for="glassNone">
+            <span class="plan-name-jp">No glass coating</span>
+            <span class="plan-price">—</span>
+          </label>
+        </div>
+        <div class="plan-option">
+          <input type="radio" name="glassOption" id="glass3" value="GLASS_3">
+          <label class="plan-card" for="glass3">
+            <span class="plan-name-jp">3 Windows + Mirrors</span>
+            <span class="plan-price">+$15 / +$20</span>
+          </label>
+        </div>
+        <div class="plan-option">
+          <input type="radio" name="glassOption" id="glassAll" value="GLASS_ALL">
+          <label class="plan-card" for="glassAll">
+            <span class="plan-name-jp">All Windows + Mirrors</span>
+            <span class="plan-price">+$30 / +$40</span>
+          </label>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:6px;">💰 + $2 ថ្លៃធ្វើដំណើរ（＋$2 出張費別途）｜🎌 GRAND OPENING -30% 適用中</p>
+    </div>
+    <div class="section">
+      <div class="section-title">💵 តម្លៃ（料金）</div>
+      <div class="field">
+        <label>តម្លៃទទួល (USD) <span class="jp">（受取料金・特価/無料は自由入力、無料なら 0）</span></label>
+        <input type="number" id="amount" placeholder="ឧ. 5（無料なら 0）" min="0" step="0.5" inputmode="decimal">
+        <p class="hint">🎫 $5キャンペーン → 5 ／ 🎁 無料サービス → 0 ／ 通常価格 → 金額を入力</p>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">📝 កំណត់សម្គាល់（備考）</div>
+      <div class="field">
+        <textarea id="notes" placeholder="ឧ. ចង់បានរៀងរាល់សប្តាហ៍（例: 毎週希望）"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 2: Schedule ==================== -->
+  <div class="step" id="step2">
+    <div class="section">
+      <div class="section-title">📅 កាលវិភាគ（予約スケジュール）</div>
+      <div class="field">
+        <label>ថ្ងៃកំណត់ <span class="jp">（予約日）</span><span class="req">*</span></label>
+        <input type="date" id="schedDate">
+      </div>
+      <div class="field">
+        <label>ម៉ោងចាប់ផ្តើម <span class="jp">（開始予定時刻）</span><span class="req">*</span></label>
+        <input type="time" id="schedTime">
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">📋 ព័ត៌មានសង្ខេប（登録内容の確認）</div>
+      <div id="regSummary"></div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 3: Before Photos + Start ==================== -->
+  <div class="step" id="step3">
+    <div class="section">
+      <div class="section-title">📸 រូបថតមុនលាង（ビフォー写真）</div>
+      <p class="hint" style="margin-bottom:12px;">រូបថត 4 សន្លឹកមុនចាប់ផ្តើមលាង（洗車前の写真を4枚撮影してください）</p>
+      <div class="photo-grid" id="beforePhotos">
+        <div class="photo-slot" data-index="0"><span class="photo-icon">📷</span><span class="photo-label">មុខ（前面）</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,'before',0)"></div>
+        <div class="photo-slot" data-index="1"><span class="photo-icon">📷</span><span class="photo-label">ក្រោយ（背面）</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,'before',1)"></div>
+        <div class="photo-slot" data-index="2"><span class="photo-icon">📷</span><span class="photo-label">ឆ្វេង（左側）</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,'before',2)"></div>
+        <div class="photo-slot" data-index="3"><span class="photo-icon">📷</span><span class="photo-label">ស្ដាំ（右側）</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,'before',3)"></div>
+      </div>
+    </div>
+    <div class="timestamp-card">
+      <span class="ts-label">⏰ ម៉ោងកំណត់（予約時刻）</span>
+      <span class="ts-value" id="schedDisplay">--:--</span>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 4: Working + End ==================== -->
+  <div class="step" id="step4">
+    <div class="timer-display running" id="timerBox">
+      <div class="timer-label">⏱ រយៈពេលធ្វើការ（作業時間）</div>
+      <div class="timer-value" id="timerValue">00:00:00</div>
+    </div>
+    <div class="timestamp-card">
+      <span class="ts-label">▶ ចាប់ផ្តើម（スタート）</span>
+      <span class="ts-value" id="startTimeDisplay">--:--</span>
+    </div>
+    <div class="section" style="margin-top:16px;">
+      <div class="section-title">📸 រូបថតក្រោយលាង（アフター写真）</div>
+      <p class="hint" style="margin-bottom:12px;">រូបថត 4 សន្លឹកក្រោយលាងរួច（洗車後の写真を4枚撮影してください）</p>
+      <div class="photo-grid" id="afterPhotos">
+        <div class="photo-slot" data-index="0"><span class="photo-icon">📷</span><span class="photo-label">មុខ（前面）</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,'after',0)"></div>
+        <div class="photo-slot" data-index="1"><span class="photo-icon">📷</span><span class="photo-label">ក្រោយ（背面）</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,'after',1)"></div>
+        <div class="photo-slot" data-index="2"><span class="photo-icon">📷</span><span class="photo-label">ឆ្វេង（左側）</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,'after',2)"></div>
+        <div class="photo-slot" data-index="3"><span class="photo-icon">📷</span><span class="photo-label">ស្ដាំ（右側）</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,'after',3)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STEP 5: Complete ==================== -->
+  <div class="step" id="step5">
+    <div class="section">
+      <div class="section-title">✅ សង្ខេបការងារ（作業サマリー）</div>
+      <div id="finalSummary"></div>
+    </div>
+    <div class="section" style="margin-top:12px;">
+      <div class="section-title">📸 រូបថតមុន/ក្រោយ（ビフォー/アフター）</div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">មុនលាង（ビフォー）</p>
+      <div class="summary-photos" id="summaryBefore"></div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">ក្រោយលាង（アフター）</p>
+      <div class="summary-photos" id="summaryAfter"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Action buttons -->
+<div class="action-area">
+  <div class="action-row" id="actionButtons"></div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+  <div class="modal">
+    <div style="font-size:48px;margin-bottom:12px;">✅</div>
+    <h2>បានបញ្ចប់ហើយ！</h2>
+    <p>（作業完了・データ保存済み！）</p>
+    <button onclick="resetAll(); loadDashboardBookings();">ត្រឡប់ទៅបញ្ជី（一覧に戻る）</button>
+  </div>
+</div>
+
+<!-- 予約ピッカー モーダル -->
+<div class="bp-overlay" id="bookingPicker">
+  <div class="bp-modal">
+    <div class="bp-header">
+      <h2>📅 ការកក់（今日・明日の予約）</h2>
+      <button class="bp-close" onclick="closeBookingPicker()">×</button>
+    </div>
+    <div class="bp-body" id="bpBody">
+      <div class="bp-loading">⏳ កំពុងផ្ទុក...（読み込み中...）</div>
+    </div>
+    <div class="bp-footer" style="padding:12px 16px;border-top:1px solid var(--border);">
+      <button class="btn btn-secondary" onclick="closeBookingPicker()" style="width:100%;font-size:14px;">
+        ✍️ មិនមានការកក់ បញ្ចូលដោយដៃ（予約なし・手動入力）
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONFIG =====
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
+var GAS_URL = APPS_SCRIPT_URL;  // chat_history / chat_send で使用
+
+// ===== STATE =====
+var currentStep = 0;  // 0 = ダッシュボード（顧客一覧）
+var totalSteps = 5;
+var dashboardBookings = []; // ダッシュボードに表示する予約一覧
+var currentThreadBooking = null; // 現在表示中の顧客スレッド
+var chatMessages = []; // チャット履歴
+var chatRefreshTimer = null; // チャット自動更新タイマー
+var photos = { before: [null,null,null,null], after: [null,null,null,null] };
+var timestamps = { registered: null, scheduled: null, start: null, end: null };
+var timerInterval = null;
+var SESSION_KEY = 'samurai_active_job';
+
+// 予約連携: 紐付け中の予約ID（null = 通常モード）
+var selectedBookingId = null;
+var selectedBookingInfo = null;
+
+// ===== セッション保存・復元 =====
+// 画面を閉じてもデータが残るようにlocalStorageに保存
+function saveSession() {
+  try {
+    var state = {
+      currentStep: currentStep,
+      timestamps: {
+        registered: timestamps.registered ? timestamps.registered.toISOString() : null,
+        scheduled: timestamps.scheduled || null,
+        start: timestamps.start ? timestamps.start.toISOString() : null,
+        end: timestamps.end ? timestamps.end.toISOString() : null
+      },
+      form: {
+        name: document.getElementById('name') ? document.getElementById('name').value : '',
+        phone: document.getElementById('phone') ? document.getElementById('phone').value : '',
+        building: document.getElementById('building') ? document.getElementById('building').value : '',
+        buildingOther: document.getElementById('buildingOther') ? document.getElementById('buildingOther').value : '',
+        room: document.getElementById('room') ? document.getElementById('room').value : '',
+        carModel: document.getElementById('carModel') ? document.getElementById('carModel').value : '',
+        plate: document.getElementById('plate') ? document.getElementById('plate').value : '',
+        plan: (function(){ var el = document.querySelector('input[name="plan"]:checked'); return el ? el.id : ''; })(),
+        vehicleType: (function(){ var el = document.querySelector('input[name="vehicleType"]:checked'); return el ? el.value : ''; })(),
+        mapUrl: document.getElementById('mapUrl') ? document.getElementById('mapUrl').value : '',
+        notes: document.getElementById('notes') ? document.getElementById('notes').value : '',
+        schedDate: document.getElementById('schedDate') ? document.getElementById('schedDate').value : '',
+        schedTime: document.getElementById('schedTime') ? document.getElementById('schedTime').value : ''
+      },
+      // 写真はサイズが大きいため保存しない（開始時にGASに送信済み）
+      photosExist: {
+        before: photos.before.map(function(p){ return p !== null; }),
+        after: photos.after.map(function(p){ return p !== null; })
+      },
+      // 予約紐付け情報
+      booking: {
+        id: selectedBookingId,
+        info: selectedBookingInfo
+      },
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(state));
+  } catch(e) {
+    // localStorageが使えない場合は無視
+  }
+}
+
+// 保存済みセッションを復元
+function restoreSession() {
+  try {
+    var saved = localStorage.getItem(SESSION_KEY);
+    if (!saved) return false;
+    var state = JSON.parse(saved);
+
+    // 24時間以上前のセッションは破棄
+    var savedTime = new Date(state.savedAt);
+    if (new Date() - savedTime > 24 * 60 * 60 * 1000) {
+      clearSession();
+      return false;
+    }
+
+    // タイムスタンプ復元
+    if (state.timestamps.registered) timestamps.registered = new Date(state.timestamps.registered);
+    if (state.timestamps.scheduled) timestamps.scheduled = state.timestamps.scheduled;
+    if (state.timestamps.start) timestamps.start = new Date(state.timestamps.start);
+    if (state.timestamps.end) timestamps.end = new Date(state.timestamps.end);
+
+    // フォーム復元
+    if (state.form) {
+      if (state.form.name) document.getElementById('name').value = state.form.name;
+      if (state.form.phone) document.getElementById('phone').value = state.form.phone;
+      if (state.form.building) {
+        document.getElementById('building').value = state.form.building;
+        if (state.form.building === 'other') {
+          document.getElementById('buildingOtherField').style.display = 'block';
+          document.getElementById('buildingOther').value = state.form.buildingOther || '';
+        }
+      }
+      if (state.form.room) document.getElementById('room').value = state.form.room;
+      if (state.form.carModel) document.getElementById('carModel').value = state.form.carModel;
+      if (state.form.plate) document.getElementById('plate').value = state.form.plate;
+      if (state.form.plan) {
+        var radio = document.getElementById(state.form.plan);
+        if (radio) radio.checked = true;
+      }
+      if (state.form.vehicleType) {
+        var vradios = document.querySelectorAll('input[name="vehicleType"]');
+        for (var vi = 0; vi < vradios.length; vi++) {
+          if (vradios[vi].value === state.form.vehicleType) {
+            vradios[vi].checked = true;
+            break;
+          }
+        }
+      }
+      if (state.form.mapUrl) document.getElementById('mapUrl').value = state.form.mapUrl;
+      if (state.form.notes) document.getElementById('notes').value = state.form.notes;
+      if (state.form.schedDate) document.getElementById('schedDate').value = state.form.schedDate;
+      if (state.form.schedTime) document.getElementById('schedTime').value = state.form.schedTime;
+    }
+
+    // 予約紐付け復元
+    if (state.booking && state.booking.id) {
+      selectedBookingId = state.booking.id;
+      selectedBookingInfo = state.booking.info || null;
+      renderBookingLink();
+    }
+
+    // ステップ復元（Step 0はダッシュボードなので1以上のみ復元）
+    currentStep = (state.currentStep && state.currentStep >= 1) ? state.currentStep : 0;
+
+    // タイマー復元（作業中の場合）
+    if (currentStep === 4 && timestamps.start && !timestamps.end) {
+      // 開始時刻の表示を復元
+      var startDisplay = document.getElementById('startTimeDisplay');
+      if (startDisplay) startDisplay.textContent = formatTime(timestamps.start);
+      // タイマーを開始時刻から再計算して再開
+      startTimer();
+    }
+
+    renderStep();
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+// セッションをクリア（送信完了後）
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
+}
+
+var stepNames = [
+  'បញ្ជីការកក់（予約ダッシュボード）',
+  'ចុះបញ្ជី（顧客登録）',
+  'កាលវិភាគ（予約設定）',
+  'រូបថតមុន + ចាប់ផ្តើម（ビフォー + スタート）',
+  'ការងារ + រូបថតក្រោយ（作業中 + アフター）',
+  'បញ្ចប់（完了・送信）'
+];
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', function() {
+  // Telegram Mini App 初期化
+  if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  }
+
+  // Set today as default date
+  var today = new Date();
+  var y = today.getFullYear();
+  var m = String(today.getMonth()+1).padStart(2,'0');
+  var d = String(today.getDate()).padStart(2,'0');
+  document.getElementById('schedDate').value = y+'-'+m+'-'+d;
+
+  // Building other toggle
+  document.getElementById('building').addEventListener('change', function() {
+    document.getElementById('buildingOtherField').style.display = this.value === 'other' ? 'block' : 'none';
+  });
+
+  // GPS
+  document.getElementById('gpsBtn').addEventListener('click', getGPS);
+
+  // セッション復元（前回閉じた状態から再開）
+  var restored = restoreSession();
+  if (!restored) {
+    // 新規: ダッシュボード（Step 0）を表示して予約一覧を読み込む
+    currentStep = 0;
+    renderStep();
+    loadDashboardBookings();
+  }
+});
+
+// ===== NAVIGATION =====
+function renderStep() {
+  // Hide all steps（Step 0, Thread, Campaign, Step 1-5）
+  for (var i = 0; i <= totalSteps; i++) {
+    var el = document.getElementById('step'+i);
+    if (el) el.classList.remove('active');
+  }
+  var threadEl = document.getElementById('stepThread');
+  if (threadEl) threadEl.classList.remove('active');
+  var campEl = document.getElementById('stepCampaign');
+  if (campEl) campEl.classList.remove('active');
+
+  if (currentStep === 'thread') {
+    threadEl.classList.add('active');
+  } else if (currentStep === 'campaign') {
+    if (campEl) campEl.classList.add('active');
+  } else {
+    var active = document.getElementById('step'+currentStep);
+    if (active) active.classList.add('active');
+  }
+
+  // Step 0/thread/campaignではプログレスバーとステップラベルを非表示
+  var progressBar = document.getElementById('progressBar');
+  var stepLabel = document.getElementById('stepLabel');
+  if (currentStep === 0 || currentStep === 'thread' || currentStep === 'campaign') {
+    progressBar.style.display = 'none';
+    stepLabel.style.display = 'none';
+  } else {
+    progressBar.style.display = 'flex';
+    stepLabel.style.display = 'block';
+  }
+
+  // スレッドから離れたらチャット更新タイマーを停止
+  if (currentStep !== 'thread' && chatRefreshTimer) {
+    clearInterval(chatRefreshTimer);
+    chatRefreshTimer = null;
+  }
+
+  // Progress dots（Step 1-5のみ）
+  var dots = '';
+  for (var i = 1; i <= totalSteps; i++) {
+    var cls = 'progress-dot';
+    if (i < currentStep) cls += ' done';
+    else if (i === currentStep) cls += ' active';
+    dots += '<div class="'+cls+'"></div>';
+  }
+  document.getElementById('progressBar').innerHTML = dots;
+  document.getElementById('stepLabel').innerHTML = '<strong>'+currentStep+'/'+totalSteps+'</strong> '+stepNames[currentStep];
+
+  // Action buttons
+  renderButtons();
+
+  // Scroll to top
+  window.scrollTo(0, 0);
+}
+
+function renderButtons() {
+  var area = document.getElementById('actionButtons');
+  switch(currentStep) {
+    case 0:
+    case 'thread':
+      area.innerHTML = ''; // ダッシュボード・スレッドでは下部ボタンなし
+      break;
+    case 'campaign':
+      area.innerHTML =
+        '<button class="btn btn-secondary" onclick="backToList()">← ថយក្រោយ（戻る）</button>' +
+        '<button class="btn btn-primary" id="campaignSubmitBtn" onclick="submitManualCampaign()">💰 រក្សាទុក（売上を記録）</button>';
+      break;
+    case 1:
+      area.innerHTML = '<button class="btn btn-primary" onclick="goNext()">បន្ទាប់（次へ）→</button>';
+      break;
+    case 2:
+      area.innerHTML = '<button class="btn btn-secondary" onclick="goPrev()">← ថយក្រោយ（戻る）</button><button class="btn btn-primary" onclick="goNext()">បន្ទាប់（次へ）→</button>';
+      break;
+    case 3:
+      area.innerHTML = '<button class="btn btn-secondary" onclick="goPrev()">← ថយក្រោយ（戻る）</button><button class="btn btn-start" onclick="startWork()">▶ ចាប់ផ្តើម（スタート）</button>';
+      break;
+    case 4:
+      area.innerHTML = '<button class="btn btn-end" onclick="endWork()">⏹ បញ្ចប់（作業終了）</button>';
+      break;
+    case 5:
+      area.innerHTML = '<button class="btn btn-secondary" onclick="goPrev()">← ថយក្រោយ（戻る）</button><button class="btn btn-success" id="submitBtn" onclick="submitAll()">✅ រក្សាទុក（保存・送信）</button>';
+      break;
+  }
+}
+
+function goNext() {
+  if (currentStep === 1) {
+    // Validate step 1
+    var name = document.getElementById('name').value.trim();
+    var phone = document.getElementById('phone').value.trim();
+    var building = document.getElementById('building').value;
+    if (!name) { showToast('ឈ្មោះអតិថិជន（顧客名）を入力してください'); return; }
+    if (!building) { showToast('អគារ（建物）を選択してください'); return; }
+    // WASH 任意化に伴い、WASH か GLASS のどちらか1つは必須
+    var hasWash = document.getElementById('planW') && document.getElementById('planW').checked;
+    var glassSel = document.querySelector('input[name="glassOption"]:checked');
+    var hasGlass = glassSel && glassSel.value !== '';
+    if (!hasWash && !hasGlass) { showToast('សេវាកម្ម（WASH か GLASS）を1つ以上選んでください'); return; }
+    timestamps.registered = new Date();
+  }
+  if (currentStep === 2) {
+    var schedDate = document.getElementById('schedDate').value;
+    var schedTime = document.getElementById('schedTime').value;
+    if (!schedDate || !schedTime) { showToast('កាលបរិច្ឆេទ（日時）を設定してください'); return; }
+    timestamps.scheduled = schedDate + ' ' + schedTime;
+    document.getElementById('schedDisplay').textContent = schedTime;
+    showRegSummary();
+  }
+  if (currentStep < totalSteps) {
+    currentStep++;
+    renderStep();
+    if (currentStep === 2) showRegSummary();
+    saveSession();
+  }
+}
+
+function goPrev() {
+  if (currentStep > 1) {
+    if (currentStep === 5 && timestamps.end) {
+      // Already ended, going back is fine
+    }
+    currentStep--;
+    renderStep();
+  }
+}
+
+// ===== STEP 2: Summary =====
+function showRegSummary() {
+  var buildingVal = document.getElementById('building').value;
+  if (buildingVal === 'other') buildingVal = document.getElementById('buildingOther').value;
+  var planEl = document.querySelector('input[name="plan"]:checked');
+  var vehicleEl = document.querySelector('input[name="vehicleType"]:checked');
+  var planText = planEl ? planEl.value : '-';
+  if (vehicleEl && planEl) planText += ' (' + vehicleEl.value + ')';
+  var html = '';
+  html += summaryRow('ឈ្មោះ（名前）', document.getElementById('name').value);
+  html += summaryRow('ទូរស័ព្ទ（電話）', document.getElementById('phone').value);
+  html += summaryRow('អគារ（建物）', buildingVal);
+  html += summaryRow('បន្ទប់（部屋）', document.getElementById('room').value || '-');
+  html += summaryRow('រថយន្ត（車種）', document.getElementById('carModel').value || '-');
+  html += summaryRow('ស្លាកលេខ（ナンバー）', document.getElementById('plate').value || '-');
+  html += summaryRow('គម្រោង（プラン）', planText);
+  document.getElementById('regSummary').innerHTML = html;
+}
+
+function summaryRow(label, value) {
+  return '<div class="summary-row"><span class="s-label">'+label+'</span><span class="s-value">'+value+'</span></div>';
+}
+
+// ===== STEP 3: Start Work =====
+function startWork() {
+  timestamps.start = new Date();
+  document.getElementById('startTimeDisplay').textContent = formatTime(timestamps.start);
+
+  // リアルタイム通知: 作業開始をGASに送信
+  var buildingVal = document.getElementById('building').value;
+  if (buildingVal === 'other') buildingVal = document.getElementById('buildingOther').value;
+  var planEl = document.querySelector('input[name="plan"]:checked');
+  var vehicleEl = document.querySelector('input[name="vehicleType"]:checked');
+  var startData = {
+    action: 'job_start',
+    name: document.getElementById('name').value,
+    building: buildingVal,
+    room: document.getElementById('room').value,
+    carModel: document.getElementById('carModel').value,
+    plate: document.getElementById('plate').value,
+    plan: planEl ? planEl.value : '',
+    glassOption: (function(){ var g = document.querySelector('input[name="glassOption"]:checked'); return g ? g.value : ''; })(),
+    vehicleType: vehicleEl ? vehicleEl.value : '',
+    amount: (function(){ var a = document.getElementById('amount'); return (a && a.value !== '') ? Number(a.value) : ''; })(),
+    startTime: timestamps.start.toISOString(),
+    beforePhotos: photos.before.filter(function(p){return p !== null;}),
+    bookingId: selectedBookingId || ''
+  };
+  if (APPS_SCRIPT_URL) {
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(startData)
+    }).catch(function(){});
+  }
+
+  // 予約と紐付け（job_id 生成は GAS 側で行うため、ここでは booking_link_job を呼ばずに
+  // job_start 内で予約紐付けまで完結させる方針。将来 jobId を返すなら拡張する）
+
+  currentStep = 4;
+  renderStep();
+  startTimer();
+  saveSession();
+}
+
+// ===== STEP 4: Timer =====
+function startTimer() {
+  timerInterval = setInterval(function() {
+    var elapsed = Math.floor((new Date() - timestamps.start) / 1000);
+    var h = String(Math.floor(elapsed/3600)).padStart(2,'0');
+    var m = String(Math.floor((elapsed%3600)/60)).padStart(2,'0');
+    var s = String(elapsed%60).padStart(2,'0');
+    document.getElementById('timerValue').textContent = h+':'+m+':'+s;
+  }, 1000);
+}
+
+function endWork() {
+  timestamps.end = new Date();
+  if (timerInterval) clearInterval(timerInterval);
+
+  // リアルタイム通知: 作業終了をGASに送信
+  var buildingVal = document.getElementById('building').value;
+  if (buildingVal === 'other') buildingVal = document.getElementById('buildingOther').value;
+  var planEl = document.querySelector('input[name="plan"]:checked');
+  var vehicleEl = document.querySelector('input[name="vehicleType"]:checked');
+  var endData = {
+    action: 'job_end',
+    name: document.getElementById('name').value,
+    building: buildingVal,
+    room: document.getElementById('room').value,
+    carModel: document.getElementById('carModel').value,
+    plate: document.getElementById('plate').value,
+    plan: planEl ? planEl.value : '',
+    glassOption: (function(){ var g = document.querySelector('input[name="glassOption"]:checked'); return g ? g.value : ''; })(),
+    vehicleType: vehicleEl ? vehicleEl.value : '',
+    amount: (function(){ var a = document.getElementById('amount'); return (a && a.value !== '') ? Number(a.value) : ''; })(),
+    endTime: timestamps.end.toISOString(),
+    duration: Math.round((timestamps.end - timestamps.start) / 60000),
+    afterPhotos: photos.after.filter(function(p){return p !== null;}),
+    bookingId: selectedBookingId || ''
+  };
+  if (APPS_SCRIPT_URL) {
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(endData)
+    }).catch(function(){});
+  }
+
+  currentStep = 5;
+  renderStep();
+  showFinalSummary();
+  saveSession();
+}
+
+// ===== STEP 5: Final Summary =====
+function showFinalSummary() {
+  var buildingVal = document.getElementById('building').value;
+  if (buildingVal === 'other') buildingVal = document.getElementById('buildingOther').value;
+  var planEl = document.querySelector('input[name="plan"]:checked');
+  var vehicleEl = document.querySelector('input[name="vehicleType"]:checked');
+  var planText = planEl ? planEl.value : '-';
+  if (vehicleEl && planEl) planText += ' (' + vehicleEl.value + ')';
+  var duration = timestamps.start && timestamps.end ? Math.round((timestamps.end - timestamps.start)/60000) : 0;
+
+  var html = '';
+  html += summaryRow('ឈ្មោះ（名前）', document.getElementById('name').value);
+  html += summaryRow('អគារ（建物）', buildingVal);
+  html += summaryRow('គម្រោង（プラン）', planText);
+  html += summaryRow('📅 កំណត់（予約）', timestamps.scheduled || '-');
+  html += summaryRow('▶ ចាប់ផ្តើម（開始）', timestamps.start ? formatTime(timestamps.start) : '-');
+  html += summaryRow('⏹ បញ្ចប់（終了）', timestamps.end ? formatTime(timestamps.end) : '-');
+  html += summaryRow('⏱ រយៈពេល（所要時間）', duration + ' នាទី（分）');
+
+  document.getElementById('finalSummary').innerHTML = html;
+
+  // Photo summaries
+  var beforeHtml = '', afterHtml = '';
+  for (var i = 0; i < 4; i++) {
+    if (photos.before[i]) beforeHtml += '<img src="'+photos.before[i]+'">';
+    else beforeHtml += '<div style="background:var(--card);border-radius:6px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-dim);">なし</div>';
+    if (photos.after[i]) afterHtml += '<img src="'+photos.after[i]+'">';
+    else afterHtml += '<div style="background:var(--card);border-radius:6px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-dim);">なし</div>';
+  }
+  document.getElementById('summaryBefore').innerHTML = beforeHtml;
+  document.getElementById('summaryAfter').innerHTML = afterHtml;
+}
+
+// ===== PHOTOS =====
+function handlePhoto(input, type, index) {
+  var file = input.files[0];
+  if (!file) return;
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    // Compress image
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var maxW = 1200;
+      var scale = Math.min(1, maxW / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      var compressed = canvas.toDataURL('image/jpeg', 0.7);
+      photos[type][index] = compressed;
+      renderPhotoSlot(type, index, compressed);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderPhotoSlot(type, index, dataUrl) {
+  var containerId = type === 'before' ? 'beforePhotos' : 'afterPhotos';
+  var slot = document.getElementById(containerId).children[index];
+  slot.classList.add('has-photo');
+  // Keep only the file input, add image + remove button
+  var labels = ['មុខ（前面）','ក្រោយ（背面）','ឆ្វេង（左側）','ស្ដាំ（右側）'];
+  slot.innerHTML = '<img src="'+dataUrl+'"><button type="button" class="photo-remove" onclick="removePhoto(\''+type+'\','+index+')">x</button><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,\''+type+'\','+index+')">';
+}
+
+function removePhoto(type, index) {
+  photos[type][index] = null;
+  var containerId = type === 'before' ? 'beforePhotos' : 'afterPhotos';
+  var labels = ['មុខ（前面）','ក្រោយ（背面）','ឆ្វេង（左側）','ស្ដាំ（右側）'];
+  var slot = document.getElementById(containerId).children[index];
+  slot.classList.remove('has-photo');
+  slot.innerHTML = '<span class="photo-icon">📷</span><span class="photo-label">'+labels[index]+'</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,\''+type+'\','+index+')">';
+}
+
+// ===== SUBMIT =====
+function submitAll() {
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ កំពុងផ្ញើ...（送信中...）';
+
+  var buildingVal = document.getElementById('building').value;
+  if (buildingVal === 'other') buildingVal = document.getElementById('buildingOther').value;
+  var planEl = document.querySelector('input[name="plan"]:checked');
+  var vehicleEl = document.querySelector('input[name="vehicleType"]:checked');
+  var duration = timestamps.start && timestamps.end ? Math.round((timestamps.end - timestamps.start)/60000) : 0;
+
+  var data = {
+    action: 'job',
+    registered: timestamps.registered ? timestamps.registered.toISOString() : '',
+    name: document.getElementById('name').value,
+    phone: document.getElementById('phone').value,
+    building: buildingVal,
+    room: document.getElementById('room').value,
+    carModel: document.getElementById('carModel').value,
+    plate: document.getElementById('plate').value,
+    plan: planEl ? planEl.value : '',
+    glassOption: (function(){ var g = document.querySelector('input[name="glassOption"]:checked'); return g ? g.value : ''; })(),
+    vehicleType: vehicleEl ? vehicleEl.value : '',
+    amount: (function(){ var a = document.getElementById('amount'); return (a && a.value !== '') ? Number(a.value) : ''; })(),
+    mapUrl: document.getElementById('mapUrl').value,
+    notes: document.getElementById('notes').value,
+    scheduled: timestamps.scheduled || '',
+    startTime: timestamps.start ? timestamps.start.toISOString() : '',
+    endTime: timestamps.end ? timestamps.end.toISOString() : '',
+    duration: duration,
+    beforePhotos: photos.before.filter(function(p){return p !== null;}),
+    afterPhotos: photos.after.filter(function(p){return p !== null;}),
+    bookingId: selectedBookingId || ''
+  };
+
+  if (APPS_SCRIPT_URL) {
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(data)
+    })
+    .then(function() {
+      clearSession();
+      document.getElementById('successModal').classList.add('show');
+    })
+    .catch(function() {
+      saveOffline(data);
+      clearSession();
+      document.getElementById('successModal').classList.add('show');
+    });
+  } else {
+    saveOffline(data);
+    clearSession();
+    document.getElementById('successModal').classList.add('show');
+  }
+}
+
+function saveOffline(data) {
+  try {
+    var saved = JSON.parse(localStorage.getItem('samurai_jobs') || '[]');
+    saved.push(data);
+    localStorage.setItem('samurai_jobs', JSON.stringify(saved));
+  } catch(e) {}
+}
+
+// ===== GPS =====
+function getGPS() {
+  var btn = document.getElementById('gpsBtn');
+  var mapInput = document.getElementById('mapUrl');
+  var hint = document.getElementById('gpsHint');
+  if (!navigator.geolocation) { showToast('GPS មិនអាចប្រើបាន'); return; }
+  var orig = btn.textContent;
+  btn.textContent = '⏳ កំពុងយក...（取得中）';
+  btn.disabled = true;
+  try {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        mapInput.value = 'https://www.google.com/maps?q='+pos.coords.latitude+','+pos.coords.longitude;
+        btn.textContent = '✅ ទីតាំងបានយក（取得済み）';
+        btn.style.background = '#2e7d32';
+        btn.disabled = false;
+        if (hint) hint.innerHTML = '✅ ' + pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5) + ' — <a href="'+mapInput.value+'" target="_blank" style="color:#4da3ff">地図で確認</a>';
+      },
+      function() {
+        btn.textContent = orig;
+        btn.disabled = false;
+        showToast('ទីតាំងមិនបាន（位置情報を取得できません）');
+        if (hint) hint.textContent = '⚠️ 取得失敗。もう一度タップ / GPS許可を確認';
+      },
+      { enableHighAccuracy:true, timeout:10000, maximumAge:30000 }
+    );
+  } catch(e) { btn.textContent = orig; btn.disabled = false; }
+}
+
+// ===== UTILS =====
+function formatTime(d) {
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+
+function resetAll() {
+  document.getElementById('successModal').classList.remove('show');
+  currentStep = 0;  // ダッシュボードに戻る
+  photos = { before:[null,null,null,null], after:[null,null,null,null] };
+  timestamps = { registered:null, scheduled:null, start:null, end:null };
+  if (timerInterval) clearInterval(timerInterval);
+  // Reset form fields
+  document.getElementById('name').value = '';
+  document.getElementById('phone').value = '';
+  document.getElementById('building').selectedIndex = 0;
+  document.getElementById('room').value = '';
+  document.getElementById('carModel').value = '';
+  document.getElementById('plate').value = '';
+  document.getElementById('mapUrl').value = '';
+  document.getElementById('notes').value = '';
+  document.getElementById('schedTime').value = '';
+  var radios = document.querySelectorAll('input[name="plan"]');
+  radios.forEach(function(r){ r.checked = false; });
+  // WASH は既定で ON に戻す（よく使うため）。GLASS 単体予約時はユーザーがタップで解除。
+  var planWReset = document.getElementById('planW');
+  if (planWReset) planWReset.checked = true;
+  // Reset photo slots
+  var labels = ['មុខ（前面）','ក្រោយ（背面）','ឆ្វេង（左側）','ស្ដាំ（右側）'];
+  ['beforePhotos','afterPhotos'].forEach(function(id) {
+    var type = id === 'beforePhotos' ? 'before' : 'after';
+    var grid = document.getElementById(id);
+    for (var i = 0; i < 4; i++) {
+      grid.children[i].classList.remove('has-photo');
+      grid.children[i].innerHTML = '<span class="photo-icon">📷</span><span class="photo-label">'+labels[i]+'</span><input type="file" accept="image/*" capture="environment" onchange="handlePhoto(this,\''+type+'\','+i+')">';
+    }
+  });
+  document.getElementById('timerValue').textContent = '00:00:00';
+  // 予約紐付けもクリア
+  clearBookingSelection();
+  renderStep();
+}
+
+// ===== ダッシュボード（Step 0: 顧客一覧） =====
+function loadDashboardBookings() {
+  var body = document.getElementById('dashboardBody');
+  body.innerHTML = '<div class="bp-loading">⏳ កំពុងផ្ទុក...（読み込み中...）</div>';
+
+  if (!APPS_SCRIPT_URL) {
+    body.innerHTML = '<div class="dash-empty"><div class="de-icon">⚠️</div><p>APPS_SCRIPT_URL が未設定です</p></div>';
+    return;
+  }
+
+  fetch(APPS_SCRIPT_URL + '?action=booking_today')
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if (!data || data.status !== 'ok') {
+        body.innerHTML = '<div class="dash-empty"><div class="de-icon">⚠️</div><p>取得に失敗しました</p></div>';
+        return;
+      }
+      dashboardBookings = data.bookings || [];
+      renderDashboard(dashboardBookings);
+    })
+    .catch(function(err){
+      body.innerHTML = '<div class="dash-empty"><div class="de-icon">⚠️</div><p>通信エラー: ' + err.message + '</p></div>';
+    });
+}
+
+function renderDashboard(bookings) {
+  // 統計を更新
+  var total = bookings.length;
+  var done = bookings.filter(function(b){ return b.status === '作業完了'; }).length;
+  var pending = total - done;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statDone').textContent = done;
+
+  var body = document.getElementById('dashboardBody');
+  if (!bookings.length) {
+    body.innerHTML = '<div class="dash-empty"><div class="de-icon">📭</div><p>មិនមានការកក់ថ្ងៃនេះ<br>（今日の予約はありません）</p></div>';
+    return;
+  }
+
+  // 今日と明日でグループ化
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  var tomorrow = new Date(today.getTime() + 24*60*60*1000);
+  var tomorrowStr = tomorrow.getFullYear() + '-' + String(tomorrow.getMonth()+1).padStart(2,'0') + '-' + String(tomorrow.getDate()).padStart(2,'0');
+
+  var grouped = { today: [], tomorrow: [], other: [] };
+  bookings.forEach(function(b){
+    if (b.date === todayStr) grouped.today.push(b);
+    else if (b.date === tomorrowStr) grouped.tomorrow.push(b);
+    else grouped.other.push(b);
+  });
+
+  var html = '';
+  if (grouped.today.length) {
+    html += '<div class="bp-day-label">📍 ថ្ងៃនេះ（今日）' + todayStr + '</div>';
+    grouped.today.forEach(function(b){ html += renderDashboardCard(b); });
+  }
+  if (grouped.tomorrow.length) {
+    html += '<div class="bp-day-label">📅 ថ្ងៃស្អែក（明日）' + tomorrowStr + '</div>';
+    grouped.tomorrow.forEach(function(b){ html += renderDashboardCard(b); });
+  }
+  if (grouped.other.length) {
+    html += '<div class="bp-day-label">⏭ ពេលក្រោយ（その他）</div>';
+    grouped.other.forEach(function(b){ html += renderDashboardCard(b); });
+  }
+
+  body.innerHTML = html;
+
+  // クリックハンドラ
+  var items = body.querySelectorAll('.chat-item');
+  for (var i = 0; i < items.length; i++) {
+    (function(item){
+      item.addEventListener('click', function(){
+        var id = item.getAttribute('data-id');
+        var found = bookings.find(function(b){ return b.bookingId === id; });
+        if (found) openThread(found);
+      });
+    })(items[i]);
+  }
+}
+
+// アバター色の生成（名前から一貫した色を返す）
+function getAvatarColor(name) {
+  var colors = ['#e74c3c','#3498db','#2ecc71','#f39c12','#9b59b6','#1abc9c','#e67e22','#e91e63'];
+  var hash = 0;
+  for (var i = 0; i < (name||'').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function renderDashboardCard(b) {
+  var name = b.customerName || 'Guest';
+  var initial = name.charAt(0).toUpperCase();
+  var color = getAvatarColor(name);
+  var st = formatTimeDisplay(b.startTime);
+  var et = formatTimeDisplay(b.endTime);
+  var amountStr = b.amount ? '$' + b.amount : '';
+
+  // ステータスに応じたプレビューテキスト
+  var preview = '🕐 ' + st + ' - ' + et;
+  // ステータステキスト (クメール語ファースト・日本語サブ)
+  if (b.status === '作業完了') preview = '✅ បានបញ្ចប់ ・ ' + preview;
+  else if (b.status === '駐車情報受領済み') preview = '🚗 ត្រៀមរួច ・ ' + preview;
+  else preview = '⏳ រង់ចាំ ・ ' + preview;
+
+  // 2026-05-20: サービスタイプバッジ（現場スタッフが一目で店舗/出張を判別できるよう）
+  var isInStore = (b.serviceType === '店舗');
+  var svcBadge = isInStore
+    ? '<span style="display:inline-block;background:rgba(212,175,55,0.18);color:#D4AF37;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.3px;margin-left:6px;border:1px solid rgba(212,175,55,0.4);">🏪 STORE / នៅហាង</span>'
+    : '<span style="display:inline-block;background:rgba(100,149,237,0.18);color:#7AB8FF;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.3px;margin-left:6px;border:1px solid rgba(100,149,237,0.4);">🚗 DELIVERY / ដឹកជញ្ជូន</span>';
+
+  // プラン名（新形式 W=WASH 優先、旧形式 A/B/C/D も対応）
+  var planNames = { 'A': '清', 'B': '輝', 'C': '極', 'D': '匠', 'W': 'WASH' };
+  var planName = planNames[b.planLetter] || b.planLetter || '';
+  // 'W' は重複を避け、 'WASH' のみ表示。旧 A/B/C/D は letter + 日本語名
+  var planDisplay = (b.planLetter === 'W' || !b.planLetter) ? (planName || 'WASH') : (b.planLetter + '(' + planName + ')');
+  var sub = '✨ ' + planDisplay + ' ・ ' + (b.vehicleType || '-');
+
+  var doneCls = (b.status === '作業完了') ? ' opacity:0.5;' : '';
+
+  // 2026-05-31: 手動特価キャンペーンの清算ボタン（手動特価 ＆ 作業完了 ＆ 未清算 の時のみ）
+  var settleBtn = '';
+  if (b.manualCampaign && b.status === '作業完了' && b.paymentStatus && b.paymentStatus !== '清算済み') {
+    settleBtn = '<button onclick="settleCampaignBooking(\'' + b.bookingId + '\', event)" ' +
+      'style="display:block;margin-top:6px;width:100%;padding:8px 12px;' +
+      'background:linear-gradient(135deg,#8b0000 0%,#c9a84c 100%);color:#fff;' +
+      'border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;' +
+      'letter-spacing:0.3px;opacity:1;">' +
+      '💵 ការទូទាត់រួច / 清算する</button>';
+  }
+
+  // 手動特価バッジ
+  var campBadge = '';
+  if (b.manualCampaign) {
+    campBadge = '<span style="display:inline-block;background:rgba(139,0,0,0.25);' +
+      'color:#ffb88a;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;' +
+      'letter-spacing:0.3px;margin-left:6px;border:1px solid rgba(201,168,76,0.5);">' +
+      '🎫 ' + (b.campaignName || 'SPECIAL') + '</span>';
+  }
+
+  return '<div class="chat-item" data-id="' + b.bookingId + '" style="' + doneCls + 'flex-wrap:wrap;">' +
+    '<div class="chat-avatar" style="background:' + color + '">' + initial + '</div>' +
+    '<div class="chat-body">' +
+      '<div class="chat-name">' + name + svcBadge + campBadge + '</div>' +
+      '<div class="chat-preview">' + preview + '</div>' +
+      '<div class="chat-preview" style="font-size:11px;margin-top:2px">' + sub + '</div>' +
+    '</div>' +
+    '<div class="chat-meta">' +
+      '<div class="chat-time">' + st + '</div>' +
+      (amountStr ? '<div class="chat-badge">' + amountStr + '</div>' : '') +
+    '</div>' +
+    (settleBtn ? '<div style="flex-basis:100%;margin-top:6px;">' + settleBtn + '</div>' : '') +
+  '</div>';
+}
+
+// ===== スレッドページ（予約詳細 + チャット履歴閲覧） =====
+function openThread(b) {
+  currentThreadBooking = b;
+  currentStep = 'thread';
+  renderStep();
+
+  // 予約情報カード表示
+  var card = document.getElementById('threadBookingCard');
+  var st = formatTimeDisplay(b.startTime);
+  var et = formatTimeDisplay(b.endTime);
+  var planNames = { 'A': '清 KIYOME', 'B': '輝 KAGAYAKI', 'C': '極 KIWAMI', 'D': '匠 TAKUMI' };
+  var planName = planNames[b.planLetter] || b.planLetter || '?';
+  // 2026-05-20: 店舗予約なら「🏪 STORE (顧客来店)」、出張なら住所/マップリンク
+  var isInStoreThread = (b.serviceType === '店舗');
+  var loc;
+  if (isInStoreThread) {
+    loc = '<span style="color:#D4AF37;font-weight:700">🏪 STORE — Customer comes to office / អតិថិជនមកការិយាល័យ</span>';
+  } else if ((b.location || '').indexOf('google.com/maps') >= 0) {
+    loc = '<a href="' + b.location + '" target="_blank" style="color:var(--blue)">📍 地図を開く / បើកផែនទី</a>';
+  } else {
+    loc = b.location || '-';
+  }
+
+  var statusBadge = '';
+  // クメール語ファースト・日本語サブ
+  if (b.status === '作業完了') statusBadge = '<span class="bp-status done">✅ បានបញ្ចប់ / 完了</span>';
+  else if (b.status === '駐車情報受領済み') statusBadge = '<span class="bp-status driving">🚗 ត្រៀមរួច / 出発OK</span>';
+  else statusBadge = '<span class="bp-status pending">⏳ រង់ចាំ / 待機中</span>';
+
+  // 2026-05-20: 詳細ページにもサービスタイプバッジ
+  var svcBadgeDetail = isInStoreThread
+    ? '<span style="display:inline-block;background:rgba(212,175,55,0.18);color:#D4AF37;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:0.4px;margin-left:8px;border:1px solid rgba(212,175,55,0.4);">🏪 STORE / នៅហាង</span>'
+    : '<span style="display:inline-block;background:rgba(100,149,237,0.18);color:#7AB8FF;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:0.4px;margin-left:8px;border:1px solid rgba(100,149,237,0.4);">🚗 DELIVERY / ដឹកជញ្ជូន</span>';
+
+  card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+    '<div>' +
+      '<div style="font-size:16px;font-weight:700">👤 ' + (b.customerName || 'Guest') + svcBadgeDetail + '</div>' +
+      '<div style="font-size:13px;color:var(--text-dim);margin-top:4px">🆔 ' + b.bookingId + '</div>' +
+    '</div>' + statusBadge +
+  '</div>' +
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;font-size:13px">' +
+    '<div><span style="color:var(--text-dim);font-size:10px">🕐 ម៉ោង / 時間</span><br><b>' + st + ' - ' + et + '</b></div>' +
+    '<div><span style="color:var(--text-dim);font-size:10px">💰 តម្លៃ / 料金</span><br><b>$' + (b.amount || '0') + '</b></div>' +
+    '<div><span style="color:var(--text-dim);font-size:10px">✨ មុខងារ / Plan</span><br><b>' + (b.planLetter === 'W' ? 'WASH' : (b.planLetter + '（' + planName + '）')) + '</b></div>' +
+    '<div><span style="color:var(--text-dim);font-size:10px">🚙 ប្រភេទរថយន្ត / 車種</span><br><b>' + (b.vehicleType || '-') + '</b></div>' +
+    '<div style="grid-column:1/-1"><span style="color:var(--text-dim);font-size:10px">📍 ទីតាំង / 場所</span><br>' + loc + '</div>' +
+  '</div>' +
+  (b.status !== '作業完了' ?
+    '<button class="thread-start-job-btn" onclick="startJobFromThread()">🚗 ចាប់ផ្តើមការងារ<br><span style="font-size:11px;opacity:0.75;font-weight:600;letter-spacing:0.3px">START JOB / ジョブ開始</span></button>' : '');
+
+  // チャットUI: 顧客チャットIDがある時だけ表示（特価予約など chatId 無しは非表示）
+  var chatArea = document.getElementById('chatArea');
+  var chatInputRow = document.querySelector('#stepThread .chat-input-row');
+  if (b.chatId) {
+    if (chatArea) chatArea.style.display = '';
+    if (chatInputRow) chatInputRow.style.display = '';
+    loadChatHistory(b.chatId);
+    // 10秒ごとに自動更新
+    if (chatRefreshTimer) clearInterval(chatRefreshTimer);
+    chatRefreshTimer = setInterval(function() {
+      if (currentStep === 'thread' && currentThreadBooking && currentThreadBooking.chatId) {
+        loadChatHistory(currentThreadBooking.chatId, true);
+      }
+    }, 10000);
+  } else {
+    // チャットID無し（特価予約等）→ チャット欄を隠す
+    if (chatArea) { chatArea.style.display = 'none'; chatArea.innerHTML = ''; }
+    if (chatInputRow) chatInputRow.style.display = 'none';
+    if (chatRefreshTimer) { clearInterval(chatRefreshTimer); chatRefreshTimer = null; }
+  }
+}
+
+function loadChatHistory(chatId, silent) {
+  if (!chatId) {
+    document.getElementById('chatArea').innerHTML = '<div class="chat-loading">💬 チャットID不明 — 履歴を表示できません</div>';
+    return;
+  }
+  if (!silent) {
+    document.getElementById('chatArea').innerHTML = '<div class="chat-loading">⏳ チャット読み込み中...</div>';
+  }
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'chat_history', chatId: String(chatId) })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if (res.status === 'ok') {
+      chatMessages = res.messages || [];
+      renderChatMessages(chatMessages);
+    } else if (!silent) {
+      document.getElementById('chatArea').innerHTML = '<div class="chat-loading">📭 チャット履歴なし</div>';
+    }
+  })
+  .catch(function(err){
+    if (!silent) {
+      document.getElementById('chatArea').innerHTML = '<div class="chat-loading">⚠️ 読み込みエラー</div>';
+    }
+  });
+}
+
+function renderChatMessages(messages) {
+  var area = document.getElementById('chatArea');
+  if (!messages.length) {
+    area.innerHTML = '<div class="chat-loading">📭 まだメッセージはありません</div>';
+    return;
+  }
+
+  var html = '';
+  var lastDate = '';
+  messages.forEach(function(m) {
+    // 日付セパレータ
+    var dateStr = (m.dateTime || '').substring(0, 10);
+    if (dateStr && dateStr !== lastDate) {
+      html += '<div style="text-align:center;color:var(--text-dim);font-size:11px;margin:12px 0 8px">' + dateStr + '</div>';
+      lastDate = dateStr;
+    }
+
+    var isStaff = (m.direction === 'staff');
+    var bubbleCls = isStaff ? 'chat-bubble outgoing' : 'chat-bubble incoming';
+    var time = (m.dateTime || '').substring(11, 16);
+    var sender = isStaff ? (m.senderName || 'Staff') : (m.senderName || 'Customer');
+
+    html += '<div class="' + bubbleCls + '">' +
+      '<div style="font-size:10px;color:var(--text-dim);margin-bottom:3px">' + sender + '</div>' +
+      '<div>' + escapeHtml(m.message || '') + '</div>' +
+      (m.mediaUrl ? '<div style="margin-top:4px"><a href="' + m.mediaUrl + '" target="_blank" style="color:var(--blue);font-size:12px">📎 添付ファイル</a></div>' : '') +
+      '<div style="font-size:10px;color:var(--text-dim);text-align:right;margin-top:4px">' + time + '</div>' +
+    '</div>';
+  });
+
+  area.innerHTML = html;
+  // 最下部にスクロール
+  area.scrollTop = area.scrollHeight;
+}
+
+function escapeHtml(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// スレッドからジョブ開始ボタン
+function startJobFromThread() {
+  if (!currentThreadBooking) return;
+  var b = currentThreadBooking;
+  if (b.status === '作業完了') {
+    showToast('この予約は既に完了しています');
+    return;
+  }
+  selectBooking(b);
+  cameFromThread = true;
+  // 特価予約は顧客情報・場所・日時が既知（または不要）なので、
+  // 顧客登録(Step1)・スケジュール(Step2)を飛ばして Before 写真(Step3) へ直行。
+  // 店舗特価で「来店 → すぐ作業開始 → 写真」のUXに最適化。
+  if (b.manualCampaign) {
+    currentStep = 3;
+  } else {
+    currentStep = 1;
+  }
+  renderStep();
+  saveSession();
+}
+
+var cameFromThread = false;
+
+// Step 1 の戻るボタン
+function goBackFromStep1() {
+  if (cameFromThread && currentThreadBooking) {
+    cameFromThread = false;
+    openThread(currentThreadBooking);
+  } else {
+    backToList();
+  }
+}
+
+// ミニアプリからメッセージ送信（オプション）
+function sendChatMessage() {
+  var input = document.getElementById('chatInput');
+  var msg = (input.value || '').trim();
+  if (!msg || !currentThreadBooking || !currentThreadBooking.chatId) return;
+
+  var btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  input.disabled = true;
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'chat_send',
+      chatId: String(currentThreadBooking.chatId),
+      message: msg,
+      senderName: 'App'
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(res){
+    if (res.status === 'ok') {
+      input.value = '';
+      // ローカルに即時追加
+      chatMessages.push({
+        direction: 'staff', senderName: 'App', message: msg,
+        dateTime: new Date().toISOString().replace('T',' ').substring(0,19)
+      });
+      renderChatMessages(chatMessages);
+      showToast('✅ 送信完了');
+    } else {
+      showToast('❌ 送信失敗: ' + (res.message || ''));
+    }
+  })
+  .catch(function(err){ showToast('❌ エラー: ' + err.message); })
+  .finally(function(){ btn.disabled = false; input.disabled = false; input.focus(); });
+}
+
+// 手動入力ボタン
+function startManualEntry() {
+  clearBookingSelection();
+  cameFromThread = false;
+  currentStep = 1;
+  renderStep();
+}
+
+// ===== 手動特価キャンペーン =====
+var campaignCache = null;
+
+function startCampaignFlow() {
+  cameFromThread = false;
+  currentStep = 'campaign';
+  renderStep();
+  loadCampaignList();
+}
+
+function loadCampaignList() {
+  var sel = document.getElementById('campaignSelect');
+  var hint = document.getElementById('campaignHint');
+  if (!sel || !hint) return;
+  sel.innerHTML = '<option value="">— ⏳ —</option>';
+  hint.textContent = '⏳ កំពុងផ្ទុក...（読み込み中...）';
+
+  if (!APPS_SCRIPT_URL) {
+    hint.textContent = '⚠️ APPS_SCRIPT_URL が未設定';
+    return;
+  }
+  fetch(APPS_SCRIPT_URL + '?action=manual_campaign_list')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data || data.status !== 'ok') {
+        hint.textContent = '❌ 取得失敗: ' + (data && data.message || '');
+        return;
+      }
+      campaignCache = data.campaigns || [];
+      if (!campaignCache.length) {
+        sel.innerHTML = '<option value="">— មិនមាន（無し）—</option>';
+        hint.textContent = '⚠️ 有効なキャンペーンがありません（マスターを確認）';
+        return;
+      }
+      sel.innerHTML = '<option value="">— ជ្រើសរើស / 選択 —</option>';
+      campaignCache.forEach(function(c){
+        var opt = document.createElement('option');
+        opt.value = c.campaignId;
+        opt.textContent = (c.no ? c.no + ' ｜ ' : '') + c.nameKm + '（' + c.nameJp + '）';
+        sel.appendChild(opt);
+      });
+      hint.textContent = '✨ ' + campaignCache.length + ' 件のキャンペーンが選択可能';
+    })
+    .catch(function(err){ hint.textContent = '❌ 通信エラー: ' + err.message; });
+}
+
+// 出張/店舗切替に応じて日時/場所フィールドを表示・非表示
+document.addEventListener('change', function(ev){
+  if (ev.target && ev.target.name === 'campaignServiceType') {
+    var dlv = document.getElementById('campaignDeliveryFields');
+    if (dlv) dlv.style.display = (ev.target.value === '出張') ? 'block' : 'none';
+  }
+});
+
+function submitManualCampaign() {
+  var campaignId = (document.getElementById('campaignSelect') || {}).value;
+  if (!campaignId) { showToast('キャンペーンを選択してください'); return; }
+  var amount = (document.getElementById('saleAmount') || {}).value;
+  if (!amount) { showToast('入金額を選択してください'); return; }
+  var name = (document.getElementById('campaignName').value || '').trim();
+  if (!name) { showToast('顧客名を入力してください'); return; }
+
+  var body = {
+    action: 'manual_campaign_sale',
+    campaignId: campaignId,
+    amount: Number(amount),
+    name: name,
+    carModel: (document.getElementById('saleCarModel').value || '').trim(),
+    plate: (document.getElementById('salePlate').value || '').trim(),
+    phone: (document.getElementById('salePhone').value || '').trim()
+  };
+
+  var btn = document.getElementById('campaignSubmitBtn');
+  if (btn) btn.disabled = true;
+  showToast('⏳ 記録中...');
+
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body)
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.status === 'ok') {
+        var rep = res.isReturning ? '（🔁リピーター: ' + (res.returningName || '') + '）' : '';
+        showToast('✅ 売上記録: ' + res.bookingId + ' / $' + res.amount + rep);
+        // 入力をリセット
+        ['campaignName','salePhone','saleCarModel','salePlate'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+        var amt = document.getElementById('saleAmount'); if (amt) amt.selectedIndex = 0;
+        var sel = document.getElementById('campaignSelect'); if (sel) sel.selectedIndex = 0;
+        // ダッシュボードへ
+        currentStep = 0;
+        renderStep();
+        loadDashboardBookings();
+      } else {
+        showToast('❌ ' + (res.message || 'エラー'));
+      }
+    })
+    .catch(function(err){ showToast('❌ 通信エラー: ' + err.message); })
+    .finally(function(){ if (btn) btn.disabled = false; });
+}
+
+// 清算ボタン（ダッシュボードカードから呼ばれる）
+function settleCampaignBooking(bookingId, ev) {
+  if (ev && ev.stopPropagation) ev.stopPropagation();
+  if (!confirm('この特価予約を「清算済み」にしますか？\n' + bookingId)) return;
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action: 'manual_campaign_settle', bookingId: bookingId })
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.status === 'ok') {
+        showToast(res.alreadySettled ? 'ℹ️ 既に清算済み' : '✅ 清算済み');
+        loadDashboardBookings();
+      } else {
+        showToast('❌ ' + (res.message || 'エラー'));
+      }
+    })
+    .catch(function(err){ showToast('❌ 通信エラー: ' + err.message); });
+}
+
+// 一覧に戻る
+function backToList() {
+  // チャットタイマー停止
+  if (chatRefreshTimer) { clearInterval(chatRefreshTimer); chatRefreshTimer = null; }
+  currentThreadBooking = null;
+  chatMessages = [];
+  cameFromThread = false;
+
+  if (currentStep > 1 && currentStep !== 'thread') {
+    if (!confirm('一覧に戻ると入力内容がクリアされます。よろしいですか？')) return;
+  }
+  resetAll();
+  currentStep = 0;
+  renderStep();
+  loadDashboardBookings();
+}
+
+// ===== 予約ピッカー =====
+function openBookingPicker() {
+  var overlay = document.getElementById('bookingPicker');
+  overlay.classList.add('show');
+  loadTodayBookings();
+}
+
+function closeBookingPicker() {
+  document.getElementById('bookingPicker').classList.remove('show');
+}
+
+function loadTodayBookings() {
+  var body = document.getElementById('bpBody');
+  body.innerHTML = '<div class="bp-loading">⏳ កំពុងផ្ទុក...（読み込み中...）</div>';
+
+  if (!APPS_SCRIPT_URL) {
+    body.innerHTML = '<div class="bp-empty"><div class="be-icon">⚠️</div>APPS_SCRIPT_URL が未設定です</div>';
+    return;
+  }
+
+  fetch(APPS_SCRIPT_URL + '?action=booking_today')
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if (!data || data.status !== 'ok') {
+        body.innerHTML = '<div class="bp-empty"><div class="be-icon">⚠️</div>取得に失敗しました</div>';
+        return;
+      }
+      renderBookingList(data.bookings || []);
+    })
+    .catch(function(err){
+      body.innerHTML = '<div class="bp-empty"><div class="be-icon">⚠️</div>通信エラー: ' + err.message + '</div>';
+    });
+}
+
+function renderBookingList(bookings) {
+  var body = document.getElementById('bpBody');
+  if (!bookings.length) {
+    body.innerHTML = '<div class="bp-empty"><div class="be-icon">📭</div>មិនមានការកក់（予約がありません）</div>';
+    return;
+  }
+
+  // 今日と明日でグループ化
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  var tomorrow = new Date(today.getTime() + 24*60*60*1000);
+  var tomorrowStr = tomorrow.getFullYear() + '-' + String(tomorrow.getMonth()+1).padStart(2,'0') + '-' + String(tomorrow.getDate()).padStart(2,'0');
+
+  var grouped = { today: [], tomorrow: [], other: [] };
+  bookings.forEach(function(b){
+    if (b.date === todayStr) grouped.today.push(b);
+    else if (b.date === tomorrowStr) grouped.tomorrow.push(b);
+    else grouped.other.push(b);
+  });
+
+  var html = '';
+  if (grouped.today.length) {
+    html += '<div class="bp-day-label">📍 ថ្ងៃនេះ（今日）' + todayStr + '</div>';
+    grouped.today.forEach(function(b, i){ html += renderBookingCard(b, 'today_' + i); });
+  }
+  if (grouped.tomorrow.length) {
+    html += '<div class="bp-day-label">📅 ថ្ងៃស្អែក（明日）' + tomorrowStr + '</div>';
+    grouped.tomorrow.forEach(function(b, i){ html += renderBookingCard(b, 'tomorrow_' + i); });
+  }
+  if (grouped.other.length) {
+    html += '<div class="bp-day-label">⏭ ពេលក្រោយ（その他）</div>';
+    grouped.other.forEach(function(b, i){ html += renderBookingCard(b, 'other_' + i); });
+  }
+
+  body.innerHTML = html;
+
+  // クリックハンドラを bookings 配列インデックスで紐付け
+  var cards = body.querySelectorAll('.bp-card');
+  for (var i = 0; i < cards.length; i++) {
+    (function(idx){
+      cards[idx].addEventListener('click', function(){
+        // bp-card の data-id 属性から予約を検索
+        var id = cards[idx].getAttribute('data-id');
+        var found = bookings.find(function(b){ return b.bookingId === id; });
+        if (found) selectBooking(found);
+      });
+    })(i);
+  }
+}
+
+function renderBookingCard(b, key) {
+  var statusCls = 'pending';
+  var statusText = '⏳ រង់ចាំ';  // 待機中
+  if (b.status === '作業完了') { statusCls = 'done'; statusText = '✅ បានបញ្ចប់'; }  // 完了
+  else if (b.status === '駐車情報受領済み') { statusCls = 'driving'; statusText = '🚗 ត្រៀមរួច'; }  // 出発OK
+
+  var linkedCls = (selectedBookingId && selectedBookingId === b.bookingId) ? ' linked' : '';
+  var doneCls = (b.status === '作業完了') ? ' done' : '';
+  var amountStr = b.amount ? '$' + b.amount : '';
+
+  // 時刻表示: Date文字列の場合はHH:mm部分を抽出
+  var st = formatTimeDisplay(b.startTime);
+  var et = formatTimeDisplay(b.endTime);
+
+  // プラン名マップ
+  var planNames = { 'A': '清 KIYOME', 'B': '輝 KAGAYAKI', 'C': '極 KIWAMI', 'D': '匠 TAKUMI' };
+  var planName = planNames[b.planLetter] || b.planLetter || '?';
+
+  // 場所表示: Google Maps URLなら短縮
+  var loc = b.location || '-';
+  if (loc.indexOf('google.com/maps') >= 0) loc = '📍 地図リンクあり';
+
+  return '<div class="bp-card' + linkedCls + doneCls + '" data-id="' + b.bookingId + '">' +
+    '<div class="bp-card-row">' +
+      '<div class="bp-time" style="font-size:18px;font-weight:700">🕐 ' + st + ' - ' + et + '</div>' +
+      '<div class="bp-amount" style="font-size:16px;font-weight:700">' + amountStr + '</div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">' +
+      '<div style="font-size:14px">👤 <b>' + (b.customerName || '名無し') + '</b></div>' +
+      '<div style="font-size:13px;color:var(--text-dim)">📍 ' + loc + '</div>' +
+      '<div style="font-size:13px;color:var(--text-dim)">🚗 ' + (b.vehicleType || '-') + ' ・ ✨ プラン' + b.planLetter + '（' + planName + '）</div>' +
+    '</div>' +
+    '<span class="bp-status ' + statusCls + '">' + statusText + '</span>' +
+  '</div>';
+}
+
+function formatTimeDisplay(t) {
+  if (!t) return '--:--';
+  // 既にHH:mm形式ならそのまま
+  if (/^\d{1,2}:\d{2}$/.test(t)) return t;
+  // ISO Date文字列（1899-...T23:00:00.000Z）からHH:mm抽出
+  if (typeof t === 'string' && t.indexOf('T') >= 0) {
+    var m = t.match(/T(\d{2}):(\d{2})/);
+    if (m) {
+      var h = parseInt(m[1], 10) + 7; // UTC→カンボジア時間(+7)
+      if (h >= 24) h -= 24;
+      return String(h).padStart(2, '0') + ':' + m[2];
+    }
+  }
+  return t.toString();
+}
+
+function selectBooking(b) {
+  if (b.status === '作業完了') {
+    showToast('この予約は既に完了しています');
+    return;
+  }
+
+  selectedBookingId = b.bookingId;
+  selectedBookingInfo = b;
+
+  // フォームに自動入力
+  if (b.customerName) document.getElementById('name').value = b.customerName;
+
+  // 場所を建物名とその他に分解
+  if (b.location) {
+    var buildingSel = document.getElementById('building');
+    var matched = false;
+    for (var i = 0; i < buildingSel.options.length; i++) {
+      var optVal = buildingSel.options[i].value;
+      if (!optVal || optVal === 'other') continue;
+      if (b.location.indexOf(optVal) === 0) {
+        buildingSel.value = optVal;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      buildingSel.value = 'other';
+      document.getElementById('buildingOtherField').style.display = 'block';
+      document.getElementById('buildingOther').value = b.location;
+    } else {
+      document.getElementById('buildingOtherField').style.display = 'none';
+    }
+  }
+
+  // 階数情報があれば部屋番号にセット
+  if (b.floor) {
+    document.getElementById('room').value = b.floor;
+  }
+
+  // 車両情報をプレートに（"Toyota Camry / 2A-1234" 形式想定）
+  if (b.vehicleInfo) {
+    var parts = b.vehicleInfo.split('/');
+    if (parts.length >= 2) {
+      document.getElementById('carModel').value = parts[0].trim();
+      document.getElementById('plate').value = parts[1].trim();
+    } else {
+      document.getElementById('carModel').value = b.vehicleInfo;
+    }
+  }
+
+  // 車種選択
+  if (b.vehicleType) {
+    var vradios = document.querySelectorAll('input[name="vehicleType"]');
+    for (var vi = 0; vi < vradios.length; vi++) {
+      if (vradios[vi].value === b.vehicleType) {
+        vradios[vi].checked = true;
+        break;
+      }
+    }
+  }
+
+  // プラン選択（A/B/C/D）
+  if (b.planLetter) {
+    var planMap = { 'A': 'planA', 'B': 'planB', 'C': 'planC', 'D': 'planD' };
+    var planRadioId = planMap[b.planLetter];
+    if (planRadioId) {
+      var planRadio = document.getElementById(planRadioId);
+      if (planRadio) planRadio.checked = true;
+    }
+  }
+
+  // 予約日時を schedule にセット
+  if (b.date) document.getElementById('schedDate').value = b.date;
+  if (b.startTime) document.getElementById('schedTime').value = b.startTime;
+
+  renderBookingLink();
+  saveSession();
+  // モーダルから呼ばれた場合のみ閉じる（ダッシュボードからは openBookingJob が遷移を処理）
+  var pickerOverlay = document.getElementById('bookingPicker');
+  if (pickerOverlay.classList.contains('show')) {
+    closeBookingPicker();
+  }
+  showToast('✅ 予約を紐付けました: ' + b.bookingId);
+}
+
+function renderBookingLink() {
+  var linked = document.getElementById('bookingLinked');
+  if (!selectedBookingId) {
+    linked.style.display = 'none';
+    return;
+  }
+  linked.style.display = 'flex';
+  document.getElementById('blTitle').textContent = selectedBookingId;
+  if (selectedBookingInfo) {
+    var detail = (selectedBookingInfo.customerName || '') + ' / ' +
+                 (selectedBookingInfo.startTime || '') + ' / $' +
+                 (selectedBookingInfo.amount || '?');
+    document.getElementById('blDetail').textContent = detail;
+  }
+}
+
+function clearBookingSelection() {
+  selectedBookingId = null;
+  selectedBookingInfo = null;
+  renderBookingLink();
+  saveSession();
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>勤怠打刻 / ចុះវត្តមាន</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --gold: #c9a84c;
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --green: #00897B;
+  --red: #c62828;
+  --radius: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans Khmer','Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+}
+.wrap { max-width: 480px; margin: 0 auto; }
+
+.title {
+  text-align:center;
+  font-size: 18px; font-weight: 700;
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--gold), #e8d5a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle {
+  text-align:center; font-size: 12px; color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.who {
+  text-align:center;
+  font-size:13px; color: var(--text);
+  padding: 10px 0 8px;
+}
+.who strong { color: var(--gold); }
+
+.clock-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.clock-date { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+.clock-time {
+  font-size: 42px; font-weight: 700; letter-spacing: 1px;
+  color: var(--gold);
+}
+.clock-time .seconds { font-size: 22px; color: var(--text-dim); }
+
+.status-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.status-card.working { border-color: var(--green); }
+.status-card.done    { border-color: var(--text-dim); }
+.status-line { display:flex; justify-content:space-between; font-size: 13px; margin: 4px 0; }
+.status-line .k { color: var(--text-dim); }
+.status-line .v { color: var(--text); }
+
+.gps-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  text-align: center;
+  min-height: 34px;
+}
+.gps-box.ok { color: #4caf50; }
+.gps-box.warn { color: #ffc107; }
+.gps-box.err { color: #ff7043; }
+
+.btn-grid { display: flex; flex-direction: column; gap: 10px; }
+.big-btn {
+  width: 100%;
+  padding: 22px 16px;
+  border: none; border-radius: var(--radius);
+  font-size: 18px; font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s;
+  font-family: inherit;
+}
+.big-btn:active { transform: scale(0.98); }
+.big-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-in  { background: linear-gradient(135deg, #00695C, #00897B); }
+.btn-out { background: linear-gradient(135deg, #b71c1c, #c62828); }
+
+.toast {
+  position: fixed; left: 50%; bottom: 30px;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--card); color: var(--text);
+  padding: 12px 20px; border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 13px; max-width: 90%;
+  transition: transform 0.3s;
+  z-index: 9999;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.err { border-color: var(--red); }
+.toast.ok  { border-color: var(--green); }
+
+.hint {
+  font-size: 11px; color: var(--text-dim);
+  text-align: center; margin-top: 12px; line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="title">🕐 勤怠打刻</div>
+  <div class="subtitle">ចុះវត្តមាន / Attendance</div>
+
+  <div class="who" id="whoLine">読み込み中…</div>
+
+  <div class="clock-card">
+    <div class="clock-date" id="clockDate">—</div>
+    <div class="clock-time">
+      <span id="clockTime">--:--</span><span class="seconds" id="clockSeconds">:--</span>
+    </div>
+  </div>
+
+  <div class="status-card" id="statusCard">
+    <div class="status-line"><span class="k">ステータス / ស្ថានភាព</span><span class="v" id="statusValue">未打刻</span></div>
+    <div class="status-line"><span class="k">出勤 / ចូល</span><span class="v" id="statusIn">—</span></div>
+    <div class="status-line"><span class="k">退勤 / ចេញ</span><span class="v" id="statusOut">—</span></div>
+  </div>
+
+  <div class="gps-box" id="gpsBox">📡 GPS 取得中… / កំពុងស្វែងរកទីតាំង</div>
+
+  <div class="btn-grid">
+    <button class="big-btn btn-in" id="btnIn" disabled>🟢 出勤 / ចូលធ្វើការ</button>
+    <button class="big-btn btn-out" id="btnOut" disabled>🔴 退勤 / ចេញពីការងារ</button>
+  </div>
+
+  <div class="hint">
+    ※ GPS 許可なしでも打刻できます<br>
+    ※ GPS មិនមាន ក៏អាចចុះវត្តមានបាន
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  GAS URL / chatId 解決（URL パラメータ優先）
+// ═══════════════════════════════════════════
+var GAS_URL = '';
+var currentChatId = '';
+var currentStaff = null;
+var currentGps = null;
+
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+// URL パラメータから取得（ページ遷移でも確実に引き継ぐ）
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('gas'))    GAS_URL = urlParams.get('gas');
+if (urlParams.get('chatId')) currentChatId = urlParams.get('chatId');
+
+// フォールバック: Telegram WebApp から取得（初回起動時）
+if (!GAS_URL && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+  GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
+}
+if (!currentChatId && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
+}
+
+function loadWho() {
+  var line = document.getElementById('whoLine');
+  if (!currentChatId) {
+    line.textContent = '⚠️ chatId 取得失敗';
+    return Promise.resolve();
+  }
+  if (!GAS_URL) {
+    line.textContent = '⚠️ GAS URL 未設定';
+    return Promise.resolve();
+  }
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'whoami', chatId: currentChatId })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok && d.staff) {
+        currentStaff = d.staff;
+        line.innerHTML = '👤 <strong>' + esc(d.staff.nameJp) + '</strong> (' + esc(d.staff.nameEn) + ')';
+      } else {
+        line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
+      }
+    })
+    .catch(function(err) {
+      line.textContent = '⚠️ 通信エラー: ' + err.message;
+    });
+}
+
+// ═══════════════════════════════════════════
+//  時計
+// ═══════════════════════════════════════════
+function updateClock() {
+  var now = new Date();
+  var offset = 7 * 60;
+  var pp = new Date(now.getTime() + (offset + now.getTimezoneOffset()) * 60000);
+  var days = ['日','月','火','水','木','金','土'];
+  var daysKh = ['អាទិត្យ','ច័ន្ទ','អង្គារ','ពុធ','ព្រហស្បតិ៍','សុក្រ','សៅរ៍'];
+  var y = pp.getFullYear();
+  var m = String(pp.getMonth()+1).padStart(2,'0');
+  var d = String(pp.getDate()).padStart(2,'0');
+  document.getElementById('clockDate').textContent =
+    y + '/' + m + '/' + d + ' (' + days[pp.getDay()] + ' / ' + daysKh[pp.getDay()] + ')';
+  document.getElementById('clockTime').textContent =
+    String(pp.getHours()).padStart(2,'0') + ':' + String(pp.getMinutes()).padStart(2,'0');
+  document.getElementById('clockSeconds').textContent = ':' + String(pp.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════
+//  GPS 取得
+// ═══════════════════════════════════════════
+function acquireGps() {
+  var box = document.getElementById('gpsBox');
+  if (!navigator.geolocation) {
+    box.className = 'gps-box err';
+    box.textContent = '📡 GPS 非対応端末 / ឧបករណ៍មិនគាំទ្រ';
+    currentGps = null;
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    currentGps = {
+      lat: Number(pos.coords.latitude.toFixed(6)),
+      lng: Number(pos.coords.longitude.toFixed(6)),
+      accuracy: Math.round(pos.coords.accuracy || 0)
+    };
+    box.className = 'gps-box ok';
+    box.textContent = '📡 GPS OK 精度 ' + currentGps.accuracy + 'm';
+  }, function(err) {
+    currentGps = null;
+    box.className = 'gps-box warn';
+    box.textContent = '📡 GPS 取得不可（打刻は可能）/ មិនអាចស្វែងរកទីតាំង';
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
+
+// ═══════════════════════════════════════════
+//  今日の状況取得
+// ═══════════════════════════════════════════
+function loadToday() {
+  if (!GAS_URL || !currentChatId) return Promise.resolve();
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'attendance_today', chatId: currentChatId })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { applyStatus(d); });
+}
+
+function applyStatus(d) {
+  var card = document.getElementById('statusCard');
+  var val  = document.getElementById('statusValue');
+  var sIn  = document.getElementById('statusIn');
+  var sOut = document.getElementById('statusOut');
+  var btnIn  = document.getElementById('btnIn');
+  var btnOut = document.getElementById('btnOut');
+
+  if (!d || !d.ok) {
+    val.textContent = '取得失敗';
+    return;
+  }
+
+  sIn.textContent  = d.clockIn  || '—';
+  sOut.textContent = d.clockOut || '—';
+
+  if (!d.clockIn) {
+    card.className = 'status-card';
+    val.textContent = '未打刻 / មិនទាន់ចុះ';
+    btnIn.disabled = false;
+    btnOut.disabled = true;
+  } else if (!d.clockOut) {
+    card.className = 'status-card working';
+    val.textContent = '🟢 勤務中 / កំពុងធ្វើការ';
+    btnIn.disabled = true;
+    btnOut.disabled = false;
+  } else {
+    card.className = 'status-card done';
+    var h = Math.floor((d.workMinutes||0)/60);
+    var m = (d.workMinutes||0) % 60;
+    val.textContent = '✅ 退勤済 ' + h + 'h' + m + 'm';
+    btnIn.disabled = true;
+    btnOut.disabled = true;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  打刻実行
+// ═══════════════════════════════════════════
+function doPunch(type) {
+  if (!currentChatId) { toast('chatId 取得失敗', 'err'); return; }
+  if (!GAS_URL)       { toast('GAS URL 未設定', 'err'); return; }
+
+  var btnIn  = document.getElementById('btnIn');
+  var btnOut = document.getElementById('btnOut');
+  btnIn.disabled = true; btnOut.disabled = true;
+
+  var payload = {
+    action: type === 'in' ? 'punch_in' : 'punch_out',
+    chatId: currentChatId,
+    gps: currentGps
+  };
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.ok) {
+      if (type === 'in') {
+        toast('🟢 出勤 ' + d.time, 'ok');
+      } else {
+        var h = Math.floor((d.workMinutes||0)/60);
+        var m = (d.workMinutes||0) % 60;
+        toast('🔴 退勤 ' + d.time + ' （' + h + 'h' + m + 'm）', 'ok');
+      }
+      // 状態再読込
+      loadToday();
+    } else {
+      toast('⚠️ ' + (d.message || d.error || 'エラー'), 'err');
+      // ボタン状態を復元
+      loadToday();
+    }
+  })
+  .catch(function(err) {
+    toast('通信エラー: ' + err.message, 'err');
+    loadToday();
+  });
+}
+
+document.getElementById('btnIn').addEventListener('click',  function() { doPunch('in');  });
+document.getElementById('btnOut').addEventListener('click', function() { doPunch('out'); });
+
+// ═══════════════════════════════════════════
+//  Toast
+// ═══════════════════════════════════════════
+var toastTimer = null;
+function toast(msg, kind) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() {
+    t.className = 'toast ' + (kind || '');
+  }, 3000);
+}
+
+function esc(s) {
+  return String(s||'').replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+// ═══════════════════════════════════════════
+//  起動
+// ═══════════════════════════════════════════
+loadWho().then(function() {
+  acquireGps();
+  return loadToday();
+});
+</script>
+</body>
+</html>

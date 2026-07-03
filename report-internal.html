@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日報入力 / របាយការណ៍</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --gold: #c9a84c;
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --green: #00897B;
+  --red: #c62828;
+  --purple: #8E24AA;
+  --radius: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans Khmer','Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+}
+.wrap { max-width: 520px; margin: 0 auto; }
+
+.title {
+  text-align:center;
+  font-size: 18px; font-weight: 700;
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--gold), #e8d5a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle {
+  text-align:center; font-size: 12px; color: var(--text-dim);
+  margin-bottom: 16px;
+}
+.who {
+  text-align:center;
+  font-size:13px; color: var(--text);
+  padding: 10px 0 14px;
+}
+.who strong { color: var(--gold); }
+
+.status-banner {
+  display:none;
+  background: linear-gradient(135deg, #4a148c, #6a1b9a);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px; color: #fff;
+  text-align:center;
+  margin-bottom: 14px;
+}
+.status-banner.show { display:block; }
+
+.field {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.field label {
+  display:block;
+  font-size: 13px; font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.field .req { color: #ff5252; font-size: 11px; margin-left: 4px; }
+.field .hint {
+  font-size: 10px; color: var(--text-dim);
+  margin-top: 6px;
+}
+.field input[type=date],
+.field textarea {
+  width:100%;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px; font-family: inherit; font-size: 14px;
+}
+.field textarea { resize: vertical; min-height: 90px; }
+.field input[type=date] { color-scheme: dark; }
+
+.submit-wrap { margin-top: 16px; }
+.big-btn {
+  width: 100%;
+  padding: 18px 16px;
+  border: none; border-radius: var(--radius);
+  font-size: 16px; font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s;
+  font-family: inherit;
+  background: linear-gradient(135deg, var(--purple), #AB47BC);
+}
+.big-btn:active { transform: scale(0.98); }
+.big-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.loading {
+  text-align:center; color: var(--text-dim);
+  padding: 30px; font-size: 13px;
+}
+
+.toast {
+  position: fixed; left: 50%; bottom: 30px;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--card); color: var(--text);
+  padding: 12px 20px; border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 13px; max-width: 90%;
+  transition: transform 0.3s;
+  z-index: 9999;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.err { border-color: var(--red); }
+.toast.ok  { border-color: var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="title">📝 日報入力</div>
+  <div class="subtitle">របាយការណ៍ប្រចាំថ្ងៃ / Daily Report</div>
+
+  <div class="who" id="whoLine">読み込み中…</div>
+
+  <div class="status-banner" id="statusBanner">✅ 本日分は提出済み。編集して再送信できます。</div>
+
+  <div id="formArea" style="display:none">
+
+    <div class="field">
+      <label>📅 対象日 / កាលបរិច្ឆេទ</label>
+      <input type="date" id="inputDate">
+      <div class="hint">通常は今日のままで OK</div>
+    </div>
+
+    <div class="field">
+      <label>🔧 本日の作業内容 <span class="req">* 必須</span></label>
+      <textarea id="inputWork" placeholder="例: 10:00〜12:00 ToulKork エリアで洗車3件（清 KIYOME ×2, 匠 TAKUMI ×1）&#10;例: 午後はオフィスで車両点検"></textarea>
+    </div>
+
+    <div class="field">
+      <label>💭 所感・気づき / កំណត់ចំណាំ</label>
+      <textarea id="inputNotes" placeholder="例: 洗車機のホースが摩耗してきた。来週交換推奨。"></textarea>
+      <div class="hint">任意</div>
+    </div>
+
+    <div class="field">
+      <label>📆 明日の予定 / កម្មវិធីថ្ងៃស្អែក</label>
+      <textarea id="inputTomorrow" placeholder="例: 9:00 予約2件、午後は在庫補充"></textarea>
+      <div class="hint">任意</div>
+    </div>
+
+    <div class="submit-wrap">
+      <button class="big-btn" id="btnSubmit">📤 日報を提出 / ដាក់ស្នើ</button>
+    </div>
+
+  </div>
+
+  <div id="loadingArea" class="loading">読み込み中… / កំពុងផ្ទុក…</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  GAS URL / chatId 解決
+// ═══════════════════════════════════════════
+var GAS_URL = '';
+var currentChatId = '';
+var currentStaff = null;
+var todayStr = '';
+
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('gas'))    GAS_URL = urlParams.get('gas');
+if (urlParams.get('chatId')) currentChatId = urlParams.get('chatId');
+
+if (!GAS_URL && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+  GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
+}
+if (!currentChatId && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
+}
+
+// ═══════════════════════════════════════════
+//  共通 fetch
+// ═══════════════════════════════════════════
+function postJson(payload) {
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function(r) { return r.json(); });
+}
+
+// ═══════════════════════════════════════════
+//  初期ロード
+// ═══════════════════════════════════════════
+function loadReport() {
+  var line = document.getElementById('whoLine');
+  if (!currentChatId) { line.textContent = '⚠️ chatId 取得失敗'; return; }
+  if (!GAS_URL)       { line.textContent = '⚠️ GAS URL 未設定'; return; }
+
+  postJson({ action: 'report_today', chatId: currentChatId })
+    .then(function(d) {
+      if (!d.ok) {
+        line.textContent = '⚠️ ' + (d.error || 'エラー');
+        document.getElementById('loadingArea').style.display = 'none';
+        return;
+      }
+      currentStaff = d.staff;
+      todayStr = d.today || formatDateLocal(new Date());
+      line.innerHTML = '👤 <strong>' + esc(d.staff.nameJp) + '</strong> (' + esc(d.staff.nameEn) + ')';
+
+      // 日付初期値
+      document.getElementById('inputDate').value = todayStr;
+
+      // 既存日報があれば中身を反映
+      if (d.report) {
+        document.getElementById('inputDate').value     = d.report.date || todayStr;
+        document.getElementById('inputWork').value     = d.report.work || '';
+        document.getElementById('inputNotes').value    = d.report.notes || '';
+        document.getElementById('inputTomorrow').value = d.report.tomorrow || '';
+        document.getElementById('statusBanner').classList.add('show');
+        document.getElementById('btnSubmit').textContent = '📤 日報を更新 / អាប់ដេត';
+      }
+
+      document.getElementById('loadingArea').style.display = 'none';
+      document.getElementById('formArea').style.display = 'block';
+    })
+    .catch(function(err) {
+      line.textContent = '⚠️ 通信エラー: ' + err.message;
+      document.getElementById('loadingArea').style.display = 'none';
+    });
+}
+
+// ═══════════════════════════════════════════
+//  提出
+// ═══════════════════════════════════════════
+document.getElementById('btnSubmit').addEventListener('click', function() {
+  var work     = document.getElementById('inputWork').value.trim();
+  var notes    = document.getElementById('inputNotes').value.trim();
+  var tomorrow = document.getElementById('inputTomorrow').value.trim();
+  var date     = document.getElementById('inputDate').value;
+
+  if (!work) {
+    toast('作業内容は必須です', 'err');
+    document.getElementById('inputWork').focus();
+    return;
+  }
+
+  var btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  var origText = btn.textContent;
+  btn.textContent = '送信中…';
+
+  postJson({
+    action: 'report_submit',
+    chatId: currentChatId,
+    work: work,
+    notes: notes,
+    tomorrow: tomorrow,
+    targetDate: date
+  })
+    .then(function(d) {
+      btn.disabled = false;
+      btn.textContent = origText;
+      if (d.ok) {
+        toast(d.updated ? '✅ 日報を更新しました' : '✅ 日報を提出しました', 'ok');
+        // 更新後の状態を再読込
+        setTimeout(function() { loadReport(); }, 600);
+      } else {
+        toast('⚠️ ' + (d.error || 'エラー'), 'err');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = origText;
+      toast('通信エラー: ' + err.message, 'err');
+    });
+});
+
+// ═══════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════
+function formatDateLocal(d) {
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + day;
+}
+
+var toastTimer = null;
+function toast(msg, kind) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() {
+    t.className = 'toast ' + (kind || '');
+  }, 3000);
+}
+
+function esc(s) {
+  return String(s||'').replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+// ═══════════════════════════════════════════
+//  起動
+// ═══════════════════════════════════════════
+loadReport();
+</script>
+</body>
+</html>

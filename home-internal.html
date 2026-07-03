@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Samurai Motors - 勤務</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --gold: #c9a84c;
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --radius: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans Khmer','Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.header {
+  text-align:center;
+  padding: 30px 16px 20px;
+}
+.logo {
+  width:72px; height:72px; border-radius:18px;
+  overflow:hidden; margin:0 auto 12px;
+  box-shadow: 0 4px 20px rgba(201,168,76,0.2);
+}
+.logo img { width:100%; height:100%; object-fit:cover; }
+.header h1 {
+  font-size:20px; letter-spacing:1px;
+  background: linear-gradient(135deg, var(--gold), #e8d5a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header p { font-size:12px; color:var(--text-dim); margin-top:4px; }
+
+.who {
+  text-align:center;
+  font-size:12px; color:var(--text-dim);
+  padding: 0 16px 12px;
+}
+.who strong { color: var(--gold); }
+
+.menu-grid {
+  padding: 0 16px 40px;
+  max-width:480px; margin:0 auto;
+  display:flex; flex-direction:column; gap:10px;
+}
+
+.menu-item {
+  display:flex; align-items:center; gap:14px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  text-decoration:none; color:var(--text);
+  transition: all 0.2s;
+  cursor:pointer;
+}
+.menu-item:active {
+  transform:scale(0.98);
+  border-color: var(--gold);
+}
+.menu-item.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.menu-icon {
+  width:48px; height:48px;
+  border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; flex-shrink:0;
+}
+
+.menu-info { flex:1; }
+.menu-title {
+  font-size:15px; font-weight:700; margin-bottom:2px;
+}
+.menu-desc {
+  font-size:11px; color:var(--text-dim); line-height:1.4;
+}
+.menu-arrow {
+  color:var(--text-dim); font-size:18px;
+}
+
+.icon-attendance { background: linear-gradient(135deg, #00695C, #00897B); }
+.icon-task       { background: linear-gradient(135deg, #E65100, #F57C00); }
+.icon-report     { background: linear-gradient(135deg, #6A1B9A, #8E24AA); }
+.icon-expense    { background: linear-gradient(135deg, #2E7D32, #43A047); }
+.icon-execdash   { background: linear-gradient(135deg, #8a7535, #c9a84c); }
+
+.section-label {
+  font-size:11px; font-weight:600; color:var(--text-dim);
+  text-transform:uppercase; letter-spacing:1px;
+  padding: 16px 0 8px;
+}
+
+.badge-soon {
+  font-size:10px; padding:2px 6px;
+  background: var(--border); border-radius: 4px;
+  color: var(--text-dim);
+  margin-left: 6px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo"><img src="logo.png" alt="Samurai Motors"></div>
+  <h1>SAMURAI MOTORS</h1>
+  <p>勤務システム / ប្រព័ន្ធផ្ទៃក្នុង</p>
+</div>
+
+<div class="who" id="whoLine">読み込み中…</div>
+
+<div class="menu-grid">
+
+  <div class="section-label">📋 ថ្ងៃនេះ / 今日</div>
+
+  <a class="menu-item" id="menuAttendance">
+    <div class="menu-icon icon-attendance">🕐</div>
+    <div class="menu-info">
+      <div class="menu-title">勤怠打刻 / ចុះវត្តមាន</div>
+      <div class="menu-desc">出勤・退勤をワンタップ記録</div>
+    </div>
+    <span class="menu-arrow">›</span>
+  </a>
+
+  <a class="menu-item" id="menuTask">
+    <div class="menu-icon icon-task">📋</div>
+    <div class="menu-info">
+      <div class="menu-title">タスク管理 / ភារកិច្ច</div>
+      <div class="menu-desc">本日のタスク確認・完了報告</div>
+    </div>
+    <span class="menu-arrow">›</span>
+  </a>
+
+  <a class="menu-item" id="menuReport">
+    <div class="menu-icon icon-report">📝</div>
+    <div class="menu-info">
+      <div class="menu-title">日報入力 / របាយការណ៍</div>
+      <div class="menu-desc">本日の作業・所感・明日の予定を記録</div>
+    </div>
+    <span class="menu-arrow">›</span>
+  </a>
+
+  <a class="menu-item" id="menuExpense">
+    <div class="menu-icon icon-expense">💰</div>
+    <div class="menu-info">
+      <div class="menu-title">経費入力 / ចំណាយ</div>
+      <div class="menu-desc">レシート写真付きで経費を記録</div>
+    </div>
+    <span class="menu-arrow">›</span>
+  </a>
+
+  <!-- 管理者(admin)のみ whoami 後に表示 -->
+  <div id="adminSection" style="display:none">
+    <div class="section-label">👑 管理者メニュー</div>
+    <a class="menu-item" id="menuExecDash">
+      <div class="menu-icon icon-execdash">📊</div>
+      <div class="menu-info">
+        <div class="menu-title">経営コックピット</div>
+        <div class="menu-desc">売上・経費・予約状況・粗利をひと目で確認</div>
+      </div>
+      <span class="menu-arrow">›</span>
+    </a>
+  </div>
+
+</div>
+
+<script>
+// v7-ops GAS URL / chatId を決定
+// 優先順位: URL ?gas=/?chatId= → Telegram start_param / initDataUnsafe.user
+var GAS_URL = '';
+var currentChatId = '';
+
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+var params = new URLSearchParams(window.location.search);
+if (params.get('gas'))    GAS_URL = params.get('gas');
+if (params.get('chatId')) currentChatId = params.get('chatId');
+
+// フォールバック: Telegram WebApp
+if (!GAS_URL && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+  GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
+}
+if (!currentChatId && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  var u = Telegram.WebApp.initDataUnsafe.user;
+  if (u && u.id) currentChatId = String(u.id);
+}
+
+// ⚠️ 先に ? でクエリを落としてから最後の /ファイル名 を削る
+// （GAS URL がクエリ内に / を含むため、逆順だと末尾マッチが誤爆する）
+// （不要になったが互換のため残す）
+var BASE = window.location.href.split('?')[0].replace(/\/[^\/]*$/, '');
+
+// URL API を使って相対パス解決（regex より堅牢）
+// new URL('attendance-internal.html', 'https://.../home-internal.html?gas=...')
+//   → https://.../attendance-internal.html （クエリは自動で落ちる）
+function buildUrl(page) {
+  var u = new URL(page, window.location.href);
+  if (GAS_URL)       u.searchParams.set('gas', GAS_URL);
+  if (currentChatId) u.searchParams.set('chatId', currentChatId);
+  return u.toString();
+}
+
+var attendanceHref = buildUrl('attendance-internal.html');
+document.getElementById('menuAttendance').href = attendanceHref;
+var taskHref = buildUrl('task-internal.html');
+document.getElementById('menuTask').href = taskHref;
+var reportHref = buildUrl('report-internal.html');
+document.getElementById('menuReport').href = reportHref;
+var expenseHref = buildUrl('expense-internal.html');
+document.getElementById('menuExpense').href = expenseHref;
+document.getElementById('menuExecDash').href = buildUrl('exec-dashboard.html');
+// デバッグ: タップ前にリンク先 URL を確認できるよう表示
+console.log('📍 attendance URL:', attendanceHref);
+console.log('📍 task URL:', taskHref);
+console.log('📍 report URL:', reportHref);
+console.log('📍 expense URL:', expenseHref);
+
+// ユーザー識別（whoami でスタッフ判別）
+(function loadWho() {
+  var line = document.getElementById('whoLine');
+  if (!currentChatId) {
+    line.textContent = 'ℹ️ Telegram 経由で開いてください';
+    return;
+  }
+  if (!GAS_URL) {
+    line.textContent = '⚠️ GAS URL 未設定';
+    return;
+  }
+  // v7 booking.html と同一方式: POST + Content-Type: 'text/plain;charset=utf-8'
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'whoami', chatId: currentChatId })
+  })
+    .then(function(r) { return r.text(); })   // デバッグ: まず text で受ける
+    .then(function(txt) {
+      var d;
+      try { d = JSON.parse(txt); }
+      catch (e) {
+        line.textContent = '⚠️ 非JSON応答（先頭300文字）: ' + txt.substring(0, 300);
+        return;
+      }
+      if (d.ok && d.staff) {
+        line.innerHTML = '👤 <strong>' + escapeHtml(d.staff.nameJp) + '</strong> (' + escapeHtml(d.staff.nameEn) + ')';
+        // 管理者のみ経営コックピットを表示（サーバ側でも admin 限定で二重防御）
+        if (d.staff.role === 'admin') {
+          document.getElementById('adminSection').style.display = 'block';
+        }
+      } else if (d.ok) {
+        line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
+      } else {
+        line.textContent = '⚠️ サーバ応答: ' + (d.error || JSON.stringify(d));
+      }
+    })
+    .catch(function(err) {
+      line.textContent = '⚠️ 通信エラー: ' + err.message;
+    });
+})();
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+</script>
+</body>
+</html>

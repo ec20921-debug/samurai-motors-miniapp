@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>経営コックピット | Samurai Motors</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --card2: #222;
+  --border: #2a2a2a;
+  --gold: #c9a84c;
+  --gold-soft: #e8d5a3;
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --green: #43a047;
+  --red: #e05252;
+  --orange: #f57c00;
+  --blue: #42a5f5;
+  --purple: #ab47bc;
+  --radius: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  font-family:'Noto Sans JP',sans-serif;
+  background:var(--bg); color:var(--text);
+  min-height:100vh; padding-bottom:50px;
+}
+.wrap { max-width:480px; margin:0 auto; padding:0 14px; }
+
+/* ===== ヘッダー ===== */
+.header { text-align:center; padding:22px 16px 6px; }
+.header h1 {
+  font-size:13px; letter-spacing:3px; font-weight:700;
+  background:linear-gradient(135deg,var(--gold),var(--gold-soft));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.header h2 { font-size:19px; font-weight:700; margin-top:3px; }
+.asof { font-size:10.5px; color:var(--text-dim); margin-top:4px; }
+.asof button {
+  background:none; border:1px solid var(--border); color:var(--text-dim);
+  border-radius:6px; padding:1px 8px; font-size:10.5px; margin-left:6px; cursor:pointer;
+  font-family:inherit;
+}
+
+/* ===== 月セレクタ ===== */
+.month-nav {
+  display:flex; align-items:center; justify-content:center; gap:14px;
+  padding:10px 0 4px;
+}
+.month-nav button {
+  width:34px; height:34px; border-radius:10px;
+  background:var(--card); border:1px solid var(--border); color:var(--gold);
+  font-size:16px; cursor:pointer;
+}
+.month-nav button:disabled { opacity:.3; }
+.month-nav .ym { font-size:16px; font-weight:700; min-width:120px; text-align:center; }
+
+/* ===== セクション ===== */
+.section { margin-top:16px; }
+.section-title {
+  font-size:11px; font-weight:600; color:var(--text-dim);
+  letter-spacing:1.5px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:baseline;
+}
+.section-title small { font-weight:400; letter-spacing:0; }
+
+/* ===== KPIカード ===== */
+.kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.kpi {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:12px 13px;
+}
+.kpi .label { font-size:10.5px; color:var(--text-dim); }
+.kpi .value { font-size:21px; font-weight:700; margin-top:3px; line-height:1.15; }
+.kpi .value.gold { color:var(--gold); }
+.kpi .sub { font-size:10.5px; color:var(--text-dim); margin-top:3px; }
+.kpi .cmp { font-size:10.5px; margin-top:3px; }
+.up   { color:var(--green); }
+.down { color:var(--red); }
+.kpi.alert { border-color:#5a2b2b; background:#231414; }
+.kpi.alert .value { color:var(--red); }
+
+/* 本日ストリップ */
+.today-strip {
+  margin-top:8px; background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:9px 13px;
+  display:flex; justify-content:space-between; align-items:center; font-size:12.5px;
+}
+.today-strip b { color:var(--gold); font-size:15px; }
+
+/* ===== 予約リスト ===== */
+.list-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); overflow:hidden;
+}
+.bk-row {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 13px; border-bottom:1px solid var(--border);
+}
+.bk-row:last-child { border-bottom:none; }
+.bk-time { font-size:13px; font-weight:700; color:var(--gold); min-width:44px; }
+.bk-main { flex:1; min-width:0; }
+.bk-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bk-meta { font-size:10.5px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bk-right { text-align:right; }
+.bk-price { font-size:13px; font-weight:700; }
+.chip {
+  display:inline-block; font-size:9.5px; padding:1.5px 7px; border-radius:20px;
+  border:1px solid; line-height:1.5; margin-top:2px;
+}
+.chip.confirmed   { color:var(--blue);   border-color:#1d4d6e; background:#10222e; }
+.chip.in_progress { color:var(--orange); border-color:#6e4a1d; background:#2e2110; }
+.chip.completed   { color:var(--green);  border-color:#2c5e2e; background:#15240f; }
+.chip.cancelled   { color:var(--text-dim); border-color:var(--border); background:none; }
+.chip.pay-ok   { color:var(--green);  border-color:#2c5e2e; background:#15240f; }
+.chip.pay-wait { color:var(--orange); border-color:#6e4a1d; background:#2e2110; }
+.chip.pay-no   { color:var(--red);    border-color:#6e2424; background:#2e1212; }
+.chip.pay-chk  { color:var(--purple); border-color:#5e2c6e; background:#22102e; }
+.date-head {
+  padding:7px 13px; font-size:11px; font-weight:600; color:var(--gold);
+  background:var(--card2); border-bottom:1px solid var(--border);
+}
+.empty { padding:18px 13px; text-align:center; color:var(--text-dim); font-size:12px; }
+
+/* ステータス内訳チップ列 */
+.status-chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.status-chips .sc {
+  font-size:10.5px; padding:4px 10px; border-radius:8px;
+  background:var(--card); border:1px solid var(--border); color:var(--text-dim);
+}
+.status-chips .sc b { color:var(--text); margin-left:3px; }
+
+/* ===== チャート ===== */
+.chart-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:var(--radius); padding:13px;
+}
+.daily-bars { display:flex; align-items:flex-end; gap:2px; height:80px; margin-top:6px; }
+.daily-bars .db { flex:1; background:linear-gradient(180deg,var(--gold),#8a7535); border-radius:2px 2px 0 0; min-height:1px; opacity:.9; }
+.daily-bars .db.zero { background:var(--border); height:2px !important; }
+.daily-bars .db.today { background:linear-gradient(180deg,#fff,var(--gold)); }
+.daily-x { display:flex; justify-content:space-between; font-size:9px; color:var(--text-dim); margin-top:4px; }
+.chart-note { font-size:9.5px; color:var(--text-dim); margin-top:7px; text-align:right; }
+
+/* 横バー（プラン別・カテゴリ別） */
+.hbar-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.hbar-label { font-size:11px; width:108px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
+.hbar-track { flex:1; height:14px; background:var(--card2); border-radius:4px; overflow:hidden; }
+.hbar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#8a7535,var(--gold)); }
+.hbar-fill.exp { background:linear-gradient(90deg,#6e2424,var(--red)); }
+.hbar-val { font-size:11px; font-weight:600; width:74px; text-align:right; }
+
+/* 月次推移（売上/経費ペアバー + 粗利） */
+.pl-row { margin-top:10px; }
+.pl-head { display:flex; justify-content:space-between; font-size:11px; margin-bottom:3px; }
+.pl-head .m { color:var(--text-dim); font-weight:600; }
+.pl-head .p b { font-weight:700; }
+.pl-bars { display:flex; flex-direction:column; gap:3px; }
+.pl-track { height:9px; background:var(--card2); border-radius:3px; overflow:hidden; }
+.pl-fill-rev { height:100%; background:linear-gradient(90deg,#8a7535,var(--gold)); border-radius:3px; }
+.pl-fill-exp { height:100%; background:linear-gradient(90deg,#6e2424,var(--red)); border-radius:3px; }
+.legend { display:flex; gap:14px; font-size:10px; color:var(--text-dim); margin-top:10px; }
+.legend i { display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:4px; vertical-align:-1px; }
+.legend .l-rev i { background:var(--gold); }
+.legend .l-exp i { background:var(--red); }
+
+/* 明細テーブル */
+.exp-row {
+  display:flex; align-items:baseline; gap:8px; padding:8px 13px;
+  border-bottom:1px solid var(--border); font-size:12px;
+}
+.exp-row:last-child { border-bottom:none; }
+.exp-date { color:var(--text-dim); font-size:10.5px; min-width:42px; }
+.exp-desc { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.exp-cat  { color:var(--text-dim); font-size:10px; }
+.exp-amt  { font-weight:600; }
+
+/* ロン君 前払い・残額 */
+.ron-hero { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; }
+.ron-hero .label { font-size:10.5px; color:var(--text-dim); }
+.ron-hero .val { font-size:28px; font-weight:700; color:var(--gold); line-height:1.2; margin-top:2px; }
+.ron-hero .val.low { color:var(--red); }
+.ron-hero .th { font-size:10px; color:var(--text-dim); text-align:right; line-height:1.6; }
+.ron-hero .th.warn { color:var(--red); font-weight:600; }
+.ron-bd { width:100%; border-collapse:collapse; font-size:12px; margin-top:11px; }
+.ron-bd td { padding:3px 0; color:var(--text-dim); }
+.ron-bd td:last-child { text-align:right; color:var(--text); font-feature-settings:"tnum"; }
+.ron-bd tr.tot td { border-top:1px solid #3b2f1b; padding-top:7px; font-weight:700; }
+.ron-bd tr.tot td:last-child { color:var(--gold); font-size:14px; }
+.ron-bd tr.tot.low td:last-child { color:var(--red); }
+
+/* 未回収 */
+.unpaid-row { display:flex; align-items:center; gap:8px; padding:9px 13px; border-bottom:1px solid var(--border); font-size:12px; }
+.unpaid-row:last-child { border-bottom:none; }
+.unpaid-row .hrs { font-size:10px; color:var(--text-dim); }
+.unpaid-row .hrs.late { color:var(--red); font-weight:600; }
+
+/* ===== 共有URLボックス ===== */
+#shareBox {
+  display:none; margin:10px auto 0; max-width:452px; text-align:left;
+  background:var(--card); border:1px solid #3b2f1b; border-radius:var(--radius);
+  padding:11px 13px;
+}
+.share-title { font-size:11px; font-weight:700; color:var(--gold); margin-bottom:7px; }
+.share-url {
+  font-size:10.5px; color:var(--text); background:var(--card2);
+  border-radius:8px; padding:8px 10px; word-break:break-all; line-height:1.6;
+  font-family:Consolas,Menlo,monospace; user-select:all; -webkit-user-select:all;
+}
+.share-actions { display:flex; gap:8px; margin-top:8px; }
+.share-copy {
+  flex:1; border:none; border-radius:9px; padding:9px; font-size:12px; font-weight:700;
+  background:linear-gradient(135deg,var(--gold),#9c7e1f); color:#14100a; cursor:pointer; font-family:inherit;
+}
+.share-close {
+  border:1px solid var(--border); background:none; color:var(--text-dim);
+  border-radius:9px; padding:9px 14px; font-size:12px; cursor:pointer; font-family:inherit;
+}
+.share-note { font-size:9px; color:var(--text-dim); margin-top:7px; line-height:1.6; }
+
+/* ===== AIチャット ===== */
+#chatFab {
+  position:fixed; right:16px; bottom:calc(env(safe-area-inset-bottom) + 16px);
+  width:54px; height:54px; border-radius:50%; border:none; cursor:pointer;
+  background:linear-gradient(135deg,var(--gold),#9c7e1f); color:#14100a;
+  font-size:24px; box-shadow:0 6px 20px rgba(201,168,76,.35); z-index:40;
+  display:none; align-items:center; justify-content:center;
+}
+#chatFab:active { transform:scale(.94); }
+#chatOverlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(3px);
+  z-index:50; display:none;
+}
+#chatOverlay.open { display:block; }
+.chat-box {
+  position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:480px; height:88dvh;
+  background:#141210; border:1px solid var(--border); border-bottom:none;
+  border-radius:18px 18px 0 0; display:flex; flex-direction:column;
+  animation:slideup .25s ease-out;
+}
+@keyframes slideup { from { transform:translate(-50%,40px); opacity:0; } }
+.chat-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:13px 16px; border-bottom:1px solid var(--border); flex:none;
+}
+.chat-head .t { font-size:14px; font-weight:700; }
+.chat-head .t small { display:block; font-size:9.5px; color:var(--text-dim); font-weight:400; margin-top:2px; }
+.chat-head button {
+  background:var(--card); border:1px solid var(--border); color:var(--text-dim);
+  width:30px; height:30px; border-radius:9px; font-size:14px; cursor:pointer;
+}
+#chatMsgs { flex:1; overflow-y:auto; padding:14px; }
+.cm { margin-bottom:10px; display:flex; }
+.cm .b {
+  max-width:86%; padding:9px 12px; border-radius:13px;
+  font-size:13px; line-height:1.75; white-space:pre-wrap; word-break:break-word;
+}
+.cm-user { justify-content:flex-end; }
+.cm-user .b { background:linear-gradient(135deg,#8a7535,var(--gold)); color:#14100a; border-bottom-right-radius:4px; font-weight:600; }
+.cm-ai .b { background:var(--card); border:1px solid var(--border); border-bottom-left-radius:4px; }
+.cm-ai .b.err { border-color:#5a2b2b; background:#231414; color:#e8b9b9; font-size:12px; }
+.typing { display:inline-flex; gap:4px; padding:4px 2px; }
+.typing i { width:6px; height:6px; border-radius:50%; background:var(--gold); animation:tp 1.2s infinite; }
+.typing i:nth-child(2) { animation-delay:.2s; } .typing i:nth-child(3) { animation-delay:.4s; }
+@keyframes tp { 0%,60%,100% { opacity:.25; } 30% { opacity:1; } }
+.chat-chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 8px; flex:none; }
+.chat-chips button {
+  background:var(--card); border:1px solid #3b2f1b; color:var(--gold);
+  border-radius:20px; padding:6px 12px; font-size:11px; cursor:pointer; font-family:inherit;
+}
+.chat-inrow {
+  display:flex; gap:8px; padding:10px 14px calc(env(safe-area-inset-bottom) + 12px);
+  border-top:1px solid var(--border); flex:none; background:#100e0c;
+}
+#chatInput {
+  flex:1; background:var(--card); border:1px solid var(--border); border-radius:12px;
+  color:var(--text); font-size:13px; padding:11px 13px; font-family:inherit; outline:none;
+}
+#chatInput:focus { border-color:#3b2f1b; }
+#chatSend {
+  width:46px; border:none; border-radius:12px; cursor:pointer; font-size:17px;
+  background:linear-gradient(135deg,var(--gold),#9c7e1f); color:#14100a;
+}
+#chatSend:disabled { opacity:.4; }
+
+/* ===== ローディング・エラー ===== */
+#loading { text-align:center; padding:50px 0; color:var(--text-dim); font-size:13px; }
+.spinner {
+  width:26px; height:26px; margin:0 auto 12px;
+  border:3px solid var(--border); border-top-color:var(--gold); border-radius:50%;
+  animation:spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+#error {
+  display:none; margin:30px 14px; padding:16px;
+  background:#231414; border:1px solid #5a2b2b; border-radius:var(--radius);
+  font-size:13px; line-height:1.7; text-align:center;
+}
+.footnote { font-size:9.5px; color:var(--text-dim); margin-top:14px; line-height:1.7; text-align:center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SAMURAI MOTORS</h1>
+  <h2>📊 経営コックピット</h2>
+  <div class="asof" id="asofLine">読み込み中…</div>
+  <div id="shareBox"></div>
+</div>
+
+<div id="loading"><div class="spinner"></div>データ集計中…</div>
+<div id="error"></div>
+
+<div class="wrap" id="content" style="display:none">
+
+  <!-- 月セレクタ -->
+  <div class="month-nav">
+    <button id="prevM">‹</button>
+    <div class="ym" id="ymLabel">----年--月</div>
+    <button id="nextM">›</button>
+  </div>
+
+  <!-- KPI -->
+  <div class="section">
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="today-strip" id="todayStrip"></div>
+  </div>
+
+  <!-- 予約状況 -->
+  <div class="section">
+    <div class="section-title">📅 予約状況<small id="bkNote">本日＋今後7日</small></div>
+    <div class="list-card" id="bkToday"></div>
+    <div style="height:8px"></div>
+    <div class="list-card" id="bkUpcoming"></div>
+    <div class="status-chips" id="bkCounts"></div>
+  </div>
+
+  <!-- 売上 -->
+  <div class="section">
+    <div class="section-title">💰 売上分析<small id="salesYmNote"></small></div>
+    <div class="chart-card">
+      <div style="font-size:11px;color:var(--text-dim)">日別売上（USD）</div>
+      <div class="daily-bars" id="dailyBars"></div>
+      <div class="daily-x"><span>1日</span><span id="midDay">15日</span><span id="endDay">30日</span></div>
+      <div class="chart-note" id="forecastNote"></div>
+    </div>
+    <div style="height:8px"></div>
+    <div class="chart-card">
+      <div style="font-size:11px;color:var(--text-dim)">プラン別売上</div>
+      <div id="planBars"></div>
+    </div>
+  </div>
+
+  <!-- 経費 -->
+  <div class="section">
+    <div class="section-title">🧾 経費分析<small id="expYmNote"></small></div>
+    <div class="chart-card">
+      <div style="font-size:11px;color:var(--text-dim)">カテゴリ別（JPY換算）</div>
+      <div id="catBars"></div>
+    </div>
+    <div style="height:8px"></div>
+    <div class="chart-card">
+      <div style="font-size:11px;color:var(--text-dim)">負担先別</div>
+      <div id="payerBars"></div>
+    </div>
+    <div style="height:8px"></div>
+    <div class="list-card" id="expRecent"></div>
+  </div>
+
+  <!-- ロン君 前払い・残額 -->
+  <div class="section" id="ronSection" style="display:none">
+    <div class="section-title">💵 ロン君 前払い・残額<small>全期間累計</small></div>
+    <div class="chart-card" id="ronCard"></div>
+    <div style="height:8px"></div>
+    <div class="list-card" id="ronTransfers" style="display:none"></div>
+  </div>
+
+  <!-- 月次推移 -->
+  <div class="section">
+    <div class="section-title">📈 月次推移（6ヶ月）<small>売上 / 経費 / 粗利</small></div>
+    <div class="chart-card">
+      <div id="plRows"></div>
+      <div class="legend">
+        <span class="l-rev"><i></i>売上（JPY換算）</span>
+        <span class="l-exp"><i></i>経費</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 未回収 -->
+  <div class="section" id="unpaidSection" style="display:none">
+    <div class="section-title">⚠️ 未回収（作業完了済み・清算待ち）</div>
+    <div class="list-card" id="unpaidList"></div>
+  </div>
+
+  <div class="footnote" id="footNote"></div>
+</div>
+
+<!-- AIチャット -->
+<button id="chatFab" onclick="openChat()">💬</button>
+<div id="chatOverlay">
+  <div class="chat-box">
+    <div class="chat-head">
+      <div class="t">💬 経営AIに質問<small>売上・経費・残金・予約データを根拠に回答します</small></div>
+      <button onclick="closeChat()">✕</button>
+    </div>
+    <div id="chatMsgs"></div>
+    <div class="chat-chips" id="chatChips">
+      <button onclick="askChat('今週のロン君の残金はいくら？')">💵 ロン君の残金は？</button>
+      <button onclick="askChat('売上上位の顧客を教えて')">👑 売上上位の顧客は？</button>
+      <button onclick="askChat('今週の経費はいくら？内訳も')">🧾 今週の経費は？</button>
+      <button onclick="askChat('未回収の状況を教えて')">⚠️ 未回収の状況は？</button>
+      <button onclick="askChat('今後の予約状況を教えて')">📅 今後の予約は？</button>
+    </div>
+    <div class="chat-inrow">
+      <input id="chatInput" type="text" maxlength="500" placeholder="例：先月と今月の売上を比べて"
+             autocomplete="off">
+      <button id="chatSend" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  経営コックピット — 管理者(admin)専用ミニアプリ
+//  データ取得は v7-operations GAS（action: exec_dashboard）
+// ============================================================
+
+var GAS_URL = '';
+var currentChatId = '';
+var MOCK = false;
+var SHARE_KEY = '';        // 共有閲覧キー（?key=）。chatId なしでも閲覧可
+var CHAT_ENABLED = false;  // AIチャット（封印中）。?chat=1 を付けた時だけ表示
+
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+// URL クエリ優先（home-internal からの遷移で必ず付与される）
+var params = new URLSearchParams(window.location.search);
+if (params.get('gas'))    GAS_URL = params.get('gas');
+if (params.get('chatId')) currentChatId = params.get('chatId');
+if (params.get('mock'))   MOCK = true;
+if (params.get('key'))    SHARE_KEY = params.get('key');
+if (params.get('chat'))   CHAT_ENABLED = true;
+
+// フォールバック: Telegram WebApp（初回起動URL時のみ取得可能）
+if (!GAS_URL && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+  GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
+}
+if (!currentChatId && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  var u = Telegram.WebApp.initDataUnsafe.user;
+  if (u && u.id) currentChatId = String(u.id);
+}
+
+// ============================================================
+//  状態
+// ============================================================
+var state = { ym: null, curYm: null, data: null };
+
+// ============================================================
+//  ユーティリティ
+// ============================================================
+function $(id) { return document.getElementById(id); }
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+function fmtUsd(n) {
+  n = Number(n) || 0;
+  var hasFrac = Math.abs(n - Math.round(n)) > 0.004;
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: hasFrac ? 2 : 0, maximumFractionDigits: 2 });
+}
+function fmtJpy(n) { return '¥' + Math.round(Number(n) || 0).toLocaleString('ja-JP'); }
+function ymJp(ym) { return ym.substring(0, 4) + '年' + Number(ym.substring(5, 7)) + '月'; }
+function ymShort(ym) { return Number(ym.substring(5, 7)) + '月'; }
+function shiftYm(ym, diff) {
+  var d = new Date(Number(ym.substring(0, 4)), Number(ym.substring(5, 7)) - 1 + diff, 1);
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+}
+function mdJp(dateStr) {
+  if (!dateStr || dateStr.length < 10) return dateStr;
+  var w = ['日','月','火','水','木','金','土'];
+  var d = new Date(dateStr + 'T00:00:00');
+  return Number(dateStr.substring(5, 7)) + '/' + Number(dateStr.substring(8, 10)) +
+         '（' + w[d.getDay()] + '）';
+}
+/** 前月比の表示（goodWhenUp: 上昇が良い指標か） */
+function cmpHtml(cur, prev, goodWhenUp) {
+  if (!prev) return '<span class="cmp" style="color:var(--text-dim)">前月 —</span>';
+  var pct = Math.round(((cur - prev) / prev) * 100);
+  var up = pct >= 0;
+  var good = goodWhenUp ? up : !up;
+  return '<span class="cmp ' + (good ? 'up' : 'down') + '">' +
+         (up ? '▲' : '▼') + Math.abs(pct) + '%<span style="color:var(--text-dim)"> 前月比</span></span>';
+}
+var PROG_JP = { confirmed: '予約確定', in_progress: '作業中', completed: '完了', cancelled: 'キャンセル' };
+function payChipClass(pay) {
+  if (pay === '清算済み')   return 'pay-ok';
+  if (pay === 'QR送信済み') return 'pay-wait';
+  if (pay === '要確認')     return 'pay-chk';
+  return 'pay-no';
+}
+
+// ============================================================
+//  データ取得
+// ============================================================
+function load(ym) {
+  $('loading').style.display = 'block';
+  $('content').style.display = 'none';
+  $('error').style.display = 'none';
+
+  if (MOCK) {
+    setTimeout(function() { onData(mockData(ym)); }, 400);
+    return;
+  }
+  if (!currentChatId && !SHARE_KEY) {
+    showError('ℹ️ Telegram 経由で開くか、共有URL（?key= 付き）でアクセスしてください');
+    return;
+  }
+  if (!GAS_URL) { showError('⚠️ GAS URL 未設定（?gas= パラメータが必要です）'); return; }
+
+  // ⚠️ v7 booking.html 実績パターン: POST + text/plain（iOS Safari 405 対策）
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'exec_dashboard', chatId: currentChatId, shareKey: SHARE_KEY, ym: ym || '' })
+  })
+    .then(function(r) { return r.text(); })
+    .then(function(txt) {
+      var d;
+      try { d = JSON.parse(txt); }
+      catch (e) { showError('⚠️ 非JSON応答: ' + esc(txt.substring(0, 200))); return; }
+      if (!d.ok) {
+        if (d.error === 'FORBIDDEN')        showError('🔒 閲覧権限がありません<br><small>このページは管理者（admin）専用です</small>');
+        else if (d.error === 'STAFF_NOT_FOUND') showError('⚠️ スタッフ未登録 chat_id=' + esc(currentChatId));
+        else if (d.error === 'INVALID_SHARE_KEY') showError('🔒 共有URLが無効です<br><small>キーが変更・削除された可能性があります。管理者に新しいURLを依頼してください</small>');
+        else showError('⚠️ サーバエラー: ' + esc(d.error || '不明'));
+        return;
+      }
+      onData(d);
+    })
+    .catch(function(err) { showError('⚠️ 通信エラー: ' + esc(err.message)); });
+}
+
+function showError(html) {
+  $('loading').style.display = 'none';
+  $('error').style.display = 'block';
+  $('error').innerHTML = html;
+  $('asofLine').textContent = '—';
+}
+
+function onData(d) {
+  state.data = d;
+  state.ym = d.ym;
+  state.curYm = d.curYm;
+  $('loading').style.display = 'none';
+  $('content').style.display = 'block';
+
+  // AIチャットは封印中: ?chat=1 を付けた admin アクセス時のみ表示
+  var isAdminMode = !!currentChatId || MOCK;
+  if (CHAT_ENABLED && isAdminMode && !SHARE_KEY) $('chatFab').style.display = 'flex';
+
+  // 共有URL発行ボタンは admin アクセス時のみ
+  var shareBtn = (isAdminMode && !SHARE_KEY)
+    ? '<button onclick="issueShareUrl()">🔗 共有URL</button>' : '';
+  $('asofLine').innerHTML = '最終更新 ' + esc(d.asOf) +
+    '（2分キャッシュ）<button onclick="load(state.ym)">↻ 更新</button>' + shareBtn;
+  renderAll(d);
+}
+
+// ============================================================
+//  共有URL発行（admin限定 / キーは GAS 側で保管・再発行は同一キー）
+// ============================================================
+function issueShareUrl() {
+  if (MOCK) { showShareUrl('SAMPLE-MOCK-KEY-1234567890'); return; }
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'exec_share_url', chatId: currentChatId })
+  })
+    .then(function(r) { return r.text(); })
+    .then(function(txt) {
+      var d;
+      try { d = JSON.parse(txt); } catch (e) { alert('発行失敗: 非JSON応答'); return; }
+      if (d.ok && d.key) showShareUrl(d.key);
+      else alert('発行失敗: ' + (d.error || '不明'));
+    })
+    .catch(function(err) { alert('通信エラー: ' + err.message); });
+}
+
+function showShareUrl(key) {
+  var url = location.href.split('?')[0] +
+    '?gas=' + encodeURIComponent(GAS_URL || '') +
+    '&key=' + encodeURIComponent(key);
+  var box = $('shareBox');
+  box.style.display = 'block';
+  box.innerHTML =
+    '<div class="share-title">🔗 共有用URL（閲覧専用・Telegram不要）</div>' +
+    '<div class="share-url" id="shareUrlText">' + esc(url) + '</div>' +
+    '<div class="share-actions">' +
+      '<button class="share-copy" onclick="copyShareUrl()">📋 コピー</button>' +
+      '<button class="share-close" onclick="$(\'shareBox\').style.display=\'none\'">閉じる</button>' +
+    '</div>' +
+    '<div class="share-note">※ このURLを知っている人は誰でも閲覧できます。無効化はGASのスクリプトプロパティ EXEC_DASH_SHARE_KEY を削除</div>';
+  window._shareUrl = url;
+}
+
+function copyShareUrl() {
+  var done = function() {
+    var b = document.querySelector('.share-copy');
+    if (b) { b.textContent = '✅ コピーしました'; setTimeout(function() { b.textContent = '📋 コピー'; }, 1800); }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(window._shareUrl).then(done).catch(function() { fallbackCopy_(done); });
+  } else {
+    fallbackCopy_(done);
+  }
+}
+function fallbackCopy_(done) {
+  // Telegram WebView 等 clipboard API 不可環境用
+  var ta = document.createElement('textarea');
+  ta.value = window._shareUrl;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { /* 手動コピーしてもらう */ }
+  document.body.removeChild(ta);
+}
+
+// ============================================================
+//  描画
+// ============================================================
+function renderAll(d) {
+  // 月セレクタ
+  $('ymLabel').textContent = ymJp(d.ym);
+  $('nextM').disabled = (d.ym >= d.curYm);
+  $('salesYmNote').textContent = ymJp(d.ym);
+  $('expYmNote').textContent = ymJp(d.ym);
+
+  renderKpi(d);
+  renderToday(d);
+  renderBookings(d);
+  renderSalesCharts(d);
+  renderExpenses(d);
+  renderRon(d);
+  renderPL(d);
+  renderUnpaid(d);
+
+  var fxNote = (d.fx && d.fx.usdJpy)
+    ? '換算レート: $1 = ' + fmtJpy(d.fx.usdJpy) + '（設定シート連動）／'
+    : '';
+  $('footNote').innerHTML = fxNote + '売上は受注ベース（キャンセル除く）・料金(USD)基準／経費は経費マスター（集計対象○・経費計上●）のJPY換算';
+}
+
+function renderKpi(d) {
+  var g = $('kpiGrid');
+  var s = d.sales, e = d.expenses, p = d.profit;
+  var html = '';
+
+  // 売上
+  if (s) {
+    var jpySub = (d.fx && d.fx.usdJpy) ? '≈ ' + fmtJpy(s.month.revenue * d.fx.usdJpy) + '・' : '';
+    html += '<div class="kpi"><div class="label">売上（' + ymShort(d.ym) + '）</div>' +
+      '<div class="value gold">' + fmtUsd(s.month.revenue) + '</div>' +
+      '<div class="sub">' + jpySub + s.month.jobs + '件・客単価 ' + fmtUsd(s.month.avgTicket) + '</div>' +
+      cmpHtml(s.month.revenue, s.prevMonth.revenue, true) + '</div>';
+  } else {
+    html += '<div class="kpi"><div class="label">売上</div><div class="value">—</div><div class="sub">V7_SPREADSHEET_ID 未設定</div></div>';
+  }
+
+  // 経費
+  if (e && e.available) {
+    var usdSub = e.month.usd ? '≈ ' + fmtUsd(e.month.usd) : '';
+    html += '<div class="kpi"><div class="label">経費（' + ymShort(d.ym) + '）</div>' +
+      '<div class="value">' + fmtJpy(e.month.jpy) + '</div>' +
+      '<div class="sub">' + usdSub + '</div>' +
+      cmpHtml(e.month.jpy, e.prevMonth.jpy, false) + '</div>';
+  } else {
+    html += '<div class="kpi"><div class="label">経費</div><div class="value">—</div><div class="sub">経費マスター未接続</div></div>';
+  }
+
+  // 粗利
+  if (p && p.month) {
+    var m = p.month;
+    html += '<div class="kpi"><div class="label">粗利（売上−経費）</div>' +
+      '<div class="value ' + (m.jpy >= 0 ? 'gold' : '') + '"' + (m.jpy < 0 ? ' style="color:var(--red)"' : '') + '>' +
+      fmtJpy(m.jpy) + '</div>' +
+      '<div class="sub">' + (m.marginPct === null ? '' : '利益率 ' + m.marginPct + '%') + '</div></div>';
+  } else {
+    html += '<div class="kpi"><div class="label">粗利</div><div class="value">—</div><div class="sub">為替レート未設定</div></div>';
+  }
+
+  // 未回収
+  var u = d.unpaid;
+  if (u) {
+    html += '<div class="kpi' + (u.count > 0 ? ' alert' : '') + '"><div class="label">未回収</div>' +
+      '<div class="value">' + fmtUsd(u.amountUsd) + '</div>' +
+      '<div class="sub">' + (u.count > 0 ? u.count + '件 清算待ち' : '未回収なし 🎉') + '</div></div>';
+  } else {
+    html += '<div class="kpi"><div class="label">未回収</div><div class="value">—</div></div>';
+  }
+
+  g.innerHTML = html;
+}
+
+function renderToday(d) {
+  var t = $('todayStrip');
+  if (!d.sales) { t.style.display = 'none'; return; }
+  t.style.display = 'flex';
+  t.innerHTML = '<span>☀️ 本日の実績</span>' +
+    '<span><b>' + fmtUsd(d.sales.today.revenue) + '</b>　' + d.sales.today.jobs + '件</span>';
+}
+
+function renderBookings(d) {
+  var b = d.bookingsNow;
+  var todayBox = $('bkToday'), upBox = $('bkUpcoming'), cBox = $('bkCounts');
+  if (!b) {
+    todayBox.innerHTML = '<div class="empty">予約データ未接続</div>';
+    upBox.style.display = 'none'; cBox.innerHTML = ''; return;
+  }
+
+  // 本日
+  var html = '<div class="date-head">本日 ' + mdJp(todayStr_()) + '</div>';
+  if (b.today.length === 0) {
+    html += '<div class="empty">本日の予約はありません</div>';
+  } else {
+    b.today.forEach(function(it) { html += bkRowHtml(it, false); });
+  }
+  todayBox.innerHTML = html;
+
+  // 今後7日
+  if (b.upcoming.length === 0) {
+    upBox.innerHTML = '<div class="empty">今後7日間の予約はありません</div>';
+  } else {
+    var uh = '';
+    b.upcoming.forEach(function(g) {
+      uh += '<div class="date-head">' + mdJp(g.date) + '　<span style="color:var(--text-dim)">' + g.items.length + '件</span></div>';
+      g.items.forEach(function(it) { uh += bkRowHtml(it, true); });
+    });
+    upBox.innerHTML = uh;
+  }
+
+  // 月内ステータス内訳
+  var mc = b.monthCounts;
+  cBox.innerHTML =
+    '<span class="sc">' + ymShort(d.ym) + ' 確定<b>' + mc.confirmed + '</b></span>' +
+    '<span class="sc">作業中<b>' + mc.in_progress + '</b></span>' +
+    '<span class="sc">完了<b>' + mc.completed + '</b></span>' +
+    '<span class="sc">ｷｬﾝｾﾙ<b>' + mc.cancelled + '</b></span>';
+}
+
+function bkRowHtml(it, hidePay) {
+  var payChip = (!hidePay && it.pay)
+    ? ' <span class="chip ' + payChipClass(it.pay) + '">' + esc(it.pay) + '</span>' : '';
+  return '<div class="bk-row">' +
+    '<div class="bk-time">' + esc(it.time || '--:--') + '</div>' +
+    '<div class="bk-main">' +
+      '<div class="bk-name">' + esc(it.customer) + '　<span style="color:var(--text-dim);font-weight:400">' + esc(it.car) + '</span></div>' +
+      '<div class="bk-meta">' + esc(it.plan) + '</div>' +
+    '</div>' +
+    '<div class="bk-right">' +
+      '<div class="bk-price">' + fmtUsd(it.priceUsd) + '</div>' +
+      '<span class="chip ' + esc(it.prog) + '">' + (PROG_JP[it.prog] || esc(it.prog)) + '</span>' + payChip +
+    '</div></div>';
+}
+
+function renderSalesCharts(d) {
+  var s = d.sales;
+  var bars = $('dailyBars'), plans = $('planBars');
+  if (!s) { bars.innerHTML = ''; plans.innerHTML = '<div class="empty">—</div>'; return; }
+
+  // 日別バー
+  var max = 1;
+  s.daily.forEach(function(x) { if (x.v > max) max = x.v; });
+  var todayD = (d.ym === d.curYm) ? Number(todayStr_().substring(8, 10)) : -1;
+  bars.innerHTML = s.daily.map(function(x) {
+    var h = Math.round((x.v / max) * 100);
+    var cls = 'db' + (x.v === 0 ? ' zero' : '') + (x.d === todayD ? ' today' : '');
+    return '<div class="' + cls + '" style="height:' + Math.max(h, 2) + '%" title="' + x.d + '日 ' + fmtUsd(x.v) + '"></div>';
+  }).join('');
+  var n = s.daily.length;
+  $('midDay').textContent = Math.ceil(n / 2) + '日';
+  $('endDay').textContent = n + '日';
+
+  // 着地予測（当月のみ・経過日数ベースの単純按分）
+  if (d.ym === d.curYm && todayD > 0 && s.month.revenue > 0) {
+    var fc = (s.month.revenue / todayD) * n;
+    $('forecastNote').textContent = '月末着地ペース ≈ ' + fmtUsd(Math.round(fc)) + '（単純按分）';
+  } else {
+    $('forecastNote').textContent = '月計 ' + fmtUsd(s.month.revenue) + '・' + s.month.jobs + '件';
+  }
+
+  // プラン別
+  if (s.byPlan.length === 0) { plans.innerHTML = '<div class="empty">データなし</div>'; return; }
+  var pmax = s.byPlan[0].revenue || 1;
+  plans.innerHTML = s.byPlan.map(function(p) {
+    var w = Math.max(Math.round((p.revenue / pmax) * 100), 3);
+    return '<div class="hbar-row">' +
+      '<div class="hbar-label">' + esc(p.name) + '</div>' +
+      '<div class="hbar-track"><div class="hbar-fill" style="width:' + w + '%"></div></div>' +
+      '<div class="hbar-val">' + fmtUsd(p.revenue) + '<span style="color:var(--text-dim);font-weight:400"> ' + p.count + '件</span></div></div>';
+  }).join('');
+}
+
+function renderExpenses(d) {
+  var e = d.expenses;
+  var cat = $('catBars'), payer = $('payerBars'), recent = $('expRecent');
+  if (!e || !e.available) {
+    cat.innerHTML = '<div class="empty">経費マスター未接続</div>';
+    payer.innerHTML = ''; recent.style.display = 'none'; return;
+  }
+
+  var renderH = function(arr, expCls) {
+    if (arr.length === 0) return '<div class="empty">データなし</div>';
+    var max = arr[0].jpy || 1;
+    return arr.map(function(c) {
+      var w = Math.max(Math.round((c.jpy / max) * 100), 3);
+      return '<div class="hbar-row">' +
+        '<div class="hbar-label">' + esc(c.name) + '</div>' +
+        '<div class="hbar-track"><div class="hbar-fill ' + expCls + '" style="width:' + w + '%"></div></div>' +
+        '<div class="hbar-val">' + fmtJpy(c.jpy) + '</div></div>';
+    }).join('');
+  };
+  cat.innerHTML = renderH(e.byCategory, 'exp');
+  payer.innerHTML = renderH(e.byPayer, 'exp');
+
+  // 直近明細
+  if (e.recent.length === 0) { recent.style.display = 'none'; return; }
+  recent.style.display = 'block';
+  recent.innerHTML = '<div class="date-head">直近の経費明細（' + ymShort(d.ym) + '・最新' + e.recent.length + '件）</div>' +
+    e.recent.map(function(r) {
+      return '<div class="exp-row">' +
+        '<span class="exp-date">' + esc(r.date.substring(5).replace('-', '/')) + '</span>' +
+        '<span class="exp-desc">' + esc(r.desc) + ' <span class="exp-cat">' + esc(r.category) + '・' + esc(r.payer) + '</span></span>' +
+        '<span class="exp-amt">' + fmtJpy(r.jpy) + '</span></div>';
+    }).join('');
+}
+
+function renderPL(d) {
+  var box = $('plRows');
+  var s = d.sales, e = d.expenses, p = d.profit;
+  if (!s || !e || !e.available) { box.innerHTML = '<div class="empty">データ不足</div>'; return; }
+
+  var usdJpy = (d.fx && d.fx.usdJpy) || 0;
+  var rows = s.monthly.map(function(sm, i) {
+    return {
+      ym: sm.ym,
+      revJpy: usdJpy ? sm.v * usdJpy : 0,
+      revUsd: sm.v,
+      expJpy: (e.monthly[i] || {}).jpy || 0,
+      profitJpy: (p && p.monthly[i]) ? p.monthly[i].jpy : null
+    };
+  });
+  var max = 1;
+  rows.forEach(function(r) { max = Math.max(max, r.revJpy, r.expJpy); });
+
+  box.innerHTML = rows.map(function(r) {
+    var pHtml = (r.profitJpy === null) ? ''
+      : '<span class="p" style="color:' + (r.profitJpy >= 0 ? 'var(--green)' : 'var(--red)') + '">粗利 <b>' + fmtJpy(r.profitJpy) + '</b></span>';
+    return '<div class="pl-row">' +
+      '<div class="pl-head"><span class="m">' + ymShort(r.ym) + '　<span style="font-weight:400">' + fmtUsd(r.revUsd) + '</span></span>' + pHtml + '</div>' +
+      '<div class="pl-bars">' +
+        '<div class="pl-track"><div class="pl-fill-rev" style="width:' + Math.max(Math.round((r.revJpy / max) * 100), 1) + '%"></div></div>' +
+        '<div class="pl-track"><div class="pl-fill-exp" style="width:' + Math.max(Math.round((r.expJpy / max) * 100), 1) + '%"></div></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function renderRon(d) {
+  var r = d.ronPrepaid;
+  var sec = $('ronSection'), card = $('ronCard'), list = $('ronTransfers');
+  if (!r) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+
+  if (!r.available) {
+    card.innerHTML = '<div class="empty">' + esc(r.note || 'データなし') + '</div>';
+    list.style.display = 'none';
+    return;
+  }
+
+  var hasTh = (r.alertThresholdUsd !== null && r.alertThresholdUsd !== undefined);
+  var low = hasTh && r.balanceUsd < r.alertThresholdUsd;
+  var thHtml = hasTh
+    ? '<div class="th' + (low ? ' warn' : '') + '">' +
+        (low ? '⚠️ 閾値 ' + fmtUsd(r.alertThresholdUsd) + ' を<br>下回っています'
+             : '閾値 ' + fmtUsd(r.alertThresholdUsd) + ' ✓') + '</div>'
+    : '';
+
+  card.innerHTML =
+    '<div class="ron-hero">' +
+      '<div><div class="label">ロン君の手元残額（前払い分）</div>' +
+      '<div class="val' + (low ? ' low' : '') + '">' + fmtUsd(r.balanceUsd) + '</div></div>' +
+      thHtml +
+    '</div>' +
+    '<table class="ron-bd">' +
+      '<tr><td>前払い送金合計（' + r.transferCount + '回）</td><td>+ ' + fmtUsd(r.totalTransfersUsd) + '</td></tr>' +
+      '<tr><td>ロン君負担の経費合計</td><td>− ' + fmtUsd(r.ronExpensesAllTimeUsd) + '</td></tr>' +
+      '<tr class="tot' + (low ? ' low' : '') + '"><td>残額</td><td>' + fmtUsd(r.balanceUsd) + '</td></tr>' +
+    '</table>';
+
+  // 直近の送金履歴
+  if (r.recentTransfers && r.recentTransfers.length > 0) {
+    list.style.display = 'block';
+    list.innerHTML = '<div class="date-head">直近の送金（最新' + r.recentTransfers.length + '件）</div>' +
+      r.recentTransfers.map(function(t) {
+        return '<div class="exp-row">' +
+          '<span class="exp-date">' + esc((t.date || '').substring(5).replace('-', '/')) + '</span>' +
+          '<span class="exp-desc">' + esc(t.note || 'ABA送金') + '</span>' +
+          '<span class="exp-amt" style="color:var(--green)">+ ' + fmtUsd(t.amountUsd) + '</span></div>';
+      }).join('');
+  } else {
+    list.style.display = 'none';
+  }
+}
+
+function renderUnpaid(d) {
+  var u = d.unpaid;
+  var sec = $('unpaidSection'), list = $('unpaidList');
+  if (!u || u.count === 0) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  list.innerHTML = u.items.map(function(it) {
+    var late = (it.hoursSinceQr !== null && it.hoursSinceQr >= 48);
+    var hrs = (it.hoursSinceQr === null) ? 'QR未送信'
+      : 'QR送信から' + (it.hoursSinceQr >= 24 ? Math.floor(it.hoursSinceQr / 24) + '日' : it.hoursSinceQr + 'h');
+    return '<div class="unpaid-row">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-weight:600">' + esc(it.id) + '　<span class="chip ' + payChipClass(it.payState) + '">' + esc(it.payState) + '</span></div>' +
+        '<div class="hrs' + (late ? ' late' : '') + '">' + esc(it.date) + '・' + hrs + (it.reminders ? '・催促' + it.reminders + '回' : '') + '</div>' +
+      '</div>' +
+      '<div style="font-weight:700">' + fmtUsd(it.amountUsd) + '</div></div>';
+  }).join('');
+}
+
+function todayStr_() {
+  var now = new Date();
+  return now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2) + '-' + ('0' + now.getDate()).slice(-2);
+}
+
+// ============================================================
+//  月ナビゲーション
+// ============================================================
+$('prevM').addEventListener('click', function() { load(shiftYm(state.ym, -1)); });
+$('nextM').addEventListener('click', function() {
+  if (state.ym < state.curYm) load(shiftYm(state.ym, 1));
+});
+
+// ============================================================
+//  AIチャット（action: exec_chat / admin限定）
+// ============================================================
+var chatHistory = [];   // {role, content} の配列（直近8件まで保持して送信）
+var chatBusy = false;
+
+function openChat() {
+  $('chatOverlay').classList.add('open');
+  setTimeout(function() { $('chatInput').focus(); }, 250);
+}
+function closeChat() { $('chatOverlay').classList.remove('open'); }
+
+function addChatMsg(text, who, isErr) {
+  var d = document.createElement('div');
+  d.className = 'cm cm-' + who;
+  d.innerHTML = '<div class="b' + (isErr ? ' err' : '') + '">' + esc(text) + '</div>';
+  $('chatMsgs').appendChild(d);
+  $('chatMsgs').scrollTop = $('chatMsgs').scrollHeight;
+  return d;
+}
+function addTyping() {
+  var d = document.createElement('div');
+  d.className = 'cm cm-ai';
+  d.innerHTML = '<div class="b"><span class="typing"><i></i><i></i><i></i></span></div>';
+  $('chatMsgs').appendChild(d);
+  $('chatMsgs').scrollTop = $('chatMsgs').scrollHeight;
+  return d;
+}
+
+function sendChat() { askChat($('chatInput').value); }
+
+function askChat(q) {
+  q = String(q || '').trim();
+  if (!q || chatBusy) return;
+  $('chatInput').value = '';
+  $('chatChips').style.display = 'none';
+  addChatMsg(q, 'user');
+  chatBusy = true;
+  $('chatSend').disabled = true;
+  var typing = addTyping();
+
+  var done = function(answer, isErr) {
+    typing.remove();
+    addChatMsg(answer, 'ai', isErr);
+    if (!isErr) {
+      // 正常応答のみ履歴に積む（フォローアップ質問用）
+      chatHistory.push({ role: 'user', content: q });
+      chatHistory.push({ role: 'assistant', content: answer });
+      if (chatHistory.length > 8) chatHistory = chatHistory.slice(-8);
+    }
+    chatBusy = false;
+    $('chatSend').disabled = false;
+  };
+
+  if (MOCK) { setTimeout(function() { done(mockChatAnswer(q), false); }, 900); return; }
+
+  // 履歴は今回の質問を含めない形で送る（サーバ側で質問を末尾に追加）
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'exec_chat', chatId: currentChatId, question: q, history: chatHistory })
+  })
+    .then(function(r) { return r.text(); })
+    .then(function(txt) {
+      var d;
+      try { d = JSON.parse(txt); }
+      catch (e) { done('⚠️ 非JSON応答: ' + txt.substring(0, 150), true); return; }
+      if (d.ok) { done(d.answer, false); return; }
+      if (d.error === 'NO_API_KEY') {
+        done('🔧 セットアップが必要です。\nGASエディタ → プロジェクトの設定 → スクリプトプロパティに ANTHROPIC_API_KEY を追加してください。', true);
+      } else if (d.error === 'FORBIDDEN') {
+        done('🔒 管理者権限がありません。', true);
+      } else {
+        done('⚠️ エラー: ' + (d.error || '不明'), true);
+      }
+    })
+    .catch(function(err) { done('⚠️ 通信エラー: ' + err.message, true); });
+}
+
+$('chatInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); sendChat(); }
+});
+
+/** モックチャット応答（?mock=1 / UI確認用） */
+function mockChatAnswer(q) {
+  if (/残金|ロン/.test(q)) return '💵 ロン君の残金は 約 $86 です。\n・前払い送金合計: $500（直近 6/02 に $200）\n・ロン君負担の経費合計: $414\n・今週のロン君の支出: ¥2,770（≈ $18）\n※ 残金 = 前払い送金合計 − ロン君負担経費（USD換算）';
+  if (/上位|顧客|トップ/.test(q)) return '👑 売上上位の顧客（全期間累計）\n・Sokha 様 — $148（5回・最終 6/13）\n・Kimheng 様 — $111（3回・最終 6/10）\n・Vibol 様 — $74（4回・最終 6/13）\n上位3名で売上全体の約54%を占めています。';
+  if (/経費/.test(q)) return '🧾 今週（6/9〜6/15）の経費は ¥10,530（≈ $69）です。\n・車両・洗車: ¥5,970\n・広告・販促: ¥4,560\n最大の支出は Facebook広告 ¥4,560（6/11・会社負担）です。';
+  if (/未回収/.test(q)) return '⚠️ 未回収は 2件・合計 $54 です。\n・BK-0038 $37 — QR送信から3日経過・催促2回 → 要フォロー\n・BK-0041 $17 — QR未送信\nBK-0038 は48時間を大きく超えています。直接連絡をおすすめします。';
+  if (/予約/.test(q)) return '📅 今後14日以内の予約は 3件です。\n・6/14（日）10:00 Dara 様 / Ford Ranger / $47\n・6/16（火）09:30 Sreyna 様 / Honda CR-V / $17\n・6/16（火）14:00 Kimheng 様 / Lexus LX / $37';
+  return '（モック応答）本番ではこの質問に実データで回答します。\n質問: ' + q;
+}
+
+// ============================================================
+//  モックデータ（?mock=1 / UI確認・スタイル調整用）
+// ============================================================
+function mockData(ymOpt) {
+  var curYm = todayStr_().substring(0, 7);
+  var ym = ymOpt || curYm;
+  var daily = [];
+  var dim = new Date(Number(ym.substring(0, 4)), Number(ym.substring(5, 7)), 0).getDate();
+  for (var i = 1; i <= dim; i++) {
+    daily.push({ d: i, v: (i % 3 === 0) ? 0 : Math.round(15 + 40 * Math.abs(Math.sin(i * 1.7))) });
+  }
+  var mk = function(n) { var a = []; for (var j = 5; j >= 0; j--) a.push(shiftYm(ym, -j)); return a.map(n); };
+  return {
+    ok: true, asOf: todayStr_() + ' 08:00', ym: ym, curYm: curYm,
+    fx: { usdJpy: 152, khrJpy: 0.0375 },
+    sales: {
+      month: { revenue: 612, jobs: 28, customers: 21, avgTicket: 21.9 },
+      prevMonth: { revenue: 480, jobs: 22 },
+      today: { revenue: 89, jobs: 3 },
+      daily: daily,
+      monthly: mk(function(m, i) { return { ym: m, v: [180, 260, 320, 410, 480, 612][i], jobs: [8, 12, 15, 19, 22, 28][i] }; }),
+      byPlan: [
+        { name: 'SAMURAI WASH', revenue: 285, count: 19 },
+        { name: 'WASH + GLASS 3面', revenue: 222, count: 6 },
+        { name: 'WASH + GLASS 全面', revenue: 105, count: 3 }
+      ]
+    },
+    unpaid: {
+      count: 2, amountUsd: 54,
+      items: [
+        { id: 'BK-0038', date: shiftYm(ym, 0) + '-08', amountUsd: 37, payState: 'QR送信済み', hoursSinceQr: 74, reminders: 2 },
+        { id: 'BK-0041', date: shiftYm(ym, 0) + '-11', amountUsd: 17, payState: '未清算', hoursSinceQr: null, reminders: 0 }
+      ]
+    },
+    bookingsNow: {
+      today: [
+        { id: 'BK-0042', date: todayStr_(), time: '09:00', customer: 'Sokha', car: 'Lexus RX', plan: 'WASH + GLASS 3面', prog: 'completed', pay: '清算済み', priceUsd: 37 },
+        { id: 'BK-0043', date: todayStr_(), time: '14:00', customer: 'Vibol', car: 'Toyota Camry', plan: 'SAMURAI WASH', prog: 'in_progress', pay: '未清算', priceUsd: 14 },
+        { id: 'BK-0044', date: todayStr_(), time: '16:30', customer: 'Hisanori', car: 'Prius', plan: 'SAMURAI WASH', prog: 'confirmed', pay: '未清算', priceUsd: 14 }
+      ],
+      upcoming: [
+        { date: shiftDate_(1), items: [
+          { id: 'BK-0045', date: shiftDate_(1), time: '10:00', customer: 'Dara', car: 'Ford Ranger', plan: 'WASH + GLASS 全面', prog: 'confirmed', pay: '未清算', priceUsd: 47 } ] },
+        { date: shiftDate_(3), items: [
+          { id: 'BK-0046', date: shiftDate_(3), time: '09:30', customer: 'Sreyna', car: 'Honda CR-V', plan: 'SAMURAI WASH', prog: 'confirmed', pay: '未清算', priceUsd: 17 },
+          { id: 'BK-0047', date: shiftDate_(3), time: '14:00', customer: 'Kimheng', car: 'Lexus LX', plan: 'WASH + GLASS 3面', prog: 'confirmed', pay: '未清算', priceUsd: 37 } ] }
+      ],
+      monthCounts: { confirmed: 6, in_progress: 1, completed: 21, cancelled: 2 }
+    },
+    expenses: {
+      month: { jpy: 48200, usd: 317 },
+      prevMonth: { jpy: 61400 },
+      byCategory: [
+        { name: '車両・洗車', jpy: 14800 }, { name: '人件費', jpy: 12000 },
+        { name: '広告・販促', jpy: 9400 }, { name: '賃貸・水道光熱', jpy: 6800 },
+        { name: 'システム・IT', jpy: 3200 }, { name: 'その他', jpy: 2000 }
+      ],
+      byPayer: [ { name: '会社', jpy: 36200 }, { name: 'ロン君', jpy: 12000 } ],
+      monthly: mk(function(m, i) { return { ym: m, jpy: [52000, 47000, 58000, 49000, 61400, 48200][i] }; }),
+      recent: [
+        { date: ym + '-12', desc: 'マイクロファイバー補充', jpy: 1850, category: '車両・洗車', payer: 'ロン君' },
+        { date: ym + '-11', desc: 'Facebook広告', jpy: 4560, category: '広告・販促', payer: '会社' },
+        { date: ym + '-10', desc: 'ガラス撥水剤', jpy: 3200, category: '車両・洗車', payer: '会社' },
+        { date: ym + '-08', desc: 'ガソリン代', jpy: 920, category: '車両・洗車', payer: 'ロン君' }
+      ],
+      available: true
+    },
+    profit: {
+      month: { jpy: 44824, marginPct: 48 },
+      monthly: mk(function(m, i) {
+        var rev = [180, 260, 320, 410, 480, 612][i] * 152;
+        var exp = [52000, 47000, 58000, 49000, 61400, 48200][i];
+        return { ym: m, jpy: Math.round(rev - exp) };
+      })
+    },
+    ronPrepaid: {
+      available: true,
+      note: '残額 = 前払い送金合計（USD） − ロン君負担の経費合計（USD換算・全期間）',
+      totalTransfersUsd: 500,
+      ronExpensesAllTimeUsd: 414,
+      balanceUsd: 86,
+      alertThresholdUsd: 50,
+      transferCount: 4,
+      recentTransfers: [
+        { date: shiftYm(ym, 0) + '-02', amountUsd: 200, note: 'ABA送金（6月分）' },
+        { date: shiftYm(ym, -1) + '-15', amountUsd: 100, note: '追加送金' },
+        { date: shiftYm(ym, -1) + '-01', amountUsd: 100, note: 'ABA送金（5月分）' },
+        { date: shiftYm(ym, -2) + '-03', amountUsd: 100, note: 'ABA送金（4月分）' }
+      ]
+    }
+  };
+}
+function shiftDate_(days) {
+  var d = new Date(); d.setDate(d.getDate() + days);
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+
+// 初回ロード（当月）
+load('');
+</script>
+</body>
+</html>

@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タスク管理 / ភារកិច្ច</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --gold: #c9a84c;
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --green: #00897B;
+  --red: #c62828;
+  --orange: #F57C00;
+  --radius: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans Khmer','Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+}
+.wrap { max-width: 480px; margin: 0 auto; }
+
+.title {
+  text-align:center;
+  font-size: 18px; font-weight: 700;
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--gold), #e8d5a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle {
+  text-align:center; font-size: 12px; color: var(--text-dim);
+  margin-bottom: 16px;
+}
+.who {
+  text-align:center;
+  font-size:13px; color: var(--text);
+  padding: 10px 0 14px;
+}
+.who strong { color: var(--gold); }
+
+.summary {
+  display:flex; gap:8px;
+  margin-bottom: 14px;
+}
+.sum-card {
+  flex:1;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  text-align:center;
+}
+.sum-card .num { font-size: 22px; font-weight:700; color: var(--gold); }
+.sum-card .lbl { font-size: 10px; color: var(--text-dim); margin-top:2px; }
+.sum-card.overdue .num { color: #ff5252; }
+.sum-card.today   .num { color: var(--orange); }
+
+.task-list { display:flex; flex-direction:column; gap:10px; }
+
+.task-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  transition: border-color 0.2s, opacity 0.3s;
+}
+.task-card.overdue { border-left: 4px solid #ff5252; }
+.task-card.today   { border-left: 4px solid var(--orange); }
+.task-card.future  { border-left: 4px solid var(--text-dim); }
+.task-card.done    { opacity: 0.45; border-color: var(--text-dim); }
+
+.task-mark { font-size:14px; margin-right:4px; }
+.task-desc {
+  font-size: 14px; font-weight: 600;
+  line-height: 1.45;
+  word-break: break-word;
+  white-space: pre-wrap;
+  margin-bottom: 6px;
+}
+.task-due {
+  font-size: 11px; color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.task-due.overdue { color: #ff5252; font-weight: 600; }
+.task-due.today   { color: var(--orange); font-weight: 600; }
+
+.task-actions { display:flex; gap:8px; }
+.btn {
+  flex:1;
+  padding: 12px 10px;
+  border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s;
+  font-family: inherit;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-done    { background: linear-gradient(135deg, #00695C, #00897B); }
+.btn-notdone { background: linear-gradient(135deg, #6d4c41, #8d6e63); }
+
+.empty {
+  text-align:center;
+  color: var(--text-dim);
+  padding: 40px 20px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.empty .big { font-size: 42px; margin-bottom: 10px; }
+
+.loading {
+  text-align:center; color: var(--text-dim);
+  padding: 30px; font-size: 13px;
+}
+
+/* 理由入力モーダル */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  z-index: 9998;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  width: 100%; max-width: 400px;
+}
+.modal h3 {
+  font-size: 15px; margin-bottom: 10px; color: var(--gold);
+}
+.modal p {
+  font-size: 12px; color: var(--text-dim); margin-bottom: 10px;
+  white-space: pre-wrap; word-break: break-word;
+}
+.modal textarea {
+  width:100%; min-height: 90px;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px; font-family: inherit; font-size: 13px;
+  resize: vertical;
+}
+.modal-actions {
+  display:flex; gap:8px; margin-top: 12px;
+}
+.btn-cancel { background: #444; }
+.btn-submit { background: linear-gradient(135deg, #b71c1c, #c62828); }
+
+.toast {
+  position: fixed; left: 50%; bottom: 30px;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--card); color: var(--text);
+  padding: 12px 20px; border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 13px; max-width: 90%;
+  transition: transform 0.3s;
+  z-index: 9999;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.err { border-color: var(--red); }
+.toast.ok  { border-color: var(--green); }
+
+/* 新規タスク作成 */
+.add-btn {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--gold);
+  background: transparent;
+  color: var(--gold);
+  border-radius: var(--radius);
+  font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 14px;
+  transition: background 0.2s;
+}
+.add-btn:active { background: rgba(201,168,76,0.1); }
+
+.create-modal .field {
+  margin-bottom: 12px;
+}
+.create-modal label {
+  display:block;
+  font-size: 12px; font-weight: 600;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.create-modal .req { color: #ff5252; font-size: 11px; margin-left: 4px; }
+.create-modal select,
+.create-modal input[type=date],
+.create-modal textarea {
+  width:100%;
+  background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px; font-family: inherit; font-size: 14px;
+}
+.create-modal input[type=date] { color-scheme: dark; }
+.create-modal textarea { resize: vertical; min-height: 70px; }
+.create-modal .hint {
+  font-size: 10px; color: var(--text-dim); margin-top: 4px;
+}
+.btn-create { background: linear-gradient(135deg, #E65100, #F57C00); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="title">📋 タスク管理</div>
+  <div class="subtitle">ភារកិច្ចថ្ងៃនេះ / Today's Tasks</div>
+
+  <div class="who" id="whoLine">読み込み中…</div>
+
+  <div class="summary" id="summaryBox" style="display:none">
+    <div class="sum-card overdue"><div class="num" id="sumOverdue">0</div><div class="lbl">🔴 期限超過</div></div>
+    <div class="sum-card today"><div class="num" id="sumToday">0</div><div class="lbl">🟡 本日期限</div></div>
+    <div class="sum-card"><div class="num" id="sumWeek">0</div><div class="lbl">🟢 今週以内</div></div>
+    <div class="sum-card"><div class="num" id="sumTotal">0</div><div class="lbl">📋 合計</div></div>
+  </div>
+
+  <button class="add-btn" id="btnOpenCreate">➕ 新規タスク作成 / បង្កើតភារកិច្ច</button>
+
+  <div id="taskList" class="task-list">
+    <div class="loading">読み込み中… / កំពុងផ្ទុក…</div>
+  </div>
+
+  <!-- admin のみ: 全スタッフのタスクを担当者別に表示 -->
+  <div id="adminGroupedSection" style="display:none; margin-top: 24px;">
+    <div style="text-align:center; font-size:13px; color:var(--gold); font-weight:700; margin-bottom:10px; letter-spacing:0.05em;">
+      👥 全スタッフのタスク一覧 / All staff tasks
+    </div>
+    <div id="adminGroupedList"></div>
+  </div>
+
+</div>
+
+<!-- 新規タスク作成モーダル -->
+<div class="modal-bg" id="createModalBg">
+  <div class="modal create-modal">
+    <h3>➕ 新規タスク作成</h3>
+
+    <div class="field">
+      <label>👤 担当者 <span class="req">* 必須</span></label>
+      <select id="createAssignee">
+        <option value="">-- 選択してください --</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>📝 タスク内容 <span class="req">* 必須</span></label>
+      <textarea id="createDesc" placeholder="例: 倉庫の清掃、月末棚卸し 等"></textarea>
+    </div>
+
+    <div class="field">
+      <label>📅 期限</label>
+      <input type="date" id="createDate">
+      <div class="hint">※ 繰返しを指定する場合は期限は不要</div>
+    </div>
+
+    <div class="field">
+      <label>🔁 繰返し</label>
+      <select id="createRecurrence">
+        <option value="なし">なし（単発タスク）</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="createCancel">キャンセル</button>
+      <button class="btn btn-create"  id="createSubmit">作成</button>
+    </div>
+  </div>
+</div>
+
+<!-- 未完了理由モーダル -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>❌ 未完了の理由 / មូលហេតុ</h3>
+    <p id="modalDesc">—</p>
+    <textarea id="reasonInput" placeholder="理由を入力してください / សូមបញ្ចូលមូលហេតុ"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" id="modalCancel">キャンセル</button>
+      <button class="btn btn-submit" id="modalSubmit">送信</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  GAS URL / chatId 解決（URL パラメータ優先）
+// ═══════════════════════════════════════════
+var GAS_URL = '';
+var currentChatId = '';
+var currentStaff = null;
+var pendingNotDoneTaskId = null;
+
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('gas'))    GAS_URL = urlParams.get('gas');
+if (urlParams.get('chatId')) currentChatId = urlParams.get('chatId');
+
+if (!GAS_URL && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+  GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
+}
+if (!currentChatId && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
+}
+
+// ═══════════════════════════════════════════
+//  共通 fetch（v7 booking.html と同一方式）
+// ═══════════════════════════════════════════
+function postJson(payload) {
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function(r) { return r.json(); });
+}
+
+// ═══════════════════════════════════════════
+//  初期ロード
+// ═══════════════════════════════════════════
+function loadTasks() {
+  var line = document.getElementById('whoLine');
+  var list = document.getElementById('taskList');
+
+  if (!currentChatId) { line.textContent = '⚠️ chatId 取得失敗'; return; }
+  if (!GAS_URL)       { line.textContent = '⚠️ GAS URL 未設定'; return; }
+
+  list.innerHTML = '<div class="loading">読み込み中… / កំពុងផ្ទុក…</div>';
+
+  postJson({ action: 'tasks_today', chatId: currentChatId })
+    .then(function(d) {
+      if (!d.ok) {
+        line.textContent = '⚠️ ' + (d.error || 'エラー');
+        list.innerHTML = '';
+        return;
+      }
+      currentStaff = d.staff;
+      line.innerHTML = '👤 <strong>' + esc(d.staff.nameJp) + '</strong> (' + esc(d.staff.nameEn) + ')';
+      renderTasks(d.tasks || []);
+      // admin の場合は他管理者のタスク一覧も描画
+      renderAdminGrouped(d.adminGrouped || [], d.staff);
+    })
+    .catch(function(err) {
+      line.textContent = '⚠️ 通信エラー: ' + err.message;
+      list.innerHTML = '';
+    });
+}
+
+// ═══════════════════════════════════════════
+//  タスク描画
+// ═══════════════════════════════════════════
+function renderTasks(tasks) {
+  var list = document.getElementById('taskList');
+  var sumBox = document.getElementById('summaryBox');
+
+  if (!tasks || tasks.length === 0) {
+    sumBox.style.display = 'none';
+    list.innerHTML =
+      '<div class="empty">' +
+      '<div class="big">🎉</div>' +
+      '1週間以内のタスクはありません<br>' +
+      'គ្មានភារកិច្ចក្នុង១សប្តាហ៍' +
+      '</div>';
+    return;
+  }
+
+  // サマリー集計
+  var todayStr = formatDateLocal(new Date());
+  var overdueCount = 0, todayCount = 0, weekCount = 0;
+  tasks.forEach(function(t) {
+    if (t.overdue) overdueCount++;
+    else if (t.due === todayStr) todayCount++;
+    else weekCount++;
+  });
+  document.getElementById('sumOverdue').textContent = overdueCount;
+  document.getElementById('sumToday').textContent   = todayCount;
+  document.getElementById('sumWeek').textContent    = weekCount;
+  document.getElementById('sumTotal').textContent   = tasks.length;
+  sumBox.style.display = 'flex';
+
+  // 期限超過を先頭にソート
+  tasks.sort(function(a, b) {
+    if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+    if (a.due !== b.due) return a.due < b.due ? -1 : 1;
+    return 0;
+  });
+
+  var html = tasks.map(function(t) {
+    var cls, mark, dueCls;
+    if (t.overdue)          { cls='overdue'; mark='🔴'; dueCls='overdue'; }
+    else if (t.due===todayStr){ cls='today';   mark='🟡'; dueCls='today'; }
+    else                    { cls='future';  mark='🟢'; dueCls=''; }
+
+    return '' +
+      '<div class="task-card ' + cls + '" data-id="' + esc(t.id) + '">' +
+        '<div class="task-desc"><span class="task-mark">' + mark + '</span>' + esc(t.desc) + '</div>' +
+        '<div class="task-due ' + dueCls + '">📅 期限 ' + esc(t.due) + (t.overdue ? '（期限超過）' : '') + '</div>' +
+        '<div class="task-actions">' +
+          '<button class="btn btn-done"    data-act="done"    data-id="' + esc(t.id) + '">✅ 完了</button>' +
+          '<button class="btn btn-notdone" data-act="notdone" data-id="' + esc(t.id) + '" data-desc="' + esc(t.desc) + '">❌ 未完了</button>' +
+        '</div>' +
+      '</div>';
+  }).join('');
+
+  list.innerHTML = html;
+
+  // イベント委譲
+  list.querySelectorAll('button.btn').forEach(function(btn) {
+    btn.addEventListener('click', onTaskButtonClick);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  admin グループ表示
+// ═══════════════════════════════════════════
+function renderAdminGrouped(groups, staff) {
+  var section = document.getElementById('adminGroupedSection');
+  var container = document.getElementById('adminGroupedList');
+  if (!staff || staff.role !== 'admin') {
+    section.style.display = 'none';
+    return;
+  }
+  // 自分のグループは上の "taskList" で既に表示しているので除外
+  var otherGroups = (groups || []).filter(function(g) { return g.nameJp !== staff.nameJp; });
+  if (otherGroups.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  var todayStr = formatDateLocal(new Date());
+  var html = otherGroups.map(function(g) {
+    var tasks = (g.tasks || []).slice().sort(function(a, b) {
+      if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+      return a.due < b.due ? -1 : (a.due > b.due ? 1 : 0);
+    });
+    var rows = tasks.map(function(t) {
+      var mark = t.overdue ? '🔴' : (t.due === todayStr ? '🟡' : '🟢');
+      var dueLabel = t.overdue ? '（期限超過 ' + esc(t.due) + '）' : '（期限 ' + esc(t.due) + '）';
+      return '<div style="padding:8px 10px; border-bottom:1px solid var(--border); font-size:13px;">' +
+             mark + ' ' + esc(t.desc) +
+             '<span style="color:var(--text-dim); font-size:11px; margin-left:6px;">' + dueLabel + '</span>' +
+             '</div>';
+    }).join('');
+    var roleBadge = g.role === 'field'
+      ? '<span style="background:#0e5a4e; color:#7fe0c8; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:6px;">現場</span>'
+      : (g.role === 'admin'
+          ? '<span style="background:#4a3a1a; color:#e8d5a3; font-size:10px; padding:2px 6px; border-radius:4px; margin-left:6px;">日本側</span>'
+          : '');
+    return '<div style="background:var(--card); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:10px; overflow:hidden;">' +
+           '<div style="padding:10px 12px; background:#242424; font-weight:700; color:var(--gold); font-size:13px;">' +
+             '👤 ' + esc(g.nameJp) + ' さん' + roleBadge + '（' + tasks.length + '件）' +
+           '</div>' +
+           rows +
+           '</div>';
+  }).join('');
+  container.innerHTML = html;
+}
+
+function onTaskButtonClick(ev) {
+  var btn = ev.currentTarget;
+  var act = btn.getAttribute('data-act');
+  var id  = btn.getAttribute('data-id');
+  if (act === 'done') {
+    submitTaskDone(id, btn);
+  } else if (act === 'notdone') {
+    var desc = btn.getAttribute('data-desc');
+    openReasonModal(id, desc);
+  }
+}
+
+// ═══════════════════════════════════════════
+//  完了処理
+// ═══════════════════════════════════════════
+function submitTaskDone(taskId, btn) {
+  // カード内のボタンを全無効化
+  var card = btn.closest('.task-card');
+  if (card) card.querySelectorAll('button').forEach(function(b) { b.disabled = true; });
+
+  postJson({ action: 'task_done', chatId: currentChatId, taskId: taskId })
+    .then(function(d) {
+      if (d.ok) {
+        toast('✅ 完了にしました', 'ok');
+        if (card) {
+          card.classList.add('done');
+          setTimeout(function() { loadTasks(); }, 600);
+        }
+      } else {
+        toast('⚠️ ' + (d.error || 'エラー'), 'err');
+        if (card) card.querySelectorAll('button').forEach(function(b) { b.disabled = false; });
+      }
+    })
+    .catch(function(err) {
+      toast('通信エラー: ' + err.message, 'err');
+      if (card) card.querySelectorAll('button').forEach(function(b) { b.disabled = false; });
+    });
+}
+
+// ═══════════════════════════════════════════
+//  未完了処理（理由モーダル）
+// ═══════════════════════════════════════════
+function openReasonModal(taskId, desc) {
+  pendingNotDoneTaskId = taskId;
+  document.getElementById('modalDesc').textContent = desc;
+  document.getElementById('reasonInput').value = '';
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeReasonModal() {
+  pendingNotDoneTaskId = null;
+  document.getElementById('modalBg').classList.remove('show');
+}
+document.getElementById('modalCancel').addEventListener('click', closeReasonModal);
+document.getElementById('modalBg').addEventListener('click', function(ev) {
+  if (ev.target === this) closeReasonModal();
+});
+document.getElementById('modalSubmit').addEventListener('click', function() {
+  if (!pendingNotDoneTaskId) return;
+  var reason = document.getElementById('reasonInput').value.trim();
+  if (!reason) {
+    toast('理由を入力してください', 'err');
+    return;
+  }
+  var taskId = pendingNotDoneTaskId;
+  var btn = document.getElementById('modalSubmit');
+  btn.disabled = true;
+
+  postJson({ action: 'task_notdone', chatId: currentChatId, taskId: taskId, reason: reason })
+    .then(function(d) {
+      btn.disabled = false;
+      if (d.ok) {
+        toast('❌ 未完了にしました', 'ok');
+        closeReasonModal();
+        setTimeout(function() { loadTasks(); }, 400);
+      } else {
+        toast('⚠️ ' + (d.error || 'エラー'), 'err');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      toast('通信エラー: ' + err.message, 'err');
+    });
+});
+
+// ═══════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════
+function formatDateLocal(d) {
+  // ブラウザのローカルTZで yyyy-MM-dd
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + day;
+}
+
+var toastTimer = null;
+function toast(msg, kind) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() {
+    t.className = 'toast ' + (kind || '');
+  }, 3000);
+}
+
+function esc(s) {
+  return String(s||'').replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+// ═══════════════════════════════════════════
+//  新規タスク作成
+// ═══════════════════════════════════════════
+var staffListCache = null;
+
+function openCreateModal() {
+  // 日付初期値 = 今日
+  document.getElementById('createDate').value = formatDateLocal(new Date());
+  document.getElementById('createDesc').value = '';
+  document.getElementById('createAssignee').value = '';
+  document.getElementById('createRecurrence').value = 'なし';
+
+  loadStaffAndRecurrences().then(function() {
+    document.getElementById('createModalBg').classList.add('show');
+  });
+}
+function closeCreateModal() {
+  document.getElementById('createModalBg').classList.remove('show');
+}
+
+function loadStaffAndRecurrences() {
+  if (staffListCache) return Promise.resolve(staffListCache);
+  return postJson({ action: 'staff_list_for_tasks' })
+    .then(function(d) {
+      if (!d.ok) { toast('スタッフ取得失敗', 'err'); return null; }
+      staffListCache = d;
+
+      var sel = document.getElementById('createAssignee');
+      // 既存オプションは先頭（プレースホルダ）だけ残す
+      sel.innerHTML = '<option value="">-- 選択してください --</option>';
+      (d.staff || []).forEach(function(s) {
+        var roleLabel = s.role === 'admin' ? '日本側' : '現場';
+        var opt = document.createElement('option');
+        opt.value = s.nameJp;
+        opt.textContent = s.nameJp + '（' + roleLabel + '）';
+        sel.appendChild(opt);
+      });
+      // デフォルトは自分
+      if (currentStaff && currentStaff.nameJp) sel.value = currentStaff.nameJp;
+
+      var recSel = document.getElementById('createRecurrence');
+      recSel.innerHTML = '';
+      (d.recurrences || ['なし']).forEach(function(r) {
+        var opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = r === 'なし' ? 'なし（単発タスク）' : r;
+        recSel.appendChild(opt);
+      });
+      return d;
+    });
+}
+
+document.getElementById('btnOpenCreate').addEventListener('click', openCreateModal);
+document.getElementById('createCancel').addEventListener('click', closeCreateModal);
+document.getElementById('createModalBg').addEventListener('click', function(ev) {
+  if (ev.target === this) closeCreateModal();
+});
+
+document.getElementById('createSubmit').addEventListener('click', function() {
+  var assignee   = document.getElementById('createAssignee').value;
+  var desc       = document.getElementById('createDesc').value.trim();
+  var targetDate = document.getElementById('createDate').value;
+  var recurrence = document.getElementById('createRecurrence').value;
+
+  if (!assignee) { toast('担当者を選択してください', 'err'); return; }
+  if (!desc)     { toast('タスク内容を入力してください', 'err'); return; }
+  if ((!recurrence || recurrence === 'なし') && !targetDate) {
+    toast('期限を指定してください（繰返しの場合は繰返しを選択）', 'err');
+    return;
+  }
+
+  var btn = document.getElementById('createSubmit');
+  btn.disabled = true;
+  var orig = btn.textContent;
+  btn.textContent = '作成中…';
+
+  postJson({
+    action: 'task_create',
+    chatId: currentChatId,
+    assigneeName: assignee,
+    targetDate: targetDate,
+    description: desc,
+    recurrence: recurrence
+  })
+    .then(function(d) {
+      btn.disabled = false;
+      btn.textContent = orig;
+      if (d.ok) {
+        toast(d.isTemplate
+          ? '🔁 繰返しテンプレート登録: ' + d.taskId
+          : '✅ タスク作成: ' + d.taskId, 'ok');
+        closeCreateModal();
+        setTimeout(function() { loadTasks(); }, 500);
+      } else {
+        toast('⚠️ ' + (d.error || 'エラー'), 'err');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = orig;
+      toast('通信エラー: ' + err.message, 'err');
+    });
+});
+
+// ═══════════════════════════════════════════
+//  起動
+// ═══════════════════════════════════════════
+loadTasks();
+</script>
+</body>
+</html>
