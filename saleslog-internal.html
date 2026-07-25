@@ -6,6 +6,10 @@
 <title>車屋提携 / ហាងដៃគូ</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
 :root {
   --bg: #0f0f0f;
@@ -50,17 +54,31 @@ body {
 }
 .who strong { color: var(--gold); }
 
-/* ── 一覧ビュー ── */
+/* ── タブ切替（一覧 / 地図） ── */
+.tab-row { display:flex; gap:8px; margin-bottom:12px; }
+.tab-btn {
+  flex:1;
+  padding: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 13px; font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tab-btn.active { border-color: var(--gold); color: var(--gold); }
+
 .new-btn {
   width: 100%;
-  padding: 18px 16px;
+  padding: 16px;
   border: none; border-radius: var(--radius);
-  font-size: 17px; font-weight: 700;
+  font-size: 16px; font-weight: 700;
   color: #1a1a1a;
   background: linear-gradient(135deg, var(--gold), #e8d5a3);
   cursor: pointer;
   font-family: inherit;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   transition: transform 0.15s;
 }
 .new-btn:active { transform: scale(0.98); }
@@ -70,7 +88,9 @@ body {
   text-transform:uppercase; letter-spacing:1px;
   padding: 4px 0 8px;
 }
-.visit-card {
+
+/* ── 店カード ── */
+.shop-card {
   background: var(--card);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
@@ -79,15 +99,10 @@ body {
   cursor: pointer;
   transition: border-color 0.2s, transform 0.15s;
 }
-.visit-card:active { transform: scale(0.98); border-color: var(--gold); }
-.visit-head { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
-.visit-shop { flex:1; font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.visit-date { font-size:11px; color:var(--text-dim); margin-bottom:4px; }
-.visit-sub  { font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.visit-memo {
-  font-size:12px; color:var(--text-dim); margin-top:4px;
-  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-}
+.shop-card:active { transform: scale(0.98); border-color: var(--gold); }
+.shop-head { display:flex; align-items:center; gap:8px; }
+.shop-name { flex:1; font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.shop-meta { font-size:12px; color:var(--text-dim); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .badge {
   flex-shrink:0;
   font-size:12px; font-weight:700;
@@ -99,18 +114,45 @@ body {
 .badge.rC { background: var(--amber); }
 .badge.rD { background: var(--red); }
 .badge.rNone { background: var(--border); color: var(--text-dim); }
+.badge.partner { background: var(--gold); color: #1a1a1a; }
 .empty {
   text-align:center; color:var(--text-dim); font-size:13px;
-  padding: 30px 0;
+  padding: 30px 0; line-height: 1.6;
 }
 
-/* ── フォームビュー ── */
+/* ── マップ ── */
+#mapWrap { display:none; }
+#map {
+  width: 100%;
+  height: calc(100vh - 250px);
+  min-height: 320px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--card);
+}
+.leaflet-popup-content-wrapper { background: var(--card); color: var(--text); border-radius: 10px; }
+.leaflet-popup-tip { background: var(--card); }
+.leaflet-popup-content { margin: 10px 14px; font-family: inherit; font-size: 13px; }
+.popup-open-btn {
+  display:block; width:100%;
+  margin-top: 8px;
+  padding: 8px;
+  border:none; border-radius:8px;
+  background: var(--gold); color:#1a1a1a;
+  font-weight:700; font-size:13px;
+  font-family: inherit;
+  cursor:pointer;
+}
+.map-hint { font-size:11px; color:var(--text-dim); text-align:center; margin-top:8px; }
+
+/* ── フォーム共通 ── */
 .back-btn {
   background:none; border:none; color:var(--text-dim);
   font-size:14px; font-family:inherit; cursor:pointer;
   padding: 4px 0 14px;
 }
 .form-title { font-size:16px; font-weight:700; margin-bottom:12px; }
+.form-note { font-size:12px; color:var(--text-dim); margin-bottom:12px; line-height:1.5; }
 .field { margin-bottom: 14px; }
 .field label {
   display:block; font-size:12px; color:var(--text-dim);
@@ -127,9 +169,7 @@ body {
   font-family: inherit;
   padding: 12px;
 }
-.field input:focus, .field textarea:focus {
-  outline: none; border-color: var(--gold);
-}
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--gold); }
 .field textarea { min-height: 90px; resize: vertical; }
 
 .gps-box {
@@ -159,28 +199,60 @@ body {
 }
 .gps-retry:active { border-color: var(--gold); }
 
-.react-grid {
-  display:grid; grid-template-columns: 1fr 1fr; gap:8px;
+/* ── 既存店サジェスト ── */
+.suggest-box { margin-top:8px; }
+.suggest-label { font-size:11px; color:var(--text-dim); margin-bottom:6px; }
+.suggest-chip {
+  display:block; width:100%;
+  text-align:left;
+  background: var(--card);
+  border: 1.5px dashed var(--gold);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px; font-family: inherit;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
 }
+.selected-shop {
+  display:flex; align-items:center; gap:8px;
+  background: rgba(201,168,76,0.12);
+  border: 1.5px solid var(--gold);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.selected-shop .name { flex:1; font-weight:700; }
+.selected-shop .unselect {
+  background:none; border:none; color:var(--text-dim);
+  font-size:16px; cursor:pointer; font-family:inherit;
+}
+
+/* ── 反応 A-D（クメール語＋日本語併記） ── */
+.react-grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
 .react-btn {
   border: 1.5px solid var(--border);
   background: var(--card);
   border-radius: 10px;
   color: var(--text);
-  font-size: 13px; font-weight:600;
   font-family: inherit;
-  padding: 12px 8px;
+  padding: 10px 8px;
   cursor: pointer;
   text-align:left;
   transition: border-color 0.15s, background 0.15s;
+  display:flex; align-items:center; gap:8px;
 }
 .react-btn .letter {
-  display:inline-block;
+  flex-shrink:0;
   width:22px; height:22px; line-height:22px;
   border-radius:6px; text-align:center;
-  font-weight:700; margin-right:6px;
+  font-weight:700; font-size:13px;
   background: var(--border); color: var(--text);
 }
+.react-btn .rtext { display:flex; flex-direction:column; min-width:0; }
+.react-btn .rkm { font-size:12px; font-weight:600; line-height:1.3; }
+.react-btn .rjp { font-size:10px; color:var(--text-dim); line-height:1.3; }
 .react-btn.rA.sel { border-color: var(--green); background: rgba(46,125,50,0.18); }
 .react-btn.rB.sel { border-color: var(--blue);  background: rgba(21,101,192,0.18); }
 .react-btn.rC.sel { border-color: var(--amber); background: rgba(245,124,0,0.18); }
@@ -190,11 +262,29 @@ body {
 .react-btn.rC.sel .letter { background: var(--amber); color:#fff; }
 .react-btn.rD.sel .letter { background: var(--red);   color:#fff; }
 
+/* ── ステータス 3値（店詳細） ── */
+.status-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; }
+.status-btn {
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  padding: 10px 4px;
+  cursor: pointer;
+  text-align:center;
+}
+.status-btn .skm { display:block; font-size:12px; font-weight:600; }
+.status-btn .sjp { display:block; font-size:10px; color:var(--text-dim); }
+.status-btn.s0.sel { border-color: var(--blue);  background: rgba(21,101,192,0.18); }
+.status-btn.s1.sel { border-color: var(--gold);  background: rgba(201,168,76,0.18); }
+.status-btn.s2.sel { border-color: var(--text-dim); background: rgba(136,136,136,0.15); }
+
 .save-btn {
   width: 100%;
-  padding: 18px 16px;
+  padding: 16px;
   border: none; border-radius: var(--radius);
-  font-size: 17px; font-weight: 700;
+  font-size: 16px; font-weight: 700;
   color: #fff;
   background: linear-gradient(135deg, #00695C, #00897B);
   cursor: pointer;
@@ -205,11 +295,44 @@ body {
 .save-btn:active { transform: scale(0.98); }
 .save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
+/* ── 店詳細: 訪問タイムライン ── */
+.section-head {
+  display:flex; align-items:center; justify-content:space-between;
+  margin: 20px 0 8px;
+}
+.section-head .h {
+  font-size:12px; font-weight:600; color:var(--text-dim);
+  text-transform:uppercase; letter-spacing:1px;
+}
+.add-visit-btn {
+  border: 1.5px solid var(--gold);
+  background: rgba(201,168,76,0.12);
+  border-radius: 10px;
+  color: var(--gold);
+  font-size: 12px; font-weight:700;
+  font-family: inherit;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.visit-item {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.visit-item:active { border-color: var(--gold); }
+.visit-item .vhead { display:flex; align-items:center; gap:8px; }
+.visit-item .vdate { flex:1; font-size:12px; color:var(--text-dim); }
+.visit-item .vmemo {
+  font-size:13px; margin-top:6px; white-space:pre-wrap; word-break:break-word;
+}
+
 .hint {
   font-size: 11px; color: var(--text-dim);
   text-align: center; margin-top: 12px; line-height: 1.5;
 }
-
 .toast {
   position: fixed; left: 50%; bottom: 30px;
   transform: translateX(-50%) translateY(100px);
@@ -223,7 +346,7 @@ body {
 .toast.show { transform: translateX(-50%) translateY(0); }
 .toast.err { border-color: var(--red); }
 .toast.ok  { border-color: #00897B; }
-.hidden { display: none; }
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -234,57 +357,114 @@ body {
 
   <div class="who" id="whoLine">…</div>
 
-  <!-- ═══════ 一覧ビュー ═══════ -->
-  <div id="viewList">
-    <button class="new-btn" id="btnNew">➕ កត់ត្រាថ្មី / New Visit</button>
-    <div class="list-label" id="listLabel">បញ្ជីការចុះជួប / Visit List</div>
-    <div id="listBody">
-      <div class="empty" id="listEmpty">…</div>
+  <!-- ═══════ ホーム（店一覧 ⇆ 地図） ═══════ -->
+  <div id="viewHome">
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabList">📋 បញ្ជី / 一覧</button>
+      <button class="tab-btn" id="tabMap">🗺 ផែនទី / 地図</button>
+    </div>
+
+    <button class="new-btn" id="btnNew">➕ កត់ត្រាថ្មី / 新規訪問</button>
+
+    <div id="listWrap">
+      <div class="list-label" id="listLabel">បញ្ជីហាង / 店一覧</div>
+      <div id="listBody">
+        <div class="empty" id="listEmpty">…</div>
+      </div>
+    </div>
+
+    <div id="mapWrap">
+      <div id="map"></div>
+      <div class="map-hint" id="mapHint">—</div>
     </div>
   </div>
 
-  <!-- ═══════ フォームビュー（新規・編集共用） ═══════ -->
+  <!-- ═══════ 店詳細（情報編集＋訪問タイムライン） ═══════ -->
+  <div id="viewShop" class="hidden">
+    <button class="back-btn" id="btnShopBack">← ត្រឡប់ / 戻る</button>
+    <div class="form-title" id="shopTitle">ព័ត៌មានហាង / 店の情報</div>
+
+    <div class="field">
+      <label>ឈ្មោះហាង / 店名 <span class="req">*</span></label>
+      <input type="text" id="sShop" maxlength="100">
+    </div>
+    <div class="field">
+      <label>ឈ្មោះម្ចាស់ហាង / オーナー名</label>
+      <input type="text" id="sOwner" maxlength="100">
+    </div>
+    <div class="field">
+      <label>លេខទូរស័ព្ទ / 電話番号</label>
+      <input type="tel" id="sPhone" maxlength="30" inputmode="tel">
+    </div>
+    <div class="field">
+      <label>ស្ថានភាព / ステータス</label>
+      <div class="status-grid" id="statusGrid">
+        <button type="button" class="status-btn s0" data-s="営業中"><span class="skm">កំពុងចរចា</span><span class="sjp">営業中</span></button>
+        <button type="button" class="status-btn s1" data-s="提携済"><span class="skm">ជាដៃគូ</span><span class="sjp">提携済</span></button>
+        <button type="button" class="status-btn s2" data-s="見送り"><span class="skm">បោះបង់</span><span class="sjp">見送り</span></button>
+      </div>
+    </div>
+    <div class="field">
+      <label>📍 GPS</label>
+      <div class="gps-box" id="shopGpsBox">—</div>
+    </div>
+    <div class="field">
+      <label>កំណត់ចំណាំ / 店メモ</label>
+      <textarea id="sMemo" maxlength="2000"></textarea>
+    </div>
+    <button class="save-btn" id="btnShopSave">💾 រក្សាទុក / 保存</button>
+
+    <div class="section-head">
+      <span class="h" id="historyHead">ប្រវត្តិការចុះជួប / 訪問履歴</span>
+      <button class="add-visit-btn" id="btnAddVisit">➕ បន្ថែមការចុះជួប / 追記</button>
+    </div>
+    <div id="visitList"></div>
+  </div>
+
+  <!-- ═══════ 訪問フォーム（新規 / 追記 / 編集 共用） ═══════ -->
   <div id="viewForm" class="hidden">
-    <button class="back-btn" id="btnBack">← ត្រឡប់ / Back</button>
-    <div class="form-title" id="formTitle">➕ កត់ត្រាថ្មី / New Visit</div>
+    <button class="back-btn" id="btnFormBack">← ត្រឡប់ / 戻る</button>
+    <div class="form-title" id="formTitle">➕ កត់ត្រាថ្មី / 新規訪問</div>
+    <div class="form-note hidden" id="formNote"></div>
 
     <div class="field" id="gpsField">
       <label>📡 GPS</label>
       <div class="gps-box" id="gpsBox">—</div>
-      <button class="gps-retry" id="btnGpsRetry" type="button">📍 យកទីតាំង / Get GPS</button>
+      <button class="gps-retry" id="btnGpsRetry" type="button">📍 យកទីតាំង / GPSを取得</button>
     </div>
 
-    <div class="field">
-      <label>ឈ្មោះហាង / Shop name <span class="req">*</span></label>
-      <input type="text" id="fShop" maxlength="100" placeholder="ឧ. ABC Auto">
+    <div class="field" id="shopNameField">
+      <label>ឈ្មោះហាង / 店名 <span class="req">*</span></label>
+      <input type="text" id="fShop" maxlength="100" placeholder="ឧ. ABC Auto" autocomplete="off">
+      <div class="suggest-box" id="suggestBox"></div>
     </div>
 
-    <div class="field">
-      <label>ឈ្មោះម្ចាស់ហាង / Owner name</label>
+    <div class="field" id="ownerField">
+      <label>ឈ្មោះម្ចាស់ហាង / オーナー名</label>
       <input type="text" id="fOwner" maxlength="100">
     </div>
 
-    <div class="field">
-      <label>លេខទូរស័ព្ទ / Phone</label>
+    <div class="field" id="phoneField">
+      <label>លេខទូរស័ព្ទ / 電話番号</label>
       <input type="tel" id="fPhone" maxlength="30" inputmode="tel">
     </div>
 
     <div class="field">
-      <label>ការឆ្លើយតប / Reaction</label>
+      <label>ការឆ្លើយតប / 反応</label>
       <div class="react-grid">
-        <button type="button" class="react-btn rA" data-r="A"><span class="letter">A</span><span class="rlabel">កំណត់ការសាកល្បង</span></button>
-        <button type="button" class="react-btn rB" data-r="B"><span class="letter">B</span><span class="rlabel">ចាប់អារម្មណ៍</span></button>
-        <button type="button" class="react-btn rC" data-r="C"><span class="letter">C</span><span class="rlabel">រង់ចាំសម្រេច</span></button>
-        <button type="button" class="react-btn rD" data-r="D"><span class="letter">D</span><span class="rlabel">បដិសេធ</span></button>
+        <button type="button" class="react-btn rA" data-r="A"><span class="letter">A</span><span class="rtext"><span class="rkm">កំណត់ការសាកល្បង</span><span class="rjp">デモ決定</span></span></button>
+        <button type="button" class="react-btn rB" data-r="B"><span class="letter">B</span><span class="rtext"><span class="rkm">ចាប់អារម្មណ៍</span><span class="rjp">興味あり</span></span></button>
+        <button type="button" class="react-btn rC" data-r="C"><span class="letter">C</span><span class="rtext"><span class="rkm">រង់ចាំសម្រេច</span><span class="rjp">保留</span></span></button>
+        <button type="button" class="react-btn rD" data-r="D"><span class="letter">D</span><span class="rtext"><span class="rkm">បដិសេធ</span><span class="rjp">断り</span></span></button>
       </div>
     </div>
 
     <div class="field">
-      <label>កំណត់ចំណាំ / Memo</label>
+      <label>កំណត់ចំណាំ / メモ</label>
       <textarea id="fMemo" maxlength="2000" placeholder="អាចបំពេញពេលក្រោយបាន"></textarea>
     </div>
 
-    <button class="save-btn" id="btnSave">💾 រក្សាទុក / Save</button>
+    <button class="save-btn" id="btnSave">💾 រក្សាទុក / 保存</button>
 
     <div class="hint" id="formHint">
       ※ GPS មិនមាន ក៏អាចរក្សាទុកបាន<br>
@@ -298,22 +478,33 @@ body {
 
 <script>
 // ═══════════════════════════════════════════
-//  文言（クメール語は Panha 校閲済みテーブル準拠）
+//  文言（クメール語は Panha 校閲済みテーブル準拠・日本語併記）
 // ═══════════════════════════════════════════
 var STR = {
-  gpsGetting:  'កំពុងស្វែងរកទីតាំង… / Getting location…',
+  gpsGetting:  'កំពុងស្វែងរកទីតាំង… / GPS取得中…',
   gpsOk:       'ទីតាំង OK',
-  gpsFail:     'មិនអាចយកទីតាំងបានទេ (អាចរក្សាទុកបាន) / No GPS — you can still save',
-  gpsOld:      'សូមធ្វើបច្ចុប្បន្នភាព Telegram ដើម្បីប្រើ GPS / Update Telegram to use GPS',
-  saving:      'កំពុងរក្សាទុក… / Saving…',
+  gpsFail:     'មិនអាចយកទីតាំងបានទេ (អាចរក្សាទុកបាន) / GPS取得不可（保存は可能）',
+  gpsOld:      'សូមធ្វើបច្ចុប្បន្នភាព Telegram ដើម្បីប្រើ GPS / Telegramを更新するとGPSが使えます',
+  saving:      'កំពុងរក្សាទុក… / 保存中…',
   saved:       'បានរក្សាទុក ✅',
   updated:     'បានកែសម្រួល ✅',
-  needShop:    'សូមបញ្ចូលឈ្មោះហាង / Please enter shop name',
-  netError:    'បញ្ហាបណ្តាញ / Network error',
-  emptyList:   'មិនទាន់មានកំណត់ត្រាទេ / No records yet',
-  editTitle:   '✏️ កែសម្រួល / Edit',
-  newTitle:    '➕ កត់ត្រាថ្មី / New Visit',
+  needShop:    'សូមបញ្ចូលឈ្មោះហាង / 店名を入力してください',
+  netError:    'បញ្ហាបណ្តាញ / 通信エラー',
+  emptyList:   'មិនទាន់មានកំណត់ត្រាទេ / まだ記録がありません',
+  newTitle:    '➕ កត់ត្រាថ្មី / 新規訪問',
+  appendTitle: '➕ បន្ថែមការចុះជួប / 訪問を追記',
+  editTitle:   '✏️ កែសម្រួលការចុះជួប / 訪問を編集',
+  appendNote:  'ការចុះជួបនេះនឹងបញ្ចូលទៅក្នុងប្រវត្តិហាងនេះ / この訪問はこの店の履歴に追加されます',
+  suggestHead: 'មានហាងនេះក្នុងបញ្ជីហើយឬទេ? / 既存の店では？',
+  noLocation:  'គ្មានទីតាំង / 位置情報なし',
+  mapEmpty:    'មិនទាន់មានហាងដែលមានទីតាំងទេ / 位置情報のある店がまだありません',
+  open:        'បើក / 開く',
   loading:     '…'
+};
+var STATUS_LABELS = {
+  '営業中': 'កំពុងចរចា / 営業中',
+  '提携済': 'ជាដៃគូ / 提携済',
+  '見送り': 'បោះបង់ / 見送り'
 };
 
 // ═══════════════════════════════════════════
@@ -321,20 +512,33 @@ var STR = {
 // ═══════════════════════════════════════════
 var GAS_URL = '';
 var currentChatId = '';
-var currentGps = null;        // { lat, lng }（新規作成時のみ使用）
-var editingVisitId = null;    // null = 新規モード
-var visitCache = [];          // saleslog_list の結果
+var currentGps = null;        // { lat, lng }（訪問記録時のみ使用）
+var shopsCache = [];          // saleslog_shops の結果
+var currentShop = null;       // 店詳細表示中の shop オブジェクト
+var currentVisits = [];       // 店詳細の訪問一覧
+var formMode = 'new';         // 'new' | 'append' | 'edit'
+var formShopId = '';          // append 時の対象店
+var editingVisitId = null;    // edit 時の対象訪問
+var selectedReaction = '';
+var selectedStatus = '';
+var map = null, mapMarkers = [];
 
 if (window.Telegram && Telegram.WebApp) {
   Telegram.WebApp.ready();
   Telegram.WebApp.expand();
+  // 地図パン操作と swipe-to-close の競合対策（Bot API 7.7+）
+  if (Telegram.WebApp.disableVerticalSwipes) Telegram.WebApp.disableVerticalSwipes();
+  if (Telegram.WebApp.onEvent) {
+    Telegram.WebApp.onEvent('viewportChanged', function() {
+      if (map) setTimeout(function() { map.invalidateSize(); }, 100);
+    });
+  }
 }
 
 var urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('gas'))    GAS_URL = urlParams.get('gas');
 if (urlParams.get('chatId')) currentChatId = urlParams.get('chatId');
 
-// フォールバック: Telegram WebApp から取得（初回起動時）
 if (!GAS_URL && window.Telegram && Telegram.WebApp &&
     Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
   GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
@@ -344,8 +548,8 @@ if (!currentChatId && window.Telegram && Telegram.WebApp &&
   currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
 }
 
-// v7 booking.html と同一方式: POST + Content-Type: 'text/plain;charset=utf-8'
-// 応答はまず text で受けて JSON.parse（認可切れ等の HTML 応答を切り分けるため。home-internal.html と同方式）
+// v7 booking.html と同一方式: POST + text/plain。応答は text で受けて JSON.parse
+// （認可切れ等の HTML 応答を切り分けるため。home-internal.html と同方式）
 function api(payload) {
   payload.chatId = currentChatId;
   return fetch(GAS_URL, {
@@ -371,107 +575,350 @@ function loadWho() {
         line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
       }
     })
-    .catch(function(err) { line.textContent = '⚠️ ' + STR.netError; });
+    .catch(function() { line.textContent = '⚠️ ' + STR.netError; });
 }
 
 // ═══════════════════════════════════════════
-//  一覧
+//  店一覧
 // ═══════════════════════════════════════════
-function loadList() {
+function loadShops() {
   var empty = document.getElementById('listEmpty');
-  empty.textContent = STR.loading;
-  return api({ action: 'saleslog_list' })
+  if (empty) empty.textContent = STR.loading;
+  return api({ action: 'saleslog_shops' })
     .then(function(d) {
       if (!d.ok) {
-        empty.textContent = '⚠️ ' + (d.error || STR.netError);
+        renderListError('⚠️ ' + (d.error || STR.netError));
         return;
       }
-      visitCache = d.visits || [];
-      renderList();
+      shopsCache = d.shops || [];
+      renderShopList();
+      refreshMapMarkers();
     })
-    .catch(function(err) { empty.textContent = '⚠️ ' + STR.netError; });
+    .catch(function() { renderListError('⚠️ ' + STR.netError); });
 }
 
-function renderList() {
+function renderListError(msg) {
   var body = document.getElementById('listBody');
   body.innerHTML = '';
-  if (!visitCache.length) {
-    var e = document.createElement('div');
-    e.className = 'empty';
-    e.id = 'listEmpty';
-    e.textContent = STR.emptyList;
-    body.appendChild(e);
+  var e = document.createElement('div');
+  e.className = 'empty'; e.id = 'listEmpty';
+  e.textContent = msg;
+  body.appendChild(e);
+}
+
+function badgeFor(shop) {
+  if (shop.status === '提携済') return '<span class="badge partner">⭐ ' + esc(shop.lastReaction || 'A') + '</span>';
+  var cls = shop.lastReaction ? 'r' + shop.lastReaction : 'rNone';
+  return '<span class="badge ' + cls + '">' + esc(shop.lastReaction || '—') + '</span>';
+}
+
+function renderShopList() {
+  var body = document.getElementById('listBody');
+  body.innerHTML = '';
+  if (!shopsCache.length) {
+    renderListError(STR.emptyList);
     return;
   }
-  visitCache.forEach(function(v) {
+  shopsCache.forEach(function(s) {
     var card = document.createElement('div');
-    card.className = 'visit-card';
-    var badgeClass = v.reaction ? 'r' + v.reaction : 'rNone';
-    var badgeText  = v.reaction || '—';
-    var sub = [v.ownerName, v.phone].filter(Boolean).join(' · ');
+    card.className = 'shop-card';
+    var meta = [];
+    meta.push('🔁 ' + s.visitCount);
+    if (s.lastVisit) meta.push('📅 ' + s.lastVisit);
+    if (s.phone)     meta.push('☎ ' + s.phone);
+    if (s.lat === null || s.lng === null) meta.push(STR.noLocation);
     card.innerHTML =
-      '<div class="visit-date">' + esc(v.datetime) + (v.lat !== null && v.lng !== null ? ' 📍' : '') + '</div>' +
-      '<div class="visit-head">' +
-        '<div class="visit-shop">' + esc(v.shopName) + '</div>' +
-        '<span class="badge ' + badgeClass + '">' + esc(badgeText) + '</span>' +
+      '<div class="shop-head">' +
+        '<div class="shop-name">' + esc(s.shopName) + '</div>' +
+        badgeFor(s) +
       '</div>' +
-      (sub ? '<div class="visit-sub">' + esc(sub) + '</div>' : '') +
-      (v.memo ? '<div class="visit-memo">' + esc(v.memo) + '</div>' : '');
-    card.addEventListener('click', function() { openEdit(v.visitId); });
+      '<div class="shop-meta">' + esc(meta.join(' · ')) + '</div>';
+    card.addEventListener('click', function() { openShop(s.shopId); });
     body.appendChild(card);
   });
+}
+
+// ═══════════════════════════════════════════
+//  マップ（Leaflet + OpenStreetMap）
+// ═══════════════════════════════════════════
+// タイルは OSM 標準。ポリシー上の帰属表示必須・遮断時は下記 URL を
+// Esri 等に 1 行差し替えで切替可能な設計
+var TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+var TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+var PP_CENTER = [11.556374, 104.928207]; // プノンペン中心
+
+var REACTION_COLORS = { A: '#2E7D32', B: '#1565C0', C: '#F57C00', D: '#c62828' };
+
+function ensureMap() {
+  if (map) return;
+  if (typeof L === 'undefined') {
+    document.getElementById('mapHint').textContent = '⚠️ ' + STR.netError;
+    return;
+  }
+  map = L.map('map', { minZoom: 11, maxZoom: 19 }).setView(PP_CENTER, 13);
+  L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
+  refreshMapMarkers();
+}
+
+function refreshMapMarkers() {
+  if (!map) return;
+  mapMarkers.forEach(function(m) { map.removeLayer(m); });
+  mapMarkers = [];
+
+  var located = shopsCache.filter(function(s) { return s.lat !== null && s.lng !== null; });
+  document.getElementById('mapHint').textContent =
+    located.length ? ('📍 ' + located.length) : STR.mapEmpty;
+  if (!located.length) return;
+
+  var bounds = [];
+  located.forEach(function(s) {
+    var color = s.status === '提携済' ? '#c9a84c' : (REACTION_COLORS[s.lastReaction] || '#888');
+    var marker = L.circleMarker([s.lat, s.lng], {
+      radius: 10, color: color, weight: 2,
+      fillColor: color, fillOpacity: 0.55
+    }).addTo(map);
+
+    var div = document.createElement('div');
+    div.innerHTML =
+      '<b>' + esc(s.shopName) + '</b><br>' +
+      esc((s.lastReaction || '—') + ' · 🔁 ' + s.visitCount + (s.lastVisit ? ' · ' + s.lastVisit : ''));
+    var btn = document.createElement('button');
+    btn.className = 'popup-open-btn';
+    btn.textContent = STR.open;
+    btn.addEventListener('click', function() { openShop(s.shopId); });
+    div.appendChild(btn);
+    marker.bindPopup(div);
+
+    mapMarkers.push(marker);
+    bounds.push([s.lat, s.lng]);
+  });
+  if (bounds.length === 1) {
+    map.setView(bounds[0], 15);
+  } else {
+    map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+  }
+}
+
+function switchTab(tab) {
+  var isMap = tab === 'map';
+  document.getElementById('tabList').className = 'tab-btn' + (isMap ? '' : ' active');
+  document.getElementById('tabMap').className  = 'tab-btn' + (isMap ? ' active' : '');
+  document.getElementById('listWrap').style.display = isMap ? 'none' : '';
+  document.getElementById('mapWrap').style.display  = isMap ? 'block' : 'none';
+  if (isMap) {
+    ensureMap();
+    if (map) setTimeout(function() { map.invalidateSize(); }, 100);
+  }
 }
 
 // ═══════════════════════════════════════════
 //  ビュー切替
 // ═══════════════════════════════════════════
 function showView(name) {
-  document.getElementById('viewList').className = name === 'list' ? '' : 'hidden';
+  document.getElementById('viewHome').className = name === 'home' ? '' : 'hidden';
+  document.getElementById('viewShop').className = name === 'shop' ? '' : 'hidden';
   document.getElementById('viewForm').className = name === 'form' ? '' : 'hidden';
   window.scrollTo(0, 0);
 }
 
-function openNew() {
-  editingVisitId = null;
-  document.getElementById('formTitle').textContent = STR.newTitle;
-  document.getElementById('fShop').value  = '';
-  document.getElementById('fOwner').value = '';
-  document.getElementById('fPhone').value = '';
-  document.getElementById('fMemo').value  = '';
-  setReaction('');
-  document.getElementById('btnGpsRetry').className = 'gps-retry';
-  showView('form');
-  acquireGps();
+// ═══════════════════════════════════════════
+//  店詳細
+// ═══════════════════════════════════════════
+function openShop(shopId) {
+  showView('shop');
+  document.getElementById('visitList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
+  api({ action: 'saleslog_shop_detail', shopId: shopId })
+    .then(function(d) {
+      if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return; }
+      currentShop = d.shop;
+      currentVisits = d.visits || [];
+      renderShopDetail();
+    })
+    .catch(function() { toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
 }
 
-function openEdit(visitId) {
-  var v = null;
-  for (var i = 0; i < visitCache.length; i++) {
-    if (visitCache[i].visitId === visitId) { v = visitCache[i]; break; }
-  }
-  if (!v) return;
-  editingVisitId = visitId;
-  document.getElementById('formTitle').textContent = STR.editTitle;
-  document.getElementById('fShop').value  = v.shopName;
-  document.getElementById('fOwner').value = v.ownerName;
-  document.getElementById('fPhone').value = v.phone;
-  document.getElementById('fMemo').value  = v.memo;
-  setReaction(v.reaction);
+function renderShopDetail() {
+  var s = currentShop;
+  document.getElementById('sShop').value  = s.shopName;
+  document.getElementById('sOwner').value = s.ownerName;
+  document.getElementById('sPhone').value = s.phone;
+  document.getElementById('sMemo').value  = s.memo;
+  setStatus(s.status || '営業中');
 
-  // 編集時: GPS は記録済みの値を表示のみ（変更しない）
-  var box = document.getElementById('gpsBox');
-  if (v.lat !== null && v.lng !== null) {
+  var box = document.getElementById('shopGpsBox');
+  if (s.lat !== null && s.lng !== null) {
     box.className = 'gps-box ok';
-    box.innerHTML = '📍 ' + esc(v.lat + ', ' + v.lng) +
-      ' <a href="https://www.google.com/maps?q=' + encodeURIComponent(v.lat + ',' + v.lng) +
+    box.innerHTML = '📍 ' + esc(s.lat + ', ' + s.lng) +
+      ' <a href="https://www.google.com/maps?q=' + encodeURIComponent(s.lat + ',' + s.lng) +
       '" target="_blank" rel="noopener">🗺</a>';
   } else {
     box.className = 'gps-box';
-    box.textContent = '📍 —';
+    box.textContent = '📍 ' + STR.noLocation;
   }
-  document.getElementById('btnGpsRetry').className = 'gps-retry hidden';
-  showView('form');
+
+  var list = document.getElementById('visitList');
+  list.innerHTML = '';
+  if (!currentVisits.length) {
+    list.innerHTML = '<div class="empty">' + esc(STR.emptyList) + '</div>';
+    return;
+  }
+  currentVisits.forEach(function(v) {
+    var item = document.createElement('div');
+    item.className = 'visit-item';
+    var cls = v.reaction ? 'r' + v.reaction : 'rNone';
+    item.innerHTML =
+      '<div class="vhead">' +
+        '<span class="vdate">' + esc(v.datetime) + (v.lat !== null && v.lng !== null ? ' 📍' : '') + '</span>' +
+        '<span class="badge ' + cls + '">' + esc(v.reaction || '—') + '</span>' +
+      '</div>' +
+      (v.memo ? '<div class="vmemo">' + esc(v.memo) + '</div>' : '');
+    item.addEventListener('click', function() { openVisitEdit(v); });
+    list.appendChild(item);
+  });
 }
+
+function setStatus(status) {
+  selectedStatus = status;
+  var btns = document.querySelectorAll('.status-btn');
+  for (var i = 0; i < btns.length; i++) {
+    var b = btns[i];
+    b.className = b.className.replace(' sel', '') +
+      (b.getAttribute('data-s') === status ? ' sel' : '');
+  }
+}
+(function bindStatusButtons() {
+  var btns = document.querySelectorAll('.status-btn');
+  for (var i = 0; i < btns.length; i++) {
+    (function(b) {
+      b.addEventListener('click', function() { setStatus(b.getAttribute('data-s')); });
+    })(btns[i]);
+  }
+})();
+
+function saveShop() {
+  if (!currentShop) return;
+  var shopName = document.getElementById('sShop').value.trim();
+  if (!shopName) { toast(STR.needShop, 'err'); return; }
+
+  var btn = document.getElementById('btnShopSave');
+  btn.disabled = true;
+  api({
+    action:    'saleslog_shop_update',
+    shopId:    currentShop.shopId,
+    shopName:  shopName,
+    ownerName: document.getElementById('sOwner').value.trim(),
+    phone:     document.getElementById('sPhone').value.trim(),
+    status:    selectedStatus,
+    memo:      document.getElementById('sMemo').value
+  })
+    .then(function(d) {
+      btn.disabled = false;
+      if (d.ok) {
+        toast(STR.updated, 'ok');
+        // 画面に留まったまま「追記」した時に古い店名が渡らないよう currentShop も即時更新
+        currentShop = Object.assign({}, currentShop, {
+          shopName:  shopName,
+          ownerName: document.getElementById('sOwner').value.trim(),
+          phone:     document.getElementById('sPhone').value.trim(),
+          status:    selectedStatus,
+          memo:      document.getElementById('sMemo').value
+        });
+        loadShops();
+      } else {
+        toast('⚠️ ' + (d.error || STR.netError), 'err');
+      }
+    })
+    .catch(function() { btn.disabled = false; toast('⚠️ ' + STR.netError, 'err'); });
+}
+
+// ═══════════════════════════════════════════
+//  訪問フォーム（新規 / 追記 / 編集）
+// ═══════════════════════════════════════════
+function openForm(mode, opts) {
+  formMode = mode;
+  opts = opts || {};
+  formShopId = opts.shopId || '';
+  editingVisitId = opts.visitId || null;
+
+  var titles = { 'new': STR.newTitle, 'append': STR.appendTitle, 'edit': STR.editTitle };
+  document.getElementById('formTitle').textContent = titles[mode];
+
+  var note = document.getElementById('formNote');
+  if (mode === 'append') {
+    note.className = 'form-note';
+    note.textContent = '🏪 ' + (opts.shopName || '') + ' — ' + STR.appendNote;
+  } else {
+    note.className = 'form-note hidden';
+  }
+
+  // フィールド表示制御: 店名/オーナー/電話は新規のみ（追記・編集は店マスター側で管理）
+  var showShopFields = mode === 'new';
+  document.getElementById('shopNameField').className = 'field' + (showShopFields ? '' : ' hidden');
+  document.getElementById('ownerField').className    = 'field' + (showShopFields ? '' : ' hidden');
+  document.getElementById('phoneField').className    = 'field' + (showShopFields ? '' : ' hidden');
+  document.getElementById('gpsField').className      = 'field' + (mode === 'edit' ? ' hidden' : '');
+
+  document.getElementById('fShop').value  = '';
+  document.getElementById('fOwner').value = '';
+  document.getElementById('fPhone').value = '';
+  document.getElementById('fMemo').value  = (mode === 'edit' && opts.visit) ? opts.visit.memo : '';
+  setReaction((mode === 'edit' && opts.visit) ? opts.visit.reaction : '');
+  clearSuggest();
+
+  showView('form');
+  if (mode !== 'edit') acquireGps();
+}
+
+function openVisitEdit(v) {
+  openForm('edit', { visitId: v.visitId, visit: v });
+}
+
+// ── 既存店サジェスト（店名部分一致 + GPS 近接 200m） ──
+function clearSuggest() {
+  document.getElementById('suggestBox').innerHTML = '';
+}
+
+function distMeters(lat1, lng1, lat2, lng2) {
+  var R = 6371000, rad = Math.PI / 180;
+  var dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(lat1*rad) * Math.cos(lat2*rad) * Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function updateSuggest() {
+  if (formMode !== 'new') return;
+  var q = document.getElementById('fShop').value.trim().toLowerCase();
+  var box = document.getElementById('suggestBox');
+  box.innerHTML = '';
+
+  var hits = [];
+  shopsCache.forEach(function(s) {
+    var nameHit = q.length >= 2 && s.shopName.toLowerCase().indexOf(q) >= 0;
+    var gpsHit = currentGps && s.lat !== null && s.lng !== null &&
+                 distMeters(currentGps.lat, currentGps.lng, s.lat, s.lng) <= 200;
+    if (nameHit || gpsHit) hits.push({ shop: s, gpsHit: gpsHit && !nameHit });
+  });
+  if (!hits.length) return;
+
+  var label = document.createElement('div');
+  label.className = 'suggest-label';
+  label.textContent = STR.suggestHead;
+  box.appendChild(label);
+
+  hits.slice(0, 4).forEach(function(h) {
+    var chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'suggest-chip';
+    chip.textContent = (h.gpsHit ? '📍 ' : '🏪 ') + h.shop.shopName +
+      '（🔁' + h.shop.visitCount + (h.shop.lastVisit ? ' · ' + h.shop.lastVisit : '') + '）';
+    chip.addEventListener('click', function() {
+      openForm('append', { shopId: h.shop.shopId, shopName: h.shop.shopName });
+    });
+    box.appendChild(chip);
+  });
+}
+document.getElementById('fShop').addEventListener('input', updateSuggest);
 
 // ═══════════════════════════════════════════
 //  GPS（Telegram LocationManager API のみ使用）
@@ -508,8 +955,8 @@ function acquireGps() {
         box.className = 'gps-box ok';
         box.textContent = '📡 ' + STR.gpsOk + ' (' + currentGps.lat + ', ' + currentGps.lng +
                           (acc ? ' ±' + acc + 'm' : '') + ')';
+        updateSuggest(); // GPS 近接サジェストを更新
       } else {
-        // アクセス拒否 or 取得失敗（保存は可能）
         currentGps = null;
         box.className = 'gps-box warn';
         box.textContent = '📡 ' + STR.gpsFail;
@@ -522,17 +969,13 @@ function acquireGps() {
 // ═══════════════════════════════════════════
 //  反応 A-D
 // ═══════════════════════════════════════════
-var selectedReaction = '';
 function setReaction(r) {
   selectedReaction = r || '';
   var btns = document.querySelectorAll('.react-btn');
   for (var i = 0; i < btns.length; i++) {
     var b = btns[i];
-    if (b.getAttribute('data-r') === selectedReaction) {
-      b.className = b.className.replace(' sel', '') + ' sel';
-    } else {
-      b.className = b.className.replace(' sel', '');
-    }
+    b.className = b.className.replace(' sel', '') +
+      (b.getAttribute('data-r') === selectedReaction ? ' sel' : '');
   }
 }
 (function bindReactionButtons() {
@@ -541,63 +984,99 @@ function setReaction(r) {
     (function(b) {
       b.addEventListener('click', function() {
         var r = b.getAttribute('data-r');
-        // 同じボタン再タップで解除（反応は任意項目）
-        setReaction(selectedReaction === r ? '' : r);
+        setReaction(selectedReaction === r ? '' : r); // 再タップで解除（任意項目）
       });
     })(btns[i]);
   }
 })();
 
 // ═══════════════════════════════════════════
-//  保存（新規 / 編集）
+//  訪問の保存（新規 / 追記 / 編集）
 // ═══════════════════════════════════════════
-function save() {
-  var shopName = document.getElementById('fShop').value.trim();
-  if (!shopName) { toast(STR.needShop, 'err'); return; }
+function saveVisit() {
   if (!currentChatId || !GAS_URL) { toast(STR.netError, 'err'); return; }
+
+  var payload;
+  if (formMode === 'edit') {
+    payload = {
+      action:   'saleslog_update',
+      visitId:  editingVisitId,
+      reaction: selectedReaction,
+      memo:     document.getElementById('fMemo').value
+    };
+  } else if (formMode === 'append') {
+    payload = {
+      action:   'saleslog_create',
+      shopId:   formShopId,
+      reaction: selectedReaction,
+      memo:     document.getElementById('fMemo').value,
+      gps:      currentGps
+    };
+  } else {
+    var shopName = document.getElementById('fShop').value.trim();
+    if (!shopName) { toast(STR.needShop, 'err'); return; }
+    payload = {
+      action:    'saleslog_create',
+      shopName:  shopName,
+      ownerName: document.getElementById('fOwner').value.trim(),
+      phone:     document.getElementById('fPhone').value.trim(),
+      reaction:  selectedReaction,
+      memo:      document.getElementById('fMemo').value,
+      gps:       currentGps
+    };
+  }
 
   var btn = document.getElementById('btnSave');
   btn.disabled = true;
   var origLabel = btn.textContent;
   btn.textContent = STR.saving;
 
-  var payload = {
-    action:    editingVisitId ? 'saleslog_update' : 'saleslog_create',
-    shopName:  shopName,
-    ownerName: document.getElementById('fOwner').value.trim(),
-    phone:     document.getElementById('fPhone').value.trim(),
-    reaction:  selectedReaction,
-    memo:      document.getElementById('fMemo').value
-  };
-  if (editingVisitId) {
-    payload.visitId = editingVisitId;
-  } else {
-    payload.gps = currentGps;
-  }
-
   api(payload)
     .then(function(d) {
       btn.disabled = false;
       btn.textContent = origLabel;
-      if (d.ok) {
-        toast(editingVisitId ? STR.updated : STR.saved, 'ok');
-        editingVisitId = null;
-        loadList().then(function() { showView('list'); });
-      } else {
-        toast('⚠️ ' + (d.error || STR.netError), 'err');
-      }
+      if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
+      toast(formMode === 'edit' ? STR.updated : STR.saved, 'ok');
+      var backShopId = (formMode === 'append') ? formShopId
+                     : (formMode === 'edit' && currentShop) ? currentShop.shopId
+                     : (d.shopId || '');
+      loadShops().then(function() {
+        if (formMode === 'new') {
+          showView('home');
+        } else if (backShopId) {
+          openShop(backShopId);
+        } else {
+          showView('home');
+        }
+      });
     })
-    .catch(function(err) {
+    .catch(function() {
       btn.disabled = false;
       btn.textContent = origLabel;
       toast('⚠️ ' + STR.netError, 'err');
     });
 }
 
-document.getElementById('btnNew').addEventListener('click', openNew);
-document.getElementById('btnBack').addEventListener('click', function() { showView('list'); });
+// ═══════════════════════════════════════════
+//  イベント束ね
+// ═══════════════════════════════════════════
+document.getElementById('tabList').addEventListener('click', function() { switchTab('list'); });
+document.getElementById('tabMap').addEventListener('click',  function() { switchTab('map'); });
+document.getElementById('btnNew').addEventListener('click',  function() { openForm('new'); });
+document.getElementById('btnShopBack').addEventListener('click', function() { showView('home'); loadShops(); });
+document.getElementById('btnShopSave').addEventListener('click', saveShop);
+document.getElementById('btnAddVisit').addEventListener('click', function() {
+  if (currentShop) openForm('append', { shopId: currentShop.shopId, shopName: currentShop.shopName });
+});
+document.getElementById('btnFormBack').addEventListener('click', function() {
+  if ((formMode === 'append' || formMode === 'edit') && currentShop) {
+    openShop(currentShop.shopId);
+  } else {
+    showView('home');
+  }
+});
 document.getElementById('btnGpsRetry').addEventListener('click', acquireGps);
-document.getElementById('btnSave').addEventListener('click', save);
+document.getElementById('btnSave').addEventListener('click', saveVisit);
 
 // ═══════════════════════════════════════════
 //  Toast / esc
@@ -622,7 +1101,7 @@ function esc(s) {
 // ═══════════════════════════════════════════
 //  起動
 // ═══════════════════════════════════════════
-loadWho().then(loadList);
+loadWho().then(loadShops);
 </script>
 </body>
 </html>
