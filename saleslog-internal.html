@@ -280,6 +280,51 @@ body {
 .status-btn.s1.sel { border-color: var(--gold);  background: rgba(201,168,76,0.18); }
 .status-btn.s2.sel { border-color: var(--text-dim); background: rgba(136,136,136,0.15); }
 
+/* ── コミッション ── */
+.grid2 { display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+.grid3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; }
+.choice-btn {
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  padding: 10px 4px;
+  cursor: pointer;
+  text-align:center;
+}
+.choice-btn .ckm { display:block; font-size:12px; font-weight:600; }
+.choice-btn .cjp { display:block; font-size:10px; color:var(--text-dim); }
+.choice-btn.sel       { border-color: var(--gold);  background: rgba(201,168,76,0.15); }
+.choice-btn.sel-green { border-color: var(--green); background: rgba(46,125,50,0.18); }
+.choice-btn.sel-red   { border-color: var(--red);   background: rgba(198,40,40,0.18); }
+.amount-preview { font-size:15px; font-weight:700; color:var(--gold); padding:6px 0 0; }
+.unpaid-bar {
+  background: rgba(198,40,40,0.10);
+  border: 1.5px solid var(--red);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.cm-item {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.cm-item:active { border-color: var(--gold); }
+.cm-head { display:flex; align-items:center; gap:8px; }
+.cm-date { flex:1; font-size:12px; color:var(--text-dim); }
+.cm-calc { font-size:13px; margin-top:4px; }
+.cm-calc .amt { font-weight:700; color:var(--gold); }
+.badge.paid   { background: var(--green); }
+.badge.unpaid { background: var(--red); }
+input[type="date"] { color-scheme: dark; }
+
 .save-btn {
   width: 100%;
   padding: 16px;
@@ -389,6 +434,10 @@ body {
       <input type="text" id="sShop" maxlength="100">
     </div>
     <div class="field">
+      <label>ប្រភេទហាង / 業種（複数選択可）</label>
+      <div class="grid2" id="sTypeGrid"></div>
+    </div>
+    <div class="field">
       <label>ឈ្មោះម្ចាស់ហាង / オーナー名</label>
       <input type="text" id="sOwner" maxlength="100">
     </div>
@@ -419,6 +468,13 @@ body {
       <button class="add-visit-btn" id="btnAddVisit">➕ បន្ថែមការចុះជួប / 追記</button>
     </div>
     <div id="visitList"></div>
+
+    <div class="section-head">
+      <span class="h" id="commissionHead">💰 កម្រៃជើងសារ / コミッション</span>
+      <button class="add-visit-btn" id="btnAddCommission">➕ កត់ត្រា / 記帳</button>
+    </div>
+    <div class="unpaid-bar hidden" id="unpaidBar"></div>
+    <div id="commissionList"></div>
   </div>
 
   <!-- ═══════ 訪問フォーム（新規 / 追記 / 編集 共用） ═══════ -->
@@ -437,6 +493,11 @@ body {
       <label>ឈ្មោះហាង / 店名 <span class="req">*</span></label>
       <input type="text" id="fShop" maxlength="100" placeholder="ឧ. ABC Auto" autocomplete="off">
       <div class="suggest-box" id="suggestBox"></div>
+    </div>
+
+    <div class="field" id="typeField">
+      <label>ប្រភេទហាង / 業種（複数選択可）</label>
+      <div class="grid2" id="fTypeGrid"></div>
     </div>
 
     <div class="field" id="ownerField">
@@ -472,6 +533,65 @@ body {
     </div>
   </div>
 
+  <!-- ═══════ コミッション記帳フォーム（新規 / 編集 共用） ═══════ -->
+  <div id="viewCommission" class="hidden">
+    <button class="back-btn" id="btnCmBack">← ត្រឡប់ / 戻る</button>
+    <div class="form-title" id="cmTitle">💰 កត់ត្រាកម្រៃជើងសារ / コミッション記帳</div>
+    <div class="form-note" id="cmShopLine"></div>
+
+    <div class="field">
+      <label>ថ្ងៃធ្វើសេវា / 施工日</label>
+      <input type="date" id="cDate">
+    </div>
+    <div class="field">
+      <label>សេវាកម្ម / 施工内容</label>
+      <input type="text" id="cDesc" maxlength="100" placeholder="ឧ. WASH, GLASS">
+    </div>
+    <div class="field">
+      <label>តម្លៃសេវា (USD) / 売上 <span class="req">*</span></label>
+      <input type="number" id="cRevenue" min="0" step="0.01" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>អត្រា (%) / 率</label>
+      <input type="number" id="cRate" min="0" max="100" step="1" value="30" inputmode="numeric">
+      <div class="amount-preview" id="cAmount">= $0.00</div>
+    </div>
+    <div class="field">
+      <label>ទិសដៅទូទាត់ / 精算方向</label>
+      <div class="grid2">
+        <button type="button" class="choice-btn dir-btn" data-d="当社→店"><span class="ckm">🏢→🏪 យើងបង់ឱ្យហាង</span><span class="cjp">当社→店に支払う</span></button>
+        <button type="button" class="choice-btn dir-btn" data-d="店→当社"><span class="ckm">🏪→🏢 ហាងបង់មកយើង</span><span class="cjp">店→当社に支払う</span></button>
+      </div>
+    </div>
+    <div class="field">
+      <label>ស្ថានភាព / 支払ステータス</label>
+      <div class="grid2">
+        <button type="button" class="choice-btn pay-btn" data-p="未払い"><span class="ckm">មិនទាន់បង់</span><span class="cjp">未払い</span></button>
+        <button type="button" class="choice-btn pay-btn" data-p="支払済み"><span class="ckm">បានបង់រួច</span><span class="cjp">支払済み</span></button>
+      </div>
+    </div>
+    <div id="payFields" class="hidden">
+      <div class="field">
+        <label>របៀបបង់ប្រាក់ / 支払方法</label>
+        <div class="grid3">
+          <button type="button" class="choice-btn pm-btn" data-m="現金"><span class="ckm">សាច់ប្រាក់</span><span class="cjp">現金</span></button>
+          <button type="button" class="choice-btn pm-btn" data-m="ABA"><span class="ckm">ABA</span><span class="cjp">ABA</span></button>
+          <button type="button" class="choice-btn pm-btn" data-m="その他"><span class="ckm">ផ្សេងៗ</span><span class="cjp">その他</span></button>
+        </div>
+      </div>
+      <div class="field">
+        <label>ថ្ងៃបង់ប្រាក់ / 支払日</label>
+        <input type="date" id="cPayDate">
+      </div>
+    </div>
+    <div class="field">
+      <label>កំណត់ចំណាំ / メモ</label>
+      <textarea id="cMemo" maxlength="2000"></textarea>
+    </div>
+
+    <button class="save-btn" id="btnCmSave">💾 រក្សាទុក / 保存</button>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -499,13 +619,32 @@ var STR = {
   noLocation:  'គ្មានទីតាំង / 位置情報なし',
   mapEmpty:    'មិនទាន់មានហាងដែលមានទីតាំងទេ / 位置情報のある店がまだありません',
   open:        'បើក / 開く',
-  loading:     '…'
+  loading:     '…',
+  cmNewTitle:  '💰 កត់ត្រាកម្រៃជើងសារ / コミッション記帳',
+  cmEditTitle: '✏️ កែសម្រួល / コミッション編集',
+  cmEmpty:     'មិនទាន់មានកំណត់ត្រាកម្រៃទេ / まだ記帳がありません',
+  cmSaved:     'បានកត់ត្រា ✅',
+  needAmount:  'សូមបញ្ចូលតម្លៃ / 金額を入力してください',
+  unpaid:      'ចំនួនជំពាក់ / 未払い残',
+  dirToShop:   'យើងបង់ឱ្យហាង / 店へ支払う分',
+  dirFromShop: 'ហាងបង់មកយើង / 店から受け取る分'
 };
 var STATUS_LABELS = {
   '営業中': 'កំពុងចរចា / 営業中',
   '提携済': 'ជាដៃគូ / 提携済',
   '見送り': 'បោះបង់ / 見送り'
 };
+// 車屋の業種（複数選択・保存値は日本語ラベル。バックエンド SALESLOG_SHOP_TYPES と一致必須）
+// ※ 暫定セット — ロン君ヒアリング後に見直す
+var SHOP_TYPES = [
+  { v: '中古車販売', km: 'លក់រថយន្តជើងទី២',                jp: '中古車販売' },
+  { v: '整備・修理', km: 'ជួសជុលរថយន្ត',                    jp: '整備・修理' },
+  { v: '洗車',       km: 'លាងរថយន្ត',                       jp: '洗車' },
+  { v: 'パーツ',     km: 'គ្រឿងបន្លាស់',                     jp: 'パーツ' },
+  { v: 'タイヤ',     km: 'កង់រថយន្ត',                        jp: 'タイヤ' },
+  { v: '板金・塗装', km: 'ជួសជុលខ្លួនរថយន្ត និងបាញ់ថ្នាំ', jp: '板金・塗装' },
+  { v: 'その他',     km: 'ផ្សេងៗ',                           jp: 'その他' }
+];
 
 // ═══════════════════════════════════════════
 //  GAS URL / chatId 解決（URL パラメータ優先）
@@ -627,11 +766,14 @@ function renderShopList() {
     if (s.lastVisit) meta.push('📅 ' + s.lastVisit);
     if (s.phone)     meta.push('☎ ' + s.phone);
     if (s.lat === null || s.lng === null) meta.push(STR.noLocation);
+    var typesLine = (s.shopTypes && s.shopTypes.length)
+      ? '<div class="shop-meta">🔧 ' + esc(s.shopTypes.join(' / ')) + '</div>' : '';
     card.innerHTML =
       '<div class="shop-head">' +
         '<div class="shop-name">' + esc(s.shopName) + '</div>' +
         badgeFor(s) +
       '</div>' +
+      typesLine +
       '<div class="shop-meta">' + esc(meta.join(' · ')) + '</div>';
     card.addEventListener('click', function() { openShop(s.shopId); });
     body.appendChild(card);
@@ -681,6 +823,7 @@ function refreshMapMarkers() {
     var div = document.createElement('div');
     div.innerHTML =
       '<b>' + esc(s.shopName) + '</b><br>' +
+      ((s.shopTypes && s.shopTypes.length) ? '🔧 ' + esc(s.shopTypes.join(' / ')) + '<br>' : '') +
       esc((s.lastReaction || '—') + ' · 🔁 ' + s.visitCount + (s.lastVisit ? ' · ' + s.lastVisit : ''));
     var btn = document.createElement('button');
     btn.className = 'popup-open-btn';
@@ -718,7 +861,16 @@ function showView(name) {
   document.getElementById('viewHome').className = name === 'home' ? '' : 'hidden';
   document.getElementById('viewShop').className = name === 'shop' ? '' : 'hidden';
   document.getElementById('viewForm').className = name === 'form' ? '' : 'hidden';
+  document.getElementById('viewCommission').className = name === 'commission' ? '' : 'hidden';
   window.scrollTo(0, 0);
+}
+
+// プノンペン時間の今日 (yyyy-MM-dd)
+function ppTodayStr() {
+  var now = new Date();
+  var pp = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60000);
+  return pp.getFullYear() + '-' + String(pp.getMonth() + 1).padStart(2, '0') + '-' +
+         String(pp.getDate()).padStart(2, '0');
 }
 
 // ═══════════════════════════════════════════
@@ -727,15 +879,211 @@ function showView(name) {
 function openShop(shopId) {
   showView('shop');
   document.getElementById('visitList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
+  document.getElementById('commissionList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
+  document.getElementById('unpaidBar').className = 'unpaid-bar hidden';
   api({ action: 'saleslog_shop_detail', shopId: shopId })
     .then(function(d) {
       if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return; }
       currentShop = d.shop;
       currentVisits = d.visits || [];
       renderShopDetail();
+      loadCommissions(shopId);
     })
     .catch(function() { toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
 }
+
+// ═══════════════════════════════════════════
+//  コミッション（Phase 4・案件単位の台帳）
+// ═══════════════════════════════════════════
+var commissionCache = [];
+var cmMode = 'new';
+var cmEditingId = null;
+var cmDirection = '当社→店';
+var cmPayStatus = '未払い';
+var cmPayMethod = '';
+
+function loadCommissions(shopId) {
+  return api({ action: 'commission_list', shopId: shopId })
+    .then(function(d) {
+      if (!d.ok) {
+        document.getElementById('commissionList').innerHTML =
+          '<div class="empty">⚠️ ' + esc(d.error || STR.netError) + '</div>';
+        return;
+      }
+      commissionCache = d.entries || [];
+      renderCommissions(d);
+    })
+    .catch(function() {
+      document.getElementById('commissionList').innerHTML =
+        '<div class="empty">⚠️ ' + esc(STR.netError) + '</div>';
+    });
+}
+
+function renderCommissions(d) {
+  var bar = document.getElementById('unpaidBar');
+  var parts = [];
+  if (d.unpaidToShop > 0)   parts.push('💸 ' + esc(STR.dirToShop) + ': <b>$' + d.unpaidToShop.toFixed(2) + '</b>');
+  if (d.unpaidFromShop > 0) parts.push('💵 ' + esc(STR.dirFromShop) + ': <b>$' + d.unpaidFromShop.toFixed(2) + '</b>');
+  if (parts.length) {
+    bar.className = 'unpaid-bar';
+    bar.innerHTML = '⚠️ ' + esc(STR.unpaid) + '<br>' + parts.join('<br>');
+  } else {
+    bar.className = 'unpaid-bar hidden';
+  }
+
+  var list = document.getElementById('commissionList');
+  list.innerHTML = '';
+  if (!commissionCache.length) {
+    list.innerHTML = '<div class="empty">' + esc(STR.cmEmpty) + '</div>';
+    return;
+  }
+  commissionCache.forEach(function(c) {
+    var item = document.createElement('div');
+    item.className = 'cm-item';
+    var paid = c.payStatus === '支払済み';
+    var dirIcon = c.direction === '店→当社' ? '🏪→🏢' : '🏢→🏪';
+    item.innerHTML =
+      '<div class="cm-head">' +
+        '<span class="cm-date">' + esc(c.serviceDate + (c.serviceDesc ? ' · ' + c.serviceDesc : '')) + '</span>' +
+        '<span class="badge ' + (paid ? 'paid' : 'unpaid') + '">' + esc(paid ? '✓' : '!') + '</span>' +
+      '</div>' +
+      '<div class="cm-calc">' + dirIcon + ' $' + esc(c.revenue.toFixed(2)) + ' × ' + esc(String(c.rate)) + '% = ' +
+        '<span class="amt">$' + esc(c.amount.toFixed(2)) + '</span>' +
+        (paid && c.payMethod ? ' <span style="color:var(--text-dim)">(' + esc(c.payMethod) + ')</span>' : '') +
+      '</div>' +
+      (c.memo ? '<div class="vmemo">' + esc(c.memo) + '</div>' : '');
+    item.addEventListener('click', function() { openCommissionForm('edit', c); });
+    list.appendChild(item);
+  });
+}
+
+function openCommissionForm(mode, entry) {
+  cmMode = mode;
+  cmEditingId = entry ? entry.commissionId : null;
+  document.getElementById('cmTitle').textContent = mode === 'edit' ? STR.cmEditTitle : STR.cmNewTitle;
+  document.getElementById('cmShopLine').textContent = '🏪 ' + (currentShop ? currentShop.shopName : '');
+  document.getElementById('cDate').value    = entry ? entry.serviceDate : ppTodayStr();
+  document.getElementById('cDesc').value    = entry ? entry.serviceDesc : '';
+  document.getElementById('cRevenue').value = entry ? entry.revenue : '';
+  document.getElementById('cRate').value    = entry ? entry.rate : 30;
+  document.getElementById('cMemo').value    = entry ? entry.memo : '';
+  document.getElementById('cPayDate').value = (entry && entry.payDate) ? entry.payDate : ppTodayStr();
+  setCmDirection(entry ? entry.direction : '当社→店');
+  setCmPayStatus(entry ? entry.payStatus : '未払い');
+  setCmPayMethod(entry ? entry.payMethod : '');
+  updateCmAmount();
+  showView('commission');
+}
+
+function updateCmAmount() {
+  // ⚠️ CommissionManager.gs の commissionAmountCents_ と同一ロジック（変更時は両方同期必須）
+  //   先にセント整数化してから演算（0.5セント境界の浮動小数点誤差対策）
+  var revenue = Number(document.getElementById('cRevenue').value);
+  var rate = Number(document.getElementById('cRate').value);
+  var amt = 0;
+  if (isFinite(revenue) && isFinite(rate)) {
+    amt = Math.round(Math.round(revenue * 100) * rate / 100) / 100;
+  }
+  document.getElementById('cAmount').textContent = '= $' + amt.toFixed(2);
+}
+
+function setCmDirection(dir) {
+  cmDirection = dir === '店→当社' ? '店→当社' : '当社→店';
+  var btns = document.querySelectorAll('.dir-btn');
+  for (var i = 0; i < btns.length; i++) {
+    var b = btns[i];
+    b.className = 'choice-btn dir-btn' + (b.getAttribute('data-d') === cmDirection ? ' sel' : '');
+  }
+}
+
+function setCmPayStatus(st) {
+  cmPayStatus = st === '支払済み' ? '支払済み' : '未払い';
+  var btns = document.querySelectorAll('.pay-btn');
+  for (var i = 0; i < btns.length; i++) {
+    var b = btns[i];
+    var on = b.getAttribute('data-p') === cmPayStatus;
+    b.className = 'choice-btn pay-btn' + (on ? (cmPayStatus === '支払済み' ? ' sel-green' : ' sel-red') : '');
+  }
+  document.getElementById('payFields').className = cmPayStatus === '支払済み' ? '' : 'hidden';
+}
+
+function setCmPayMethod(m) {
+  cmPayMethod = ['現金', 'ABA', 'その他'].indexOf(m) >= 0 ? m : '';
+  var btns = document.querySelectorAll('.pm-btn');
+  for (var i = 0; i < btns.length; i++) {
+    var b = btns[i];
+    b.className = 'choice-btn pm-btn' + (b.getAttribute('data-m') === cmPayMethod ? ' sel-green' : '');
+  }
+}
+
+function saveCommission() {
+  var revenue = Number(document.getElementById('cRevenue').value);
+  if (!isFinite(revenue) || revenue <= 0) { toast(STR.needAmount, 'err'); return; }
+  if (!currentShop) { toast('⚠️ ' + STR.netError, 'err'); return; }
+
+  // rate はバックエンドの補正（範囲外→30）と同じ値を送る（プレビューと保存値のズレ防止）
+  var rate = Number(document.getElementById('cRate').value);
+  if (!isFinite(rate) || rate < 0 || rate > 100) rate = 30;
+
+  var payload = {
+    action:      cmMode === 'edit' ? 'commission_update' : 'commission_create',
+    serviceDate: document.getElementById('cDate').value,
+    serviceDesc: document.getElementById('cDesc').value.trim(),
+    revenue:     revenue,
+    rate:        rate,
+    direction:   cmDirection,
+    payStatus:   cmPayStatus,
+    payMethod:   cmPayMethod,
+    payDate:     document.getElementById('cPayDate').value,
+    memo:        document.getElementById('cMemo').value
+  };
+  if (cmMode === 'edit') payload.commissionId = cmEditingId;
+  else payload.shopId = currentShop.shopId;
+
+  var btn = document.getElementById('btnCmSave');
+  btn.disabled = true;
+  var origLabel = btn.textContent;
+  btn.textContent = STR.saving;
+
+  api(payload)
+    .then(function(d) {
+      btn.disabled = false;
+      btn.textContent = origLabel;
+      if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
+      toast(STR.cmSaved, 'ok');
+      openShop(currentShop.shopId);
+    })
+    .catch(function() {
+      btn.disabled = false;
+      btn.textContent = origLabel;
+      toast('⚠️ ' + STR.netError, 'err');
+    });
+}
+
+(function bindCommissionButtons() {
+  var i, btns;
+  btns = document.querySelectorAll('.dir-btn');
+  for (i = 0; i < btns.length; i++) {
+    (function(b) { b.addEventListener('click', function() { setCmDirection(b.getAttribute('data-d')); }); })(btns[i]);
+  }
+  btns = document.querySelectorAll('.pay-btn');
+  for (i = 0; i < btns.length; i++) {
+    (function(b) { b.addEventListener('click', function() { setCmPayStatus(b.getAttribute('data-p')); }); })(btns[i]);
+  }
+  btns = document.querySelectorAll('.pm-btn');
+  for (i = 0; i < btns.length; i++) {
+    (function(b) { b.addEventListener('click', function() { setCmPayMethod(b.getAttribute('data-m')); }); })(btns[i]);
+  }
+  document.getElementById('cRevenue').addEventListener('input', updateCmAmount);
+  document.getElementById('cRate').addEventListener('input', updateCmAmount);
+  document.getElementById('btnAddCommission').addEventListener('click', function() {
+    if (currentShop) openCommissionForm('new', null);
+  });
+  document.getElementById('btnCmBack').addEventListener('click', function() {
+    if (currentShop) openShop(currentShop.shopId); else showView('home');
+  });
+  document.getElementById('btnCmSave').addEventListener('click', saveCommission);
+})();
 
 function renderShopDetail() {
   var s = currentShop;
@@ -744,6 +1092,7 @@ function renderShopDetail() {
   document.getElementById('sPhone').value = s.phone;
   document.getElementById('sMemo').value  = s.memo;
   setStatus(s.status || '営業中');
+  setTypeSelection('s', 'sTypeGrid', s.shopTypes || []);
 
   var box = document.getElementById('shopGpsBox');
   if (s.lat !== null && s.lng !== null) {
@@ -777,6 +1126,39 @@ function renderShopDetail() {
   });
 }
 
+// ── 業種チップ（複数選択・店詳細=sTypeGrid / 新規フォーム=fTypeGrid 共通） ──
+var typeSelections = { s: [], f: [] };
+
+function renderTypeChips(gridId, key) {
+  var grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  // 定義済み7種 + 定義外の値（ラベル改名後の旧データ等）も可視チップとして出す
+  // — 見えないまま保存で消えるのを防ぐ。タップで意図的に外すことは可能
+  var items = SHOP_TYPES.slice();
+  var known = SHOP_TYPES.map(function(t) { return t.v; });
+  typeSelections[key].forEach(function(v) {
+    if (known.indexOf(v) < 0) items.push({ v: v, km: v, jp: '旧ラベル' });
+  });
+  items.forEach(function(t) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'choice-btn' + (typeSelections[key].indexOf(t.v) >= 0 ? ' sel' : '');
+    b.innerHTML = '<span class="ckm">' + esc(t.km) + '</span><span class="cjp">' + esc(t.jp) + '</span>';
+    b.addEventListener('click', function() {
+      var idx = typeSelections[key].indexOf(t.v);
+      if (idx >= 0) typeSelections[key].splice(idx, 1);
+      else typeSelections[key].push(t.v);
+      renderTypeChips(gridId, key);
+    });
+    grid.appendChild(b);
+  });
+}
+
+function setTypeSelection(key, gridId, values) {
+  typeSelections[key] = (values || []).slice();
+  renderTypeChips(gridId, key);
+}
+
 function setStatus(status) {
   selectedStatus = status;
   var btns = document.querySelectorAll('.status-btn');
@@ -806,6 +1188,7 @@ function saveShop() {
     action:    'saleslog_shop_update',
     shopId:    currentShop.shopId,
     shopName:  shopName,
+    shopTypes: typeSelections.s.slice(),
     ownerName: document.getElementById('sOwner').value.trim(),
     phone:     document.getElementById('sPhone').value.trim(),
     status:    selectedStatus,
@@ -818,6 +1201,7 @@ function saveShop() {
         // 画面に留まったまま「追記」した時に古い店名が渡らないよう currentShop も即時更新
         currentShop = Object.assign({}, currentShop, {
           shopName:  shopName,
+          shopTypes: typeSelections.s.slice(),
           ownerName: document.getElementById('sOwner').value.trim(),
           phone:     document.getElementById('sPhone').value.trim(),
           status:    selectedStatus,
@@ -851,12 +1235,14 @@ function openForm(mode, opts) {
     note.className = 'form-note hidden';
   }
 
-  // フィールド表示制御: 店名/オーナー/電話は新規のみ（追記・編集は店マスター側で管理）
+  // フィールド表示制御: 店名/業種/オーナー/電話は新規のみ（追記・編集は店マスター側で管理）
   var showShopFields = mode === 'new';
   document.getElementById('shopNameField').className = 'field' + (showShopFields ? '' : ' hidden');
+  document.getElementById('typeField').className     = 'field' + (showShopFields ? '' : ' hidden');
   document.getElementById('ownerField').className    = 'field' + (showShopFields ? '' : ' hidden');
   document.getElementById('phoneField').className    = 'field' + (showShopFields ? '' : ' hidden');
   document.getElementById('gpsField').className      = 'field' + (mode === 'edit' ? ' hidden' : '');
+  if (showShopFields) setTypeSelection('f', 'fTypeGrid', []);
 
   document.getElementById('fShop').value  = '';
   document.getElementById('fOwner').value = '';
@@ -1018,6 +1404,7 @@ function saveVisit() {
     payload = {
       action:    'saleslog_create',
       shopName:  shopName,
+      shopTypes: typeSelections.f.slice(),
       ownerName: document.getElementById('fOwner').value.trim(),
       phone:     document.getElementById('fPhone').value.trim(),
       reaction:  selectedReaction,
