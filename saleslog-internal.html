@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>車屋提携 / ហាងដៃគូ</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --border: #2a2a2a;
+  --gold: #c9a84c;
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --green: #2E7D32;
+  --blue: #1565C0;
+  --amber: #F57C00;
+  --red: #c62828;
+  --radius: 14px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans Khmer','Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+}
+.wrap { max-width: 480px; margin: 0 auto; }
+
+.title {
+  text-align:center;
+  font-size: 18px; font-weight: 700;
+  margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--gold), #e8d5a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle {
+  text-align:center; font-size: 12px; color: var(--text-dim);
+  margin-bottom: 12px;
+}
+.who {
+  text-align:center;
+  font-size:13px; color: var(--text);
+  padding: 0 0 12px;
+}
+.who strong { color: var(--gold); }
+
+/* ── 一覧ビュー ── */
+.new-btn {
+  width: 100%;
+  padding: 18px 16px;
+  border: none; border-radius: var(--radius);
+  font-size: 17px; font-weight: 700;
+  color: #1a1a1a;
+  background: linear-gradient(135deg, var(--gold), #e8d5a3);
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 16px;
+  transition: transform 0.15s;
+}
+.new-btn:active { transform: scale(0.98); }
+
+.list-label {
+  font-size:11px; font-weight:600; color:var(--text-dim);
+  text-transform:uppercase; letter-spacing:1px;
+  padding: 4px 0 8px;
+}
+.visit-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+.visit-card:active { transform: scale(0.98); border-color: var(--gold); }
+.visit-head { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.visit-shop { flex:1; font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.visit-date { font-size:11px; color:var(--text-dim); margin-bottom:4px; }
+.visit-sub  { font-size:12px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.visit-memo {
+  font-size:12px; color:var(--text-dim); margin-top:4px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.badge {
+  flex-shrink:0;
+  font-size:12px; font-weight:700;
+  padding: 2px 10px; border-radius: 8px;
+  color:#fff;
+}
+.badge.rA { background: var(--green); }
+.badge.rB { background: var(--blue); }
+.badge.rC { background: var(--amber); }
+.badge.rD { background: var(--red); }
+.badge.rNone { background: var(--border); color: var(--text-dim); }
+.empty {
+  text-align:center; color:var(--text-dim); font-size:13px;
+  padding: 30px 0;
+}
+
+/* ── フォームビュー ── */
+.back-btn {
+  background:none; border:none; color:var(--text-dim);
+  font-size:14px; font-family:inherit; cursor:pointer;
+  padding: 4px 0 14px;
+}
+.form-title { font-size:16px; font-weight:700; margin-bottom:12px; }
+.field { margin-bottom: 14px; }
+.field label {
+  display:block; font-size:12px; color:var(--text-dim);
+  margin-bottom:6px;
+}
+.field label .req { color: var(--red); font-weight:700; }
+.field input, .field textarea {
+  width:100%;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  padding: 12px;
+}
+.field input:focus, .field textarea:focus {
+  outline: none; border-color: var(--gold);
+}
+.field textarea { min-height: 90px; resize: vertical; }
+
+.gps-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: center;
+  min-height: 38px;
+}
+.gps-box.ok   { color: #4caf50; }
+.gps-box.warn { color: #ffc107; }
+.gps-box.err  { color: #ff7043; }
+.gps-box a { color: inherit; }
+.gps-retry {
+  width:100%;
+  margin-top:8px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px; font-family: inherit;
+  padding: 10px;
+  cursor:pointer;
+}
+.gps-retry:active { border-color: var(--gold); }
+
+.react-grid {
+  display:grid; grid-template-columns: 1fr 1fr; gap:8px;
+}
+.react-btn {
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13px; font-weight:600;
+  font-family: inherit;
+  padding: 12px 8px;
+  cursor: pointer;
+  text-align:left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.react-btn .letter {
+  display:inline-block;
+  width:22px; height:22px; line-height:22px;
+  border-radius:6px; text-align:center;
+  font-weight:700; margin-right:6px;
+  background: var(--border); color: var(--text);
+}
+.react-btn.rA.sel { border-color: var(--green); background: rgba(46,125,50,0.18); }
+.react-btn.rB.sel { border-color: var(--blue);  background: rgba(21,101,192,0.18); }
+.react-btn.rC.sel { border-color: var(--amber); background: rgba(245,124,0,0.18); }
+.react-btn.rD.sel { border-color: var(--red);   background: rgba(198,40,40,0.18); }
+.react-btn.rA.sel .letter { background: var(--green); color:#fff; }
+.react-btn.rB.sel .letter { background: var(--blue);  color:#fff; }
+.react-btn.rC.sel .letter { background: var(--amber); color:#fff; }
+.react-btn.rD.sel .letter { background: var(--red);   color:#fff; }
+
+.save-btn {
+  width: 100%;
+  padding: 18px 16px;
+  border: none; border-radius: var(--radius);
+  font-size: 17px; font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #00695C, #00897B);
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 6px;
+  transition: transform 0.15s, opacity 0.2s;
+}
+.save-btn:active { transform: scale(0.98); }
+.save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.hint {
+  font-size: 11px; color: var(--text-dim);
+  text-align: center; margin-top: 12px; line-height: 1.5;
+}
+
+.toast {
+  position: fixed; left: 50%; bottom: 30px;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--card); color: var(--text);
+  padding: 12px 20px; border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 13px; max-width: 90%;
+  transition: transform 0.3s;
+  z-index: 9999;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.err { border-color: var(--red); }
+.toast.ok  { border-color: #00897B; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="title">🤝 ហាងដៃគូ</div>
+  <div class="subtitle">車屋提携 営業ログ / Partner Shop Visit Log</div>
+
+  <div class="who" id="whoLine">…</div>
+
+  <!-- ═══════ 一覧ビュー ═══════ -->
+  <div id="viewList">
+    <button class="new-btn" id="btnNew">➕ កត់ត្រាថ្មី / New Visit</button>
+    <div class="list-label" id="listLabel">បញ្ជីការចុះជួប / Visit List</div>
+    <div id="listBody">
+      <div class="empty" id="listEmpty">…</div>
+    </div>
+  </div>
+
+  <!-- ═══════ フォームビュー（新規・編集共用） ═══════ -->
+  <div id="viewForm" class="hidden">
+    <button class="back-btn" id="btnBack">← ត្រឡប់ / Back</button>
+    <div class="form-title" id="formTitle">➕ កត់ត្រាថ្មី / New Visit</div>
+
+    <div class="field" id="gpsField">
+      <label>📡 GPS</label>
+      <div class="gps-box" id="gpsBox">—</div>
+      <button class="gps-retry" id="btnGpsRetry" type="button">📍 យកទីតាំង / Get GPS</button>
+    </div>
+
+    <div class="field">
+      <label>ឈ្មោះហាង / Shop name <span class="req">*</span></label>
+      <input type="text" id="fShop" maxlength="100" placeholder="ឧ. ABC Auto">
+    </div>
+
+    <div class="field">
+      <label>ឈ្មោះម្ចាស់ហាង / Owner name</label>
+      <input type="text" id="fOwner" maxlength="100">
+    </div>
+
+    <div class="field">
+      <label>លេខទូរស័ព្ទ / Phone</label>
+      <input type="tel" id="fPhone" maxlength="30" inputmode="tel">
+    </div>
+
+    <div class="field">
+      <label>ការឆ្លើយតប / Reaction</label>
+      <div class="react-grid">
+        <button type="button" class="react-btn rA" data-r="A"><span class="letter">A</span><span class="rlabel">កំណត់ការសាកល្បង</span></button>
+        <button type="button" class="react-btn rB" data-r="B"><span class="letter">B</span><span class="rlabel">ចាប់អារម្មណ៍</span></button>
+        <button type="button" class="react-btn rC" data-r="C"><span class="letter">C</span><span class="rlabel">រង់ចាំសម្រេច</span></button>
+        <button type="button" class="react-btn rD" data-r="D"><span class="letter">D</span><span class="rlabel">បដិសេធ</span></button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>កំណត់ចំណាំ / Memo</label>
+      <textarea id="fMemo" maxlength="2000" placeholder="អាចបំពេញពេលក្រោយបាន"></textarea>
+    </div>
+
+    <button class="save-btn" id="btnSave">💾 រក្សាទុក / Save</button>
+
+    <div class="hint" id="formHint">
+      ※ GPS មិនមាន ក៏អាចរក្សាទុកបាន<br>
+      ※ GPS なしでも保存できます
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  文言（クメール語は Panha 校閲済みテーブル準拠）
+// ═══════════════════════════════════════════
+var STR = {
+  gpsGetting:  'កំពុងស្វែងរកទីតាំង… / Getting location…',
+  gpsOk:       'ទីតាំង OK',
+  gpsFail:     'មិនអាចយកទីតាំងបានទេ (អាចរក្សាទុកបាន) / No GPS — you can still save',
+  gpsOld:      'សូមធ្វើបច្ចុប្បន្នភាព Telegram ដើម្បីប្រើ GPS / Update Telegram to use GPS',
+  saving:      'កំពុងរក្សាទុក… / Saving…',
+  saved:       'បានរក្សាទុក ✅',
+  updated:     'បានកែសម្រួល ✅',
+  needShop:    'សូមបញ្ចូលឈ្មោះហាង / Please enter shop name',
+  netError:    'បញ្ហាបណ្តាញ / Network error',
+  emptyList:   'មិនទាន់មានកំណត់ត្រាទេ / No records yet',
+  editTitle:   '✏️ កែសម្រួល / Edit',
+  newTitle:    '➕ កត់ត្រាថ្មី / New Visit',
+  loading:     '…'
+};
+
+// ═══════════════════════════════════════════
+//  GAS URL / chatId 解決（URL パラメータ優先）
+// ═══════════════════════════════════════════
+var GAS_URL = '';
+var currentChatId = '';
+var currentGps = null;        // { lat, lng }（新規作成時のみ使用）
+var editingVisitId = null;    // null = 新規モード
+var visitCache = [];          // saleslog_list の結果
+
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+}
+
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('gas'))    GAS_URL = urlParams.get('gas');
+if (urlParams.get('chatId')) currentChatId = urlParams.get('chatId');
+
+// フォールバック: Telegram WebApp から取得（初回起動時）
+if (!GAS_URL && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+  GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
+}
+if (!currentChatId && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
+}
+
+// v7 booking.html と同一方式: POST + Content-Type: 'text/plain;charset=utf-8'
+// 応答はまず text で受けて JSON.parse（認可切れ等の HTML 応答を切り分けるため。home-internal.html と同方式）
+function api(payload) {
+  payload.chatId = currentChatId;
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function(r) { return r.text(); })
+    .then(function(txt) {
+      try { return JSON.parse(txt); }
+      catch (e) { return { ok: false, error: '非JSON応答（先頭300文字）: ' + txt.substring(0, 300) }; }
+    });
+}
+
+function loadWho() {
+  var line = document.getElementById('whoLine');
+  if (!currentChatId) { line.textContent = '⚠️ chatId 取得失敗'; return Promise.resolve(); }
+  if (!GAS_URL)       { line.textContent = '⚠️ GAS URL 未設定'; return Promise.resolve(); }
+  return api({ action: 'whoami' })
+    .then(function(d) {
+      if (d.ok && d.staff) {
+        line.innerHTML = '👤 <strong>' + esc(d.staff.nameJp) + '</strong> (' + esc(d.staff.nameEn) + ')';
+      } else {
+        line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
+      }
+    })
+    .catch(function(err) { line.textContent = '⚠️ ' + STR.netError; });
+}
+
+// ═══════════════════════════════════════════
+//  一覧
+// ═══════════════════════════════════════════
+function loadList() {
+  var empty = document.getElementById('listEmpty');
+  empty.textContent = STR.loading;
+  return api({ action: 'saleslog_list' })
+    .then(function(d) {
+      if (!d.ok) {
+        empty.textContent = '⚠️ ' + (d.error || STR.netError);
+        return;
+      }
+      visitCache = d.visits || [];
+      renderList();
+    })
+    .catch(function(err) { empty.textContent = '⚠️ ' + STR.netError; });
+}
+
+function renderList() {
+  var body = document.getElementById('listBody');
+  body.innerHTML = '';
+  if (!visitCache.length) {
+    var e = document.createElement('div');
+    e.className = 'empty';
+    e.id = 'listEmpty';
+    e.textContent = STR.emptyList;
+    body.appendChild(e);
+    return;
+  }
+  visitCache.forEach(function(v) {
+    var card = document.createElement('div');
+    card.className = 'visit-card';
+    var badgeClass = v.reaction ? 'r' + v.reaction : 'rNone';
+    var badgeText  = v.reaction || '—';
+    var sub = [v.ownerName, v.phone].filter(Boolean).join(' · ');
+    card.innerHTML =
+      '<div class="visit-date">' + esc(v.datetime) + (v.lat !== null && v.lng !== null ? ' 📍' : '') + '</div>' +
+      '<div class="visit-head">' +
+        '<div class="visit-shop">' + esc(v.shopName) + '</div>' +
+        '<span class="badge ' + badgeClass + '">' + esc(badgeText) + '</span>' +
+      '</div>' +
+      (sub ? '<div class="visit-sub">' + esc(sub) + '</div>' : '') +
+      (v.memo ? '<div class="visit-memo">' + esc(v.memo) + '</div>' : '');
+    card.addEventListener('click', function() { openEdit(v.visitId); });
+    body.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  ビュー切替
+// ═══════════════════════════════════════════
+function showView(name) {
+  document.getElementById('viewList').className = name === 'list' ? '' : 'hidden';
+  document.getElementById('viewForm').className = name === 'form' ? '' : 'hidden';
+  window.scrollTo(0, 0);
+}
+
+function openNew() {
+  editingVisitId = null;
+  document.getElementById('formTitle').textContent = STR.newTitle;
+  document.getElementById('fShop').value  = '';
+  document.getElementById('fOwner').value = '';
+  document.getElementById('fPhone').value = '';
+  document.getElementById('fMemo').value  = '';
+  setReaction('');
+  document.getElementById('btnGpsRetry').className = 'gps-retry';
+  showView('form');
+  acquireGps();
+}
+
+function openEdit(visitId) {
+  var v = null;
+  for (var i = 0; i < visitCache.length; i++) {
+    if (visitCache[i].visitId === visitId) { v = visitCache[i]; break; }
+  }
+  if (!v) return;
+  editingVisitId = visitId;
+  document.getElementById('formTitle').textContent = STR.editTitle;
+  document.getElementById('fShop').value  = v.shopName;
+  document.getElementById('fOwner').value = v.ownerName;
+  document.getElementById('fPhone').value = v.phone;
+  document.getElementById('fMemo').value  = v.memo;
+  setReaction(v.reaction);
+
+  // 編集時: GPS は記録済みの値を表示のみ（変更しない）
+  var box = document.getElementById('gpsBox');
+  if (v.lat !== null && v.lng !== null) {
+    box.className = 'gps-box ok';
+    box.innerHTML = '📍 ' + esc(v.lat + ', ' + v.lng) +
+      ' <a href="https://www.google.com/maps?q=' + encodeURIComponent(v.lat + ',' + v.lng) +
+      '" target="_blank" rel="noopener">🗺</a>';
+  } else {
+    box.className = 'gps-box';
+    box.textContent = '📍 —';
+  }
+  document.getElementById('btnGpsRetry').className = 'gps-retry hidden';
+  showView('form');
+}
+
+// ═══════════════════════════════════════════
+//  GPS（Telegram LocationManager API のみ使用）
+//  ※ navigator.geolocation は Telegram WebView 内で不安定なため使用禁止（要件 v1）
+// ═══════════════════════════════════════════
+function acquireGps() {
+  var box = document.getElementById('gpsBox');
+  currentGps = null;
+
+  var wa = window.Telegram && Telegram.WebApp;
+  if (!wa || !wa.LocationManager || !(wa.isVersionAtLeast && wa.isVersionAtLeast('8.0'))) {
+    box.className = 'gps-box err';
+    box.textContent = '📡 ' + STR.gpsOld;
+    return;
+  }
+
+  box.className = 'gps-box';
+  box.textContent = '📡 ' + STR.gpsGetting;
+
+  var lm = wa.LocationManager;
+  var run = function() {
+    if (!lm.isLocationAvailable) {
+      box.className = 'gps-box warn';
+      box.textContent = '📡 ' + STR.gpsFail;
+      return;
+    }
+    lm.getLocation(function(data) {
+      if (data && typeof data.latitude === 'number') {
+        currentGps = {
+          lat: Number(data.latitude.toFixed(6)),
+          lng: Number(data.longitude.toFixed(6))
+        };
+        var acc = Math.round(data.horizontal_accuracy || 0);
+        box.className = 'gps-box ok';
+        box.textContent = '📡 ' + STR.gpsOk + ' (' + currentGps.lat + ', ' + currentGps.lng +
+                          (acc ? ' ±' + acc + 'm' : '') + ')';
+      } else {
+        // アクセス拒否 or 取得失敗（保存は可能）
+        currentGps = null;
+        box.className = 'gps-box warn';
+        box.textContent = '📡 ' + STR.gpsFail;
+      }
+    });
+  };
+  if (lm.isInited) run(); else lm.init(run);
+}
+
+// ═══════════════════════════════════════════
+//  反応 A-D
+// ═══════════════════════════════════════════
+var selectedReaction = '';
+function setReaction(r) {
+  selectedReaction = r || '';
+  var btns = document.querySelectorAll('.react-btn');
+  for (var i = 0; i < btns.length; i++) {
+    var b = btns[i];
+    if (b.getAttribute('data-r') === selectedReaction) {
+      b.className = b.className.replace(' sel', '') + ' sel';
+    } else {
+      b.className = b.className.replace(' sel', '');
+    }
+  }
+}
+(function bindReactionButtons() {
+  var btns = document.querySelectorAll('.react-btn');
+  for (var i = 0; i < btns.length; i++) {
+    (function(b) {
+      b.addEventListener('click', function() {
+        var r = b.getAttribute('data-r');
+        // 同じボタン再タップで解除（反応は任意項目）
+        setReaction(selectedReaction === r ? '' : r);
+      });
+    })(btns[i]);
+  }
+})();
+
+// ═══════════════════════════════════════════
+//  保存（新規 / 編集）
+// ═══════════════════════════════════════════
+function save() {
+  var shopName = document.getElementById('fShop').value.trim();
+  if (!shopName) { toast(STR.needShop, 'err'); return; }
+  if (!currentChatId || !GAS_URL) { toast(STR.netError, 'err'); return; }
+
+  var btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  var origLabel = btn.textContent;
+  btn.textContent = STR.saving;
+
+  var payload = {
+    action:    editingVisitId ? 'saleslog_update' : 'saleslog_create',
+    shopName:  shopName,
+    ownerName: document.getElementById('fOwner').value.trim(),
+    phone:     document.getElementById('fPhone').value.trim(),
+    reaction:  selectedReaction,
+    memo:      document.getElementById('fMemo').value
+  };
+  if (editingVisitId) {
+    payload.visitId = editingVisitId;
+  } else {
+    payload.gps = currentGps;
+  }
+
+  api(payload)
+    .then(function(d) {
+      btn.disabled = false;
+      btn.textContent = origLabel;
+      if (d.ok) {
+        toast(editingVisitId ? STR.updated : STR.saved, 'ok');
+        editingVisitId = null;
+        loadList().then(function() { showView('list'); });
+      } else {
+        toast('⚠️ ' + (d.error || STR.netError), 'err');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = origLabel;
+      toast('⚠️ ' + STR.netError, 'err');
+    });
+}
+
+document.getElementById('btnNew').addEventListener('click', openNew);
+document.getElementById('btnBack').addEventListener('click', function() { showView('list'); });
+document.getElementById('btnGpsRetry').addEventListener('click', acquireGps);
+document.getElementById('btnSave').addEventListener('click', save);
+
+// ═══════════════════════════════════════════
+//  Toast / esc
+// ═══════════════════════════════════════════
+var toastTimer = null;
+function toast(msg, kind) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() {
+    t.className = 'toast ' + (kind || '');
+  }, 3000);
+}
+
+function esc(s) {
+  return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+// ═══════════════════════════════════════════
+//  起動
+// ═══════════════════════════════════════════
+loadWho().then(loadList);
+</script>
+</body>
+</html>

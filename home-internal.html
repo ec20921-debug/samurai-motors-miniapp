@@ -97,6 +97,7 @@ body {
 .icon-task       { background: linear-gradient(135deg, #E65100, #F57C00); }
 .icon-report     { background: linear-gradient(135deg, #6A1B9A, #8E24AA); }
 .icon-expense    { background: linear-gradient(135deg, #2E7D32, #43A047); }
+.icon-saleslog   { background: linear-gradient(135deg, #1565C0, #1E88E5); }
 .icon-execdash   { background: linear-gradient(135deg, #8a7535, #c9a84c); }
 
 .section-label {
@@ -159,6 +160,15 @@ body {
     <div class="menu-info">
       <div class="menu-title">経費入力 / ចំណាយ</div>
       <div class="menu-desc">レシート写真付きで経費を記録</div>
+    </div>
+    <span class="menu-arrow">›</span>
+  </a>
+
+  <a class="menu-item" id="menuSalesLog">
+    <div class="menu-icon icon-saleslog">🤝</div>
+    <div class="menu-info">
+      <div class="menu-title">車屋提携 / ហាងដៃគូ</div>
+      <div class="menu-desc">訪問記録・営業ログ / កំណត់ត្រាការចុះជួបហាង</div>
     </div>
     <span class="menu-arrow">›</span>
   </a>
@@ -227,12 +237,15 @@ var reportHref = buildUrl('report-internal.html');
 document.getElementById('menuReport').href = reportHref;
 var expenseHref = buildUrl('expense-internal.html');
 document.getElementById('menuExpense').href = expenseHref;
+var salesLogHref = buildUrl('saleslog-internal.html');
+document.getElementById('menuSalesLog').href = salesLogHref;
 document.getElementById('menuExecDash').href = buildUrl('exec-dashboard.html');
 // デバッグ: タップ前にリンク先 URL を確認できるよう表示
 console.log('📍 attendance URL:', attendanceHref);
 console.log('📍 task URL:', taskHref);
 console.log('📍 report URL:', reportHref);
 console.log('📍 expense URL:', expenseHref);
+console.log('📍 saleslog URL:', salesLogHref);
 
 // ユーザー識別（whoami でスタッフ判別）
 (function loadWho() {
