@@ -574,8 +574,8 @@ input[type="date"] { color-scheme: dark; }
       <div class="field">
         <label>របៀបបង់ប្រាក់ / 支払方法</label>
         <div class="grid3">
-          <button type="button" class="choice-btn pm-btn" data-m="現金"><span class="ckm">សាច់ប្រាក់</span><span class="cjp">現金</span></button>
           <button type="button" class="choice-btn pm-btn" data-m="ABA"><span class="ckm">ABA</span><span class="cjp">ABA</span></button>
+          <button type="button" class="choice-btn pm-btn" data-m="現金"><span class="ckm">សាច់ប្រាក់</span><span class="cjp">現金</span></button>
           <button type="button" class="choice-btn pm-btn" data-m="その他"><span class="ckm">ផ្សេងៗ</span><span class="cjp">その他</span></button>
         </div>
       </div>
@@ -1005,6 +1005,8 @@ function setCmPayStatus(st) {
     b.className = 'choice-btn pay-btn' + (on ? (cmPayStatus === '支払済み' ? ' sel-green' : ' sel-red') : '');
   }
   document.getElementById('payFields').className = cmPayStatus === '支払済み' ? '' : 'hidden';
+  // ABA 送金がほぼ100%のため既定選択に（2026-07-25 Daisuke。変更はワンタップで可能）
+  if (cmPayStatus === '支払済み' && !cmPayMethod) setCmPayMethod('ABA');
 }
 
 function setCmPayMethod(m) {
