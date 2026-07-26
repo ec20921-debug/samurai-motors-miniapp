@@ -557,11 +557,12 @@ input[type="date"] { color-scheme: dark; }
       <div class="amount-preview" id="cAmount">= $0.00</div>
     </div>
     <div class="field">
-      <label>ទិសដៅទូទាត់ / 精算方向</label>
+      <label>❓ អ្នកណាទទួលលុយពីភ្ញៀវ? / だれがお客からお金を受け取った？</label>
       <div class="grid2">
-        <button type="button" class="choice-btn dir-btn" data-d="当社→店"><span class="ckm">🏢→🏪 យើងបង់ឱ្យហាង</span><span class="cjp">当社→店に支払う</span></button>
-        <button type="button" class="choice-btn dir-btn" data-d="店→当社"><span class="ckm">🏪→🏢 ហាងបង់មកយើង</span><span class="cjp">店→当社に支払う</span></button>
+        <button type="button" class="choice-btn col-btn" data-c="店"><span class="ckm">🏪 ហាងទទួលលុយពីភ្ញៀវ</span><span class="cjp">店が受け取った（ふつうはこれ）</span></button>
+        <button type="button" class="choice-btn col-btn" data-c="当社"><span class="ckm">🏢 យើងទទួលលុយពីភ្ញៀវ</span><span class="cjp">うちが受け取った</span></button>
       </div>
+      <div class="amount-preview" id="cSettle"></div>
     </div>
     <div class="field">
       <label>ស្ថានភាព / 支払ステータス</label>
@@ -898,7 +899,7 @@ function openShop(shopId) {
 var commissionCache = [];
 var cmMode = 'new';
 var cmEditingId = null;
-var cmDirection = '当社→店';
+var cmCollector = '店'; // 集金者。既定=店集金（2026-07-26 Daisuke 裁可・店の請求に込みが基本）
 var cmPayStatus = '未払い';
 var cmPayMethod = '';
 
@@ -941,15 +942,18 @@ function renderCommissions(d) {
     var item = document.createElement('div');
     item.className = 'cm-item';
     var paid = c.payStatus === '支払済み';
-    var dirIcon = c.direction === '店→当社' ? '🏪→🏢' : '🏢→🏪';
+    // 精算額の表示: 店集金→店がうちに払う分(当社受取額) / 当社集金→うちが店に払う分(コミッション額)
+    var isOurs = c.collector === '当社';
+    var settleIcon = isOurs ? '🏢→🏪' : '🏪→🏢';
+    var settleAmt = isOurs ? c.amount : (c.ourAmount || (c.revenue - c.amount));
     item.innerHTML =
       '<div class="cm-head">' +
         '<span class="cm-date">' + esc(c.serviceDate + (c.serviceDesc ? ' · ' + c.serviceDesc : '')) + '</span>' +
         '<span class="badge ' + (paid ? 'paid' : 'unpaid') + '">' + esc(paid ? '✓' : '!') + '</span>' +
       '</div>' +
-      '<div class="cm-calc">' + dirIcon + ' $' + esc(c.revenue.toFixed(2)) + ' × ' + esc(String(c.rate)) + '% = ' +
-        '<span class="amt">$' + esc(c.amount.toFixed(2)) + '</span>' +
-        (paid && c.payMethod ? ' <span style="color:var(--text-dim)">(' + esc(c.payMethod) + ')</span>' : '') +
+      '<div class="cm-calc">' + settleIcon + ' <span class="amt">$' + esc(settleAmt.toFixed(2)) + '</span>' +
+        ' <span style="color:var(--text-dim)">($' + esc(c.revenue.toFixed(2)) + ' · ' + esc(String(c.rate)) + '%)' +
+        (paid && c.payMethod ? ' ' + esc(c.payMethod) : '') + '</span>' +
       '</div>' +
       (c.memo ? '<div class="vmemo">' + esc(c.memo) + '</div>' : '');
     item.addEventListener('click', function() { openCommissionForm('edit', c); });
@@ -968,10 +972,9 @@ function openCommissionForm(mode, entry) {
   document.getElementById('cRate').value    = entry ? entry.rate : 30;
   document.getElementById('cMemo').value    = entry ? entry.memo : '';
   document.getElementById('cPayDate').value = (entry && entry.payDate) ? entry.payDate : ppTodayStr();
-  setCmDirection(entry ? entry.direction : '当社→店');
   setCmPayStatus(entry ? entry.payStatus : '未払い');
   setCmPayMethod(entry ? entry.payMethod : '');
-  updateCmAmount();
+  setCmCollector(entry ? (entry.collector || '店') : '店'); // updateCmAmount も内部で呼ばれる
   showView('commission');
 }
 
@@ -980,20 +983,31 @@ function updateCmAmount() {
   //   先にセント整数化してから演算（0.5セント境界の浮動小数点誤差対策）
   var revenue = Number(document.getElementById('cRevenue').value);
   var rate = Number(document.getElementById('cRate').value);
-  var amt = 0;
+  var commission = 0, our = 0;
   if (isFinite(revenue) && isFinite(rate)) {
-    amt = Math.round(Math.round(revenue * 100) * rate / 100) / 100;
+    var rc = Math.round(revenue * 100);
+    var cc = Math.round(rc * rate / 100);
+    commission = cc / 100;
+    our = (rc - cc) / 100;
   }
-  document.getElementById('cAmount').textContent = '= $' + amt.toFixed(2);
+  document.getElementById('cAmount').textContent = '= $' + commission.toFixed(2);
+  // 集金者の選択に応じて「実際に動くお金」を表示
+  var settle = document.getElementById('cSettle');
+  if (cmCollector === '当社') {
+    settle.textContent = '🏢→🏪 ' + STR.dirToShop + ': $' + commission.toFixed(2);
+  } else {
+    settle.textContent = '🏪→🏢 ' + STR.dirFromShop + ': $' + our.toFixed(2);
+  }
 }
 
-function setCmDirection(dir) {
-  cmDirection = dir === '店→当社' ? '店→当社' : '当社→店';
-  var btns = document.querySelectorAll('.dir-btn');
+function setCmCollector(c) {
+  cmCollector = c === '当社' ? '当社' : '店';
+  var btns = document.querySelectorAll('.col-btn');
   for (var i = 0; i < btns.length; i++) {
     var b = btns[i];
-    b.className = 'choice-btn dir-btn' + (b.getAttribute('data-d') === cmDirection ? ' sel' : '');
+    b.className = 'choice-btn col-btn' + (b.getAttribute('data-c') === cmCollector ? ' sel' : '');
   }
+  updateCmAmount();
 }
 
 function setCmPayStatus(st) {
@@ -1033,7 +1047,7 @@ function saveCommission() {
     serviceDesc: document.getElementById('cDesc').value.trim(),
     revenue:     revenue,
     rate:        rate,
-    direction:   cmDirection,
+    collector:   cmCollector,
     payStatus:   cmPayStatus,
     payMethod:   cmPayMethod,
     payDate:     document.getElementById('cPayDate').value,
@@ -1064,9 +1078,9 @@ function saveCommission() {
 
 (function bindCommissionButtons() {
   var i, btns;
-  btns = document.querySelectorAll('.dir-btn');
+  btns = document.querySelectorAll('.col-btn');
   for (i = 0; i < btns.length; i++) {
-    (function(b) { b.addEventListener('click', function() { setCmDirection(b.getAttribute('data-d')); }); })(btns[i]);
+    (function(b) { b.addEventListener('click', function() { setCmCollector(b.getAttribute('data-c')); }); })(btns[i]);
   }
   btns = document.querySelectorAll('.pay-btn');
   for (i = 0; i < btns.length; i++) {
