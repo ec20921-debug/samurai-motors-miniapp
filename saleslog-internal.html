@@ -446,6 +446,10 @@ input[type="date"] { color-scheme: dark; }
       <input type="tel" id="sPhone" maxlength="30" inputmode="tel">
     </div>
     <div class="field">
+      <label>🔗 Facebook <span id="sFbLink"></span></label>
+      <input type="url" id="sFb" maxlength="300" placeholder="https://facebook.com/..." inputmode="url">
+    </div>
+    <div class="field">
       <label>ស្ថានភាព / ステータス</label>
       <div class="status-grid" id="statusGrid">
         <button type="button" class="status-btn s0" data-s="営業中"><span class="skm">កំពុងចរចា</span><span class="sjp">営業中</span></button>
@@ -508,6 +512,11 @@ input[type="date"] { color-scheme: dark; }
     <div class="field" id="phoneField">
       <label>លេខទូរស័ព្ទ / 電話番号</label>
       <input type="tel" id="fPhone" maxlength="30" inputmode="tel">
+    </div>
+
+    <div class="field" id="fbField">
+      <label>🔗 Facebook</label>
+      <input type="url" id="fFb" maxlength="300" placeholder="https://facebook.com/..." inputmode="url">
     </div>
 
     <div class="field">
@@ -766,6 +775,7 @@ function renderShopList() {
     meta.push('🔁 ' + s.visitCount);
     if (s.lastVisit) meta.push('📅 ' + s.lastVisit);
     if (s.phone)     meta.push('☎ ' + s.phone);
+    if (s.facebook)  meta.push('🔗FB');
     if (s.lat === null || s.lng === null) meta.push(STR.noLocation);
     var typesLine = (s.shopTypes && s.shopTypes.length)
       ? '<div class="shop-meta">🔧 ' + esc(s.shopTypes.join(' / ')) + '</div>' : '';
@@ -1106,6 +1116,14 @@ function renderShopDetail() {
   document.getElementById('sShop').value  = s.shopName;
   document.getElementById('sOwner').value = s.ownerName;
   document.getElementById('sPhone').value = s.phone;
+  document.getElementById('sFb').value    = s.facebook || '';
+  // http で始まる値のみ開くリンクを出す（ページ名だけの記録も許容するため）
+  var fbLink = document.getElementById('sFbLink');
+  if (s.facebook && /^https?:\/\//i.test(s.facebook)) {
+    fbLink.innerHTML = '<a href="' + esc(s.facebook) + '" target="_blank" rel="noopener">បើក / 開く ↗</a>';
+  } else {
+    fbLink.innerHTML = '';
+  }
   document.getElementById('sMemo').value  = s.memo;
   setStatus(s.status || '営業中');
   setTypeSelection('s', 'sTypeGrid', s.shopTypes || []);
@@ -1207,6 +1225,7 @@ function saveShop() {
     shopTypes: typeSelections.s.slice(),
     ownerName: document.getElementById('sOwner').value.trim(),
     phone:     document.getElementById('sPhone').value.trim(),
+    facebook:  document.getElementById('sFb').value.trim(),
     status:    selectedStatus,
     memo:      document.getElementById('sMemo').value
   })
@@ -1220,6 +1239,7 @@ function saveShop() {
           shopTypes: typeSelections.s.slice(),
           ownerName: document.getElementById('sOwner').value.trim(),
           phone:     document.getElementById('sPhone').value.trim(),
+          facebook:  document.getElementById('sFb').value.trim(),
           status:    selectedStatus,
           memo:      document.getElementById('sMemo').value
         });
@@ -1257,12 +1277,14 @@ function openForm(mode, opts) {
   document.getElementById('typeField').className     = 'field' + (showShopFields ? '' : ' hidden');
   document.getElementById('ownerField').className    = 'field' + (showShopFields ? '' : ' hidden');
   document.getElementById('phoneField').className    = 'field' + (showShopFields ? '' : ' hidden');
+  document.getElementById('fbField').className       = 'field' + (showShopFields ? '' : ' hidden');
   document.getElementById('gpsField').className      = 'field' + (mode === 'edit' ? ' hidden' : '');
   if (showShopFields) setTypeSelection('f', 'fTypeGrid', []);
 
   document.getElementById('fShop').value  = '';
   document.getElementById('fOwner').value = '';
   document.getElementById('fPhone').value = '';
+  document.getElementById('fFb').value    = '';
   document.getElementById('fMemo').value  = (mode === 'edit' && opts.visit) ? opts.visit.memo : '';
   setReaction((mode === 'edit' && opts.visit) ? opts.visit.reaction : '');
   clearSuggest();
@@ -1423,6 +1445,7 @@ function saveVisit() {
       shopTypes: typeSelections.f.slice(),
       ownerName: document.getElementById('fOwner').value.trim(),
       phone:     document.getElementById('fPhone').value.trim(),
+      facebook:  document.getElementById('fFb').value.trim(),
       reaction:  selectedReaction,
       memo:      document.getElementById('fMemo').value,
       gps:       currentGps
