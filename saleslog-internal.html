@@ -186,6 +186,13 @@ body {
 .gps-box.warn { color: #ffc107; }
 .gps-box.err  { color: #ff7043; }
 .gps-box a { color: inherit; }
+/* 原因の切り分け用（日本側で不具合報告を受けたときに状態が分かるように） */
+.gps-diag {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
 .gps-retry {
   width:100%;
   margin-top:8px;
@@ -491,6 +498,9 @@ input[type="date"] { color-scheme: dark; }
       <label>📡 GPS</label>
       <div class="gps-box" id="gpsBox">—</div>
       <button class="gps-retry" id="btnGpsRetry" type="button">📍 យកទីតាំង / GPSを取得</button>
+      <!-- 許可されていないときだけ出す。openSettings は「ユーザー操作への応答」でしか
+           呼べない仕様（Bot API 8.0）のため、必ずボタン経由にする -->
+      <button class="gps-retry hidden" id="btnGpsSettings" type="button">⚙️ <span id="gpsSettingsLabel"></span></button>
     </div>
 
     <div class="field" id="shopNameField">
@@ -615,6 +625,12 @@ var STR = {
   gpsOk:       'ទីតាំង OK',
   gpsFail:     'មិនអាចយកទីតាំងបានទេ (អាចរក្សាទុកបាន) / GPS取得不可（保存は可能）',
   gpsOld:      'សូមធ្វើបច្ចុប្បន្នភាព Telegram ដើម្បីប្រើ GPS / Telegramを更新するとGPSが使えます',
+  // ↓ 2026-07-28 GPS 不具合修正で追加（原因別の出し分け）。Panha 校閲済み
+  //   ការអនុញ្ញាត（許可）は本アプリ初出のため provisional。ロン君の native check 推奨
+  gpsDenied:   'គ្មានការអនុញ្ញាតទីតាំង។ សូមចុច «បើកការកំណត់» ដើម្បីអនុញ្ញាត។ / 位置情報が許可されていません。「設定を開く」から許可してください',
+  gpsBtnSet:   'បើកការកំណត់ / 設定を開く',
+  gpsOffDev:   'GPS លើទូរស័ព្ទបិទ។ សូមចូលការកំណត់ ដើម្បីបើក GPS។ / スマホ本体の位置情報がオフです。設定でオンにしてください',
+  gpsTimeout:  'ការយកទីតាំងកំពុងចំណាយពេលច្រើន។ សូមព្យាយាមម្តងទៀត។ / 位置情報の取得に時間がかかっています。もう一度お試しください',
   saving:      'កំពុងរក្សាទុក… / 保存中…',
   saved:       'បានរក្សាទុក ✅',
   updated:     'បានកែសម្រួល ✅',
@@ -1345,49 +1361,163 @@ function updateSuggest() {
 document.getElementById('fShop').addEventListener('input', updateSuggest);
 
 // ═══════════════════════════════════════════
-//  GPS（Telegram LocationManager API のみ使用）
-//  ※ navigator.geolocation は Telegram WebView 内で不安定なため使用禁止（要件 v1）
+//  GPS
+//  一次 = Telegram LocationManager（Bot API 8.0+）／二次 = navigator.geolocation
+//
+//  ※ 2026-07-28 修正: 旧実装は失敗を一律「取得不可」と出すだけで、
+//    ①未許可なのか ②端末の位置情報がオフなのか ③応答が返ってこないのか を
+//    切り分けられず、許可し直す導線（openSettings）も無かったため復帰不能だった。
+//    あわせて init() の非同期完了を待ってから getLocation を呼んでいたため
+//    「ユーザー操作の文脈」が切れ、Telegram の許可ダイアログが出ないケースがあった
+//    → 起動時に init を済ませ、タップ内で同期的に getLocation できるようにした。
+//    要件 v1 は LocationManager のみだったが、上記でも取れない端末の救済として
+//    navigator.geolocation を保険で併用する（勤怠アプリでは従来から実績あり）。
 // ═══════════════════════════════════════════
-function acquireGps() {
-  var box = document.getElementById('gpsBox');
-  currentGps = null;
+var gpsSeq = 0;           // 遅れて返ったコールバックを捨てるための世代番号
+var lmEventBound = false; // locationManagerUpdated の二重登録防止
 
-  var wa = window.Telegram && Telegram.WebApp;
-  if (!wa || !wa.LocationManager || !(wa.isVersionAtLeast && wa.isVersionAtLeast('8.0'))) {
-    box.className = 'gps-box err';
-    box.textContent = '📡 ' + STR.gpsOld;
+function tgWebApp() {
+  return (window.Telegram && Telegram.WebApp) ? Telegram.WebApp : null;
+}
+
+// 使える LocationManager を返す（古い Telegram / 非対応クライアントでは null）
+function locationManager() {
+  var wa = tgWebApp();
+  if (!wa || !wa.LocationManager) return null;
+  if (wa.isVersionAtLeast && !wa.isVersionAtLeast('8.0')) return null;
+  return wa.LocationManager;
+}
+
+// 起動時に init しておく（init は非同期。フォームを開いたタップの中で
+// getLocation を同期的に呼べるようにしないと許可ダイアログが出ないことがある）
+(function initLocationManagerEarly() {
+  var lm = locationManager();
+  if (!lm) return;
+  try { if (!lm.isInited) lm.init(); } catch (e) {}
+
+  var wa = tgWebApp();
+  if (wa && wa.onEvent && !lmEventBound) {
+    lmEventBound = true;
+    // 設定画面で許可された直後に自動で取り直す（フォーム表示中・未取得のときだけ）
+    wa.onEvent('locationManagerUpdated', function() {
+      var lm2 = locationManager();
+      if (!lm2 || !lm2.isAccessGranted || currentGps) return;
+      if (document.getElementById('viewForm').className.indexOf('hidden') >= 0) return;
+      acquireGps();
+    });
+  }
+})();
+
+function setGpsBox(cls, text, diag) {
+  var box = document.getElementById('gpsBox');
+  box.className = 'gps-box' + (cls ? ' ' + cls : '');
+  box.innerHTML = esc(text) + (diag ? '<div class="gps-diag">' + esc(diag) + '</div>' : '');
+}
+
+function showGpsSettingsBtn(show) {
+  document.getElementById('btnGpsSettings').className = 'gps-retry' + (show ? '' : ' hidden');
+}
+
+// 不具合報告を受けたときに原因が分かるよう、失敗時だけ状態を小さく併記する
+function gpsDiag() {
+  var lm = locationManager();
+  if (!lm) return 'LM: n/a';
+  return 'LM avail=' + (lm.isLocationAvailable ? 1 : 0) +
+         ' req='      + (lm.isAccessRequested  ? 1 : 0) +
+         ' grant='    + (lm.isAccessGranted    ? 1 : 0);
+}
+
+function gpsOk(lat, lng, accuracy, viaBrowser, seq) {
+  if (seq !== gpsSeq) return;
+  currentGps = { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) };
+  var acc = Math.round(accuracy || 0);
+  showGpsSettingsBtn(false);
+  setGpsBox('ok', '📡 ' + STR.gpsOk + ' (' + currentGps.lat + ', ' + currentGps.lng +
+                  (acc ? ' ±' + acc + 'm' : '') + ')' + (viaBrowser ? ' 🌐' : ''));
+  updateSuggest(); // GPS 近接サジェストを更新
+}
+
+// 失敗表示は即座に出す（保険の端末GPSは裏で走らせ、取れたら OK 表示で上書きする）
+function gpsFailUi(seq, msg, cls, offerSettings) {
+  if (seq !== gpsSeq) return;
+  setGpsBox(cls, '📡 ' + msg, gpsDiag());
+  showGpsSettingsBtn(!!offerSettings);
+}
+
+function browserGpsFallback(seq) {
+  if (!navigator.geolocation || seq !== gpsSeq) return;
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { gpsOk(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, true, seq); },
+    function() { /* 失敗時は LocationManager 側のメッセージをそのまま残す */ },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+function acquireGps() {
+  var seq = ++gpsSeq;   // 進行中の取得を無効化してから開始
+  currentGps = null;
+  showGpsSettingsBtn(false);
+  setGpsBox('', '📡 ' + STR.gpsGetting);
+
+  var lm = locationManager();
+  if (!lm) {                       // 古い Telegram / デスクトップ等
+    gpsFailUi(seq, STR.gpsOld, 'err', false);
+    browserGpsFallback(seq);
+    return;
+  }
+  if (!lm.isInited) {
+    // init が返ってこないまま「取得中…」で固まらないように保険をかける
+    var initTimer = setTimeout(function() {
+      if (seq !== gpsSeq) return;
+      gpsSeq++;                          // 遅れて来る init コールバックを無効化
+      gpsFailUi(gpsSeq, STR.gpsTimeout, 'warn', false);
+      browserGpsFallback(gpsSeq);
+    }, 8000);
+    lm.init(function() { clearTimeout(initTimer); lmGetLocation(seq); });
+    return;
+  }
+  lmGetLocation(seq);
+}
+
+function lmGetLocation(seq) {
+  if (seq !== gpsSeq) return;
+  var lm = locationManager();
+  if (!lm) { gpsFailUi(seq, STR.gpsOld, 'err', false); browserGpsFallback(seq); return; }
+
+  // 端末そのものの位置情報サービスが無効（Telegram の許可では直らない）
+  if (!lm.isLocationAvailable) {
+    gpsFailUi(seq, STR.gpsOffDev, 'err', false);
+    browserGpsFallback(seq);
     return;
   }
 
-  box.className = 'gps-box';
-  box.textContent = '📡 ' + STR.gpsGetting;
+  // getLocation が応答を返さないまま無言で固まるのを防ぐ
+  var done = false;
+  var timer = setTimeout(function() {
+    if (done || seq !== gpsSeq) return;
+    done = true;
+    gpsFailUi(seq, STR.gpsTimeout, 'warn', false);
+    browserGpsFallback(seq);
+  }, 12000);
 
-  var lm = wa.LocationManager;
-  var run = function() {
-    if (!lm.isLocationAvailable) {
-      box.className = 'gps-box warn';
-      box.textContent = '📡 ' + STR.gpsFail;
-      return;
-    }
+  try {
     lm.getLocation(function(data) {
+      if (done || seq !== gpsSeq) return;
+      done = true; clearTimeout(timer);
       if (data && typeof data.latitude === 'number') {
-        currentGps = {
-          lat: Number(data.latitude.toFixed(6)),
-          lng: Number(data.longitude.toFixed(6))
-        };
-        var acc = Math.round(data.horizontal_accuracy || 0);
-        box.className = 'gps-box ok';
-        box.textContent = '📡 ' + STR.gpsOk + ' (' + currentGps.lat + ', ' + currentGps.lng +
-                          (acc ? ' ±' + acc + 'm' : '') + ')';
-        updateSuggest(); // GPS 近接サジェストを更新
+        gpsOk(data.latitude, data.longitude, data.horizontal_accuracy, false, seq);
       } else {
-        currentGps = null;
-        box.className = 'gps-box warn';
-        box.textContent = '📡 ' + STR.gpsFail;
+        // 仕様上 null = 許可されていない。設定導線を出す（openSettings はボタン経由）
+        gpsFailUi(seq, lm.isAccessGranted ? STR.gpsFail : STR.gpsDenied, 'err', !lm.isAccessGranted);
+        browserGpsFallback(seq);
       }
     });
-  };
-  if (lm.isInited) run(); else lm.init(run);
+  } catch (e) {
+    if (done) return;
+    done = true; clearTimeout(timer);
+    gpsFailUi(seq, STR.gpsFail, 'warn', false);
+    browserGpsFallback(seq);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1502,6 +1632,16 @@ document.getElementById('btnFormBack').addEventListener('click', function() {
   }
 });
 document.getElementById('btnGpsRetry').addEventListener('click', acquireGps);
+document.getElementById('gpsSettingsLabel').textContent = STR.gpsBtnSet;
+document.getElementById('btnGpsSettings').addEventListener('click', function() {
+  // openSettings は「ユーザー操作への応答」でのみ呼べる（Bot API 8.0）
+  var lm = locationManager();
+  if (lm && lm.openSettings) {
+    try { lm.openSettings(); } catch (e) { toast('⚠️ ' + STR.gpsFail, 'err'); }
+  }
+  // 許可されると locationManagerUpdated で自動的に取り直す。
+  // イベントが来ないクライアント向けに「GPSを取得」ボタンも残してある
+});
 document.getElementById('btnSave').addEventListener('click', saveVisit);
 
 // ═══════════════════════════════════════════
