@@ -193,6 +193,28 @@ if (!currentChatId && window.Telegram && Telegram.WebApp &&
   currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
 }
 
+// whoami を最大3回リトライ（1.5s→3s バックオフ）。
+// ※ 2026-07-28: 一時的なサーバーエラーでも「スタッフ未登録」と出て復帰しない誤表示があった
+//   （実際は登録済み・直後の attendance_today は成功 → 一過性の照合失敗）。
+//   「未登録」は ok:true で staff なしが確定したときだけ表示するよう分離。
+function fetchWho(attempt) {
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'whoami', chatId: currentChatId })
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d && d.ok) return d;                      // 成功（staff の有無はここで確定）
+      throw new Error(d && d.error ? d.error : 'SERVER_ERROR');
+    })
+    .catch(function(err) {
+      if (attempt >= 3) throw err;
+      return new Promise(function(res) { setTimeout(res, attempt * 1500); })
+        .then(function() { return fetchWho(attempt + 1); });
+    });
+}
+
 function loadWho() {
   var line = document.getElementById('whoLine');
   if (!currentChatId) {
@@ -203,22 +225,21 @@ function loadWho() {
     line.textContent = '⚠️ GAS URL 未設定';
     return Promise.resolve();
   }
-  return fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'whoami', chatId: currentChatId })
-  })
-    .then(function(r) { return r.json(); })
+  line.textContent = '…';
+  line.onclick = null;
+  return fetchWho(1)
     .then(function(d) {
-      if (d.ok && d.staff) {
+      if (d.staff) {
         currentStaff = d.staff;
         line.innerHTML = '👤 <strong>' + esc(d.staff.nameJp) + '</strong> (' + esc(d.staff.nameEn) + ')';
       } else {
+        // ok:true かつ staff なし = 本当に未登録（3回とも成功応答での確定）
         line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
       }
     })
     .catch(function(err) {
-      line.textContent = '⚠️ 通信エラー: ' + err.message;
+      line.textContent = '⚠️ 通信エラー（タップで再試行）: ' + err.message;
+      line.onclick = function() { loadWho().then(loadToday); };
     });
 }
 
@@ -280,7 +301,8 @@ function loadToday() {
     body: JSON.stringify({ action: 'attendance_today', chatId: currentChatId })
   })
     .then(function(r) { return r.json(); })
-    .then(function(d) { applyStatus(d); });
+    .then(function(d) { applyStatus(d); })
+    .catch(function() { applyStatus(null); });  // 通信失敗時も「取得失敗」を明示（無言の「…」固まり防止）
 }
 
 function applyStatus(d) {

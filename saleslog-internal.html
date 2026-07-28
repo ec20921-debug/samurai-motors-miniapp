@@ -728,19 +728,41 @@ function api(payload) {
     });
 }
 
+// whoami を最大3回リトライ（1.5s→3s バックオフ）。
+// ※ 2026-07-28: 一時的なサーバーエラーでも「スタッフ未登録」と出る誤表示の是正
+//   （勤怠アプリで実発生。「未登録」は ok:true で staff なし確定のときだけ表示する）
+function fetchWho(attempt) {
+  return api({ action: 'whoami' })
+    .then(function(d) {
+      if (d && d.ok) return d;                      // 成功（staff の有無はここで確定）
+      throw new Error(d && d.error ? d.error : 'SERVER_ERROR');
+    })
+    .catch(function(err) {
+      if (attempt >= 3) throw err;
+      return new Promise(function(res) { setTimeout(res, attempt * 1500); })
+        .then(function() { return fetchWho(attempt + 1); });
+    });
+}
+
 function loadWho() {
   var line = document.getElementById('whoLine');
   if (!currentChatId) { line.textContent = '⚠️ chatId 取得失敗'; return Promise.resolve(); }
   if (!GAS_URL)       { line.textContent = '⚠️ GAS URL 未設定'; return Promise.resolve(); }
-  return api({ action: 'whoami' })
+  line.textContent = '…';
+  line.onclick = null;
+  return fetchWho(1)
     .then(function(d) {
-      if (d.ok && d.staff) {
+      if (d.staff) {
         line.innerHTML = '👤 <strong>' + esc(d.staff.nameJp) + '</strong> (' + esc(d.staff.nameEn) + ')';
       } else {
+        // ok:true かつ staff なし = 本当に未登録（3回とも成功応答での確定）
         line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
       }
     })
-    .catch(function() { line.textContent = '⚠️ ' + STR.netError; });
+    .catch(function() {
+      line.textContent = '⚠️ ' + STR.netError + '（タップで再試行）';
+      line.onclick = function() { loadWho().then(loadShops); };
+    });
 }
 
 // ═══════════════════════════════════════════

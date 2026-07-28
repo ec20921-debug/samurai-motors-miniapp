@@ -248,7 +248,31 @@ console.log('📍 expense URL:', expenseHref);
 console.log('📍 saleslog URL:', salesLogHref);
 
 // ユーザー識別（whoami でスタッフ判別）
-(function loadWho() {
+// ※ 2026-07-28: 一時的なサーバーエラーで誤って「未登録」扱いにならないよう、
+//   最大3回リトライ（1.5s→3s バックオフ）+ 失敗時はタップで再試行
+function fetchWho(attempt) {
+  // v7 booking.html と同一方式: POST + Content-Type: 'text/plain;charset=utf-8'
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'whoami', chatId: currentChatId })
+  })
+    .then(function(r) { return r.text(); })   // デバッグ: まず text で受ける
+    .then(function(txt) {
+      var d;
+      try { d = JSON.parse(txt); }
+      catch (e) { throw new Error('非JSON応答（先頭300文字）: ' + txt.substring(0, 300)); }
+      if (d && d.ok) return d;                // 成功（staff の有無はここで確定）
+      throw new Error(d && d.error ? d.error : JSON.stringify(d));
+    })
+    .catch(function(err) {
+      if (attempt >= 3) throw err;
+      return new Promise(function(res) { setTimeout(res, attempt * 1500); })
+        .then(function() { return fetchWho(attempt + 1); });
+    });
+}
+
+function loadWho() {
   var line = document.getElementById('whoLine');
   if (!currentChatId) {
     line.textContent = 'ℹ️ Telegram 経由で開いてください';
@@ -258,36 +282,27 @@ console.log('📍 saleslog URL:', salesLogHref);
     line.textContent = '⚠️ GAS URL 未設定';
     return;
   }
-  // v7 booking.html と同一方式: POST + Content-Type: 'text/plain;charset=utf-8'
-  fetch(GAS_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'whoami', chatId: currentChatId })
-  })
-    .then(function(r) { return r.text(); })   // デバッグ: まず text で受ける
-    .then(function(txt) {
-      var d;
-      try { d = JSON.parse(txt); }
-      catch (e) {
-        line.textContent = '⚠️ 非JSON応答（先頭300文字）: ' + txt.substring(0, 300);
-        return;
-      }
-      if (d.ok && d.staff) {
+  line.textContent = '…';
+  line.onclick = null;
+  fetchWho(1)
+    .then(function(d) {
+      if (d.staff) {
         line.innerHTML = '👤 <strong>' + escapeHtml(d.staff.nameJp) + '</strong> (' + escapeHtml(d.staff.nameEn) + ')';
         // 管理者のみ経営コックピットを表示（サーバ側でも admin 限定で二重防御）
         if (d.staff.role === 'admin') {
           document.getElementById('adminSection').style.display = 'block';
         }
-      } else if (d.ok) {
-        line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
       } else {
-        line.textContent = '⚠️ サーバ応答: ' + (d.error || JSON.stringify(d));
+        // ok:true かつ staff なし = 本当に未登録（3回とも成功応答での確定）
+        line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
       }
     })
     .catch(function(err) {
-      line.textContent = '⚠️ 通信エラー: ' + err.message;
+      line.textContent = '⚠️ 通信エラー（タップで再試行）: ' + err.message;
+      line.onclick = loadWho;
     });
-})();
+}
+loadWho();
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, function(c) {
