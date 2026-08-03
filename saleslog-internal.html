@@ -144,6 +144,19 @@ body {
   cursor:pointer;
 }
 .map-hint { font-size:11px; color:var(--text-dim); text-align:center; margin-top:8px; }
+/* 見込み店レイヤの表示トグル */
+.layer-toggle {
+  width:100%;
+  margin-top:8px;
+  padding:10px;
+  border:1.5px solid var(--border);
+  background: var(--card);
+  border-radius:10px;
+  color: var(--text-dim);
+  font-size:13px; font-weight:600; font-family:inherit;
+  cursor:pointer;
+}
+.layer-toggle.active { border-color: var(--gold); color: var(--gold); }
 
 /* ── フォーム共通 ── */
 .back-btn {
@@ -428,6 +441,7 @@ input[type="date"] { color-scheme: dark; }
     <div id="mapWrap">
       <div id="map"></div>
       <div class="map-hint" id="mapHint">—</div>
+      <button class="layer-toggle active" id="btnProspectToggle" type="button">…</button>
     </div>
   </div>
 
@@ -464,9 +478,20 @@ input[type="date"] { color-scheme: dark; }
         <button type="button" class="status-btn s2" data-s="見送り"><span class="skm">បោះបង់</span><span class="sjp">見送り</span></button>
       </div>
     </div>
+    <div class="grid2">
+      <div class="field">
+        <label>📅 ថ្ងៃគ្រោងសាកល្បង / デモ予定日</label>
+        <input type="date" id="sDemoPlanned">
+      </div>
+      <div class="field">
+        <label>✅ ថ្ងៃបានសាកល្បង / デモ実施日</label>
+        <input type="date" id="sDemoDone">
+      </div>
+    </div>
     <div class="field">
       <label>📍 GPS</label>
       <div class="gps-box" id="shopGpsBox">—</div>
+      <button class="gps-retry" id="btnSetShopGps" type="button">📍 <span id="setShopGpsLabel"></span></button>
     </div>
     <div class="field">
       <label>កំណត់ចំណាំ / 店メモ</label>
@@ -653,7 +678,15 @@ var STR = {
   needAmount:  'សូមបញ្ចូលតម្លៃ / 金額を入力してください',
   unpaid:      'ចំនួនជំពាក់ / 未払い残',
   dirToShop:   'យើងបង់ឱ្យហាង / 店へ支払う分',
-  dirFromShop: 'ហាងបង់មកយើង / 店から受け取る分'
+  dirFromShop: 'ហាងបង់មកយើង / 店から受け取る分',
+  // ↓ 2026-08-03 見込み店レイヤ＋デモ日＋店GPS追加分。クメール語は Panha 校閲済み（2026-08-03）
+  prospectToggle:      'ហាងគោលដៅ / 見込み店',
+  prospectPopupTag:    'ហាងគោលដៅ (មិនទាន់ចុះជួប) / 見込み店（未訪問）',
+  prospectVisit:       '📝 កត់ត្រាថ្មី សម្រាប់ហាងនេះ / この店に訪問記録',
+  gpsFromList:         'ទីតាំងពីបញ្ជីហាងគោលដៅ / リスト座標',
+  setShopGps:          'កំណត់ទីតាំងបច្ចុប្បន្នជាទីតាំងហាងនេះ / 今の場所をこの店の位置にする',
+  confirmGpsOverwrite: 'ហាងនេះមានទីតាំងរួចហើយ។ ជំនួសដោយទីតាំងបច្ចុប្បន្នឬទេ? / この店には既にGPSがあります。今の場所で上書きしますか？',
+  gpsShopSaved:        'បានរក្សាទុកទីតាំង ✅ / 位置を保存しました'
 };
 var STATUS_LABELS = {
   '営業中': 'កំពុងចរចា / 営業中',
@@ -687,6 +720,9 @@ var editingVisitId = null;    // edit 時の対象訪問
 var selectedReaction = '';
 var selectedStatus = '';
 var map = null, mapMarkers = [];
+var prospectsCache = [];      // saleslog_prospects の結果（未訪問の見込み店）
+var prospectLayer = null;     // 見込み店レイヤ（L.layerGroup）
+var prospectVisible = true;   // トグル既定ON
 
 if (window.Telegram && Telegram.WebApp) {
   Telegram.WebApp.ready();
@@ -849,6 +885,7 @@ function ensureMap() {
   map = L.map('map', { minZoom: 11, maxZoom: 19 }).setView(PP_CENTER, 13);
   L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
   refreshMapMarkers();
+  refreshProspectMarkers();
 }
 
 function refreshMapMarkers() {
@@ -890,6 +927,68 @@ function refreshMapMarkers() {
     map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
   }
 }
+
+// ═══════════════════════════════════════════
+//  見込み店レイヤ（営業リストGSSの未訪問店・白抜き小径ピン）
+// ═══════════════════════════════════════════
+var TIER_COLORS = { S: '#c62828', A: '#1565C0', B: '#888888', C: '#F9A825' };
+
+function loadProspects() {
+  return api({ action: 'saleslog_prospects' })
+    .then(function(d) {
+      prospectsCache = (d && d.ok && d.prospects) ? d.prospects : [];
+      updateProspectToggleLabel();
+      refreshProspectMarkers();
+    })
+    .catch(function() { /* 取得失敗時はレイヤなしで続行（訪問記録は通常どおり） */ });
+}
+
+function refreshProspectMarkers() {
+  if (!map || typeof L === 'undefined') return;
+  if (!prospectLayer) prospectLayer = L.layerGroup();
+  prospectLayer.clearLayers();
+
+  prospectsCache.forEach(function(p) {
+    var color = TIER_COLORS[p.tier] || '#888888';
+    // 白抜き小径ピン（訪問済店の塗りつぶしピンと見分ける）
+    var marker = L.circleMarker([p.lat, p.lng], {
+      radius: 6, color: color, weight: 2,
+      fillColor: '#ffffff', fillOpacity: 0.9
+    });
+    var div = document.createElement('div');
+    div.innerHTML =
+      '<b>' + esc(p.shopName) + '</b><br>' +
+      esc('Tier ' + (p.tier || '—') + (p.shopType ? ' · ' + p.shopType : '')) + '<br>' +
+      (p.phone ? '☎ ' + esc(p.phone) + '<br>' : '') +
+      '<span style="color:var(--text-dim)">' + esc(STR.prospectPopupTag) + '</span>';
+    var btn = document.createElement('button');
+    btn.className = 'popup-open-btn';
+    btn.textContent = STR.prospectVisit;
+    btn.addEventListener('click', function() { openForm('new', { prefill: p }); });
+    div.appendChild(btn);
+    marker.bindPopup(div);
+    prospectLayer.addLayer(marker);
+  });
+
+  if (prospectVisible && !map.hasLayer(prospectLayer)) map.addLayer(prospectLayer);
+  // ※ fitBounds は訪問済店（refreshMapMarkers）のみで取る。見込み108ピンでは広げない
+}
+
+function updateProspectToggleLabel() {
+  var b = document.getElementById('btnProspectToggle');
+  b.textContent = (prospectVisible ? '👁 ' : '🚫 ') + STR.prospectToggle + ' (' + prospectsCache.length + ')';
+  b.className = 'layer-toggle' + (prospectVisible ? ' active' : '');
+}
+
+document.getElementById('btnProspectToggle').addEventListener('click', function() {
+  prospectVisible = !prospectVisible;
+  if (map && prospectLayer) {
+    if (prospectVisible) map.addLayer(prospectLayer);
+    else map.removeLayer(prospectLayer);
+  }
+  updateProspectToggleLabel();
+});
+updateProspectToggleLabel();
 
 function switchTab(tab) {
   var isMap = tab === 'map';
@@ -1163,19 +1262,12 @@ function renderShopDetail() {
     fbLink.innerHTML = '';
   }
   document.getElementById('sMemo').value  = s.memo;
+  document.getElementById('sDemoPlanned').value = s.demoPlanned || '';
+  document.getElementById('sDemoDone').value    = s.demoDone || '';
   setStatus(s.status || '営業中');
   setTypeSelection('s', 'sTypeGrid', s.shopTypes || []);
 
-  var box = document.getElementById('shopGpsBox');
-  if (s.lat !== null && s.lng !== null) {
-    box.className = 'gps-box ok';
-    box.innerHTML = '📍 ' + esc(s.lat + ', ' + s.lng) +
-      ' <a href="https://www.google.com/maps?q=' + encodeURIComponent(s.lat + ',' + s.lng) +
-      '" target="_blank" rel="noopener">🗺</a>';
-  } else {
-    box.className = 'gps-box';
-    box.textContent = '📍 ' + STR.noLocation;
-  }
+  renderShopGpsBox();
 
   var list = document.getElementById('visitList');
   list.innerHTML = '';
@@ -1249,7 +1341,26 @@ function setStatus(status) {
   }
 })();
 
-function saveShop() {
+// 店詳細の GPS 表示（保存後の再描画でも使うため関数化）
+function renderShopGpsBox() {
+  var s = currentShop;
+  var box = document.getElementById('shopGpsBox');
+  if (s.lat !== null && s.lng !== null) {
+    box.className = 'gps-box ok';
+    box.innerHTML = '📍 ' + esc(s.lat + ', ' + s.lng) +
+      ' <a href="https://www.google.com/maps?q=' + encodeURIComponent(s.lat + ',' + s.lng) +
+      '" target="_blank" rel="noopener">🗺</a>';
+  } else {
+    box.className = 'gps-box';
+    box.textContent = '📍 ' + STR.noLocation;
+  }
+}
+
+/**
+ * 店情報の保存
+ * @param {Object|null} gpsOverride - 「今の場所をこの店の位置にする」からの GPS。通常保存は null
+ */
+function saveShop(gpsOverride) {
   if (!currentShop) return;
   var shopName = document.getElementById('sShop').value.trim();
   if (!shopName) { toast(STR.needShop, 'err'); return; }
@@ -1257,36 +1368,102 @@ function saveShop() {
   var btn = document.getElementById('btnShopSave');
   btn.disabled = true;
   api({
-    action:    'saleslog_shop_update',
-    shopId:    currentShop.shopId,
-    shopName:  shopName,
-    shopTypes: typeSelections.s.slice(),
-    ownerName: document.getElementById('sOwner').value.trim(),
-    phone:     document.getElementById('sPhone').value.trim(),
-    facebook:  document.getElementById('sFb').value.trim(),
-    status:    selectedStatus,
-    memo:      document.getElementById('sMemo').value
+    action:      'saleslog_shop_update',
+    shopId:      currentShop.shopId,
+    shopName:    shopName,
+    shopTypes:   typeSelections.s.slice(),
+    ownerName:   document.getElementById('sOwner').value.trim(),
+    phone:       document.getElementById('sPhone').value.trim(),
+    facebook:    document.getElementById('sFb').value.trim(),
+    status:      selectedStatus,
+    memo:        document.getElementById('sMemo').value,
+    demoPlanned: document.getElementById('sDemoPlanned').value || '',
+    demoDone:    document.getElementById('sDemoDone').value || '',
+    gps:         gpsOverride || null
   })
     .then(function(d) {
       btn.disabled = false;
       if (d.ok) {
-        toast(STR.updated, 'ok');
+        toast(gpsOverride ? STR.gpsShopSaved : STR.updated, 'ok');
         // 画面に留まったまま「追記」した時に古い店名が渡らないよう currentShop も即時更新
         currentShop = Object.assign({}, currentShop, {
-          shopName:  shopName,
-          shopTypes: typeSelections.s.slice(),
-          ownerName: document.getElementById('sOwner').value.trim(),
-          phone:     document.getElementById('sPhone').value.trim(),
-          facebook:  document.getElementById('sFb').value.trim(),
-          status:    selectedStatus,
-          memo:      document.getElementById('sMemo').value
+          shopName:    shopName,
+          shopTypes:   typeSelections.s.slice(),
+          ownerName:   document.getElementById('sOwner').value.trim(),
+          phone:       document.getElementById('sPhone').value.trim(),
+          facebook:    document.getElementById('sFb').value.trim(),
+          status:      selectedStatus,
+          memo:        document.getElementById('sMemo').value,
+          demoPlanned: document.getElementById('sDemoPlanned').value || '',
+          demoDone:    document.getElementById('sDemoDone').value || ''
         });
+        if (gpsOverride) {
+          currentShop.lat = gpsOverride.lat;
+          currentShop.lng = gpsOverride.lng;
+          renderShopGpsBox();
+        }
         loadShops();
       } else {
         toast('⚠️ ' + (d.error || STR.netError), 'err');
       }
     })
     .catch(function() { btn.disabled = false; toast('⚠️ ' + STR.netError, 'err'); });
+}
+
+// ── 「今の場所をこの店の位置にする」（GPS未登録店の救済） ──
+function captureShopGps() {
+  if (!currentShop) return;
+  var proceed = function() {
+    toast(STR.gpsGetting);
+    shopGpsAcquire(
+      function(gps) { saveShop(gps); },
+      function() { toast('⚠️ ' + STR.gpsFail, 'err'); }
+    );
+  };
+  if (currentShop.lat !== null && currentShop.lng !== null) {
+    // 既にGPSがある店は上書き前に確認を挟む
+    var wa = tgWebApp();
+    if (wa && wa.showConfirm) {
+      wa.showConfirm(STR.confirmGpsOverwrite, function(ok) { if (ok) proceed(); });
+    } else if (window.confirm(STR.confirmGpsOverwrite)) {
+      proceed();
+    }
+  } else {
+    proceed();
+  }
+}
+
+// 訪問フォーム用 acquireGps は #gpsBox 表示と結合しているため、
+// 店詳細用に UI 非依存の取得だけ行う軽量版（一次=LocationManager / 二次=ブラウザGPS）
+function shopGpsAcquire(onOk, onFail) {
+  var done = false;
+  function ok(lat, lng) {
+    if (done) return;
+    done = true;
+    onOk({ lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) });
+  }
+  function fallback() {
+    if (done) return;
+    if (!navigator.geolocation) { done = true; onFail(); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(pos) { ok(pos.coords.latitude, pos.coords.longitude); },
+      function() { if (!done) { done = true; onFail(); } },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+  var lm = locationManager();
+  if (!lm || !lm.isInited || !lm.isLocationAvailable) { fallback(); return; }
+  var timer = setTimeout(fallback, 12000);
+  try {
+    lm.getLocation(function(data) {
+      clearTimeout(timer);
+      if (data && typeof data.latitude === 'number') ok(data.latitude, data.longitude);
+      else fallback();
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    fallback();
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1328,7 +1505,25 @@ function openForm(mode, opts) {
   clearSuggest();
 
   showView('form');
-  if (mode !== 'edit') acquireGps();
+  if (mode === 'new' && opts.prefill) {
+    applyProspectPrefill(opts.prefill);   // 見込み店ピンから: GPS はリスト座標を採用（取得しない）
+  } else if (mode !== 'edit') {
+    acquireGps();
+  }
+}
+
+// 見込み店ピンの「この店に訪問記録」: 店名・電話・GPS（リスト座標）をプレフィル
+function applyProspectPrefill(p) {
+  document.getElementById('fShop').value  = p.shopName || '';
+  document.getElementById('fPhone').value = p.phone || '';
+  // 種別がアプリの業種セットと完全一致する時だけ既定選択（自由記述は選択しない）
+  var known = SHOP_TYPES.some(function(t) { return t.v === p.shopType; });
+  if (known) setTypeSelection('f', 'fTypeGrid', [p.shopType]);
+  gpsSeq++;                                // 進行中のGPS取得コールバックを無効化
+  currentGps = { lat: Number(p.lat), lng: Number(p.lng) };
+  showGpsSettingsBtn(false);
+  setGpsBox('ok', '📍 ' + STR.gpsFromList + ' (' + currentGps.lat + ', ' + currentGps.lng + ')');
+  updateSuggest();                         // 二重登録防止の既存店サジェストも動かす
 }
 
 function openVisitEdit(v) {
@@ -1642,7 +1837,10 @@ document.getElementById('tabList').addEventListener('click', function() { switch
 document.getElementById('tabMap').addEventListener('click',  function() { switchTab('map'); });
 document.getElementById('btnNew').addEventListener('click',  function() { openForm('new'); });
 document.getElementById('btnShopBack').addEventListener('click', function() { showView('home'); loadShops(); });
-document.getElementById('btnShopSave').addEventListener('click', saveShop);
+// ※ saveShop は引数に GPS を取るため、click イベントオブジェクトが渡らないようラップする
+document.getElementById('btnShopSave').addEventListener('click', function() { saveShop(null); });
+document.getElementById('setShopGpsLabel').textContent = STR.setShopGps;
+document.getElementById('btnSetShopGps').addEventListener('click', captureShopGps);
 document.getElementById('btnAddVisit').addEventListener('click', function() {
   if (currentShop) openForm('append', { shopId: currentShop.shopId, shopName: currentShop.shopName });
 });
@@ -1689,7 +1887,7 @@ function esc(s) {
 // ═══════════════════════════════════════════
 //  起動
 // ═══════════════════════════════════════════
-loadWho().then(loadShops);
+loadWho().then(loadShops).then(loadProspects);
 </script>
 </body>
 </html>
