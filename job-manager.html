@@ -839,6 +839,18 @@ body {
   <div class="action-row" id="actionButtons"></div>
 </div>
 
+<!-- QR連携モーダル（手入力客のTelegram連携・写真配信用） -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal">
+    <div style="font-size:36px;margin-bottom:6px;">📲</div>
+    <h2 style="font-size:15px;line-height:1.5;margin-bottom:4px;">សូមស្កេន QR នេះ ដើម្បីទទួលរូបថតមុនលាង／ក្រោយលាង តាម Telegram</h2>
+    <p style="font-size:11px;margin-bottom:12px;">（QRをスキャンすると写真がTelegramに届きます）</p>
+    <img id="qrModalImg" src="" alt="QR" style="width:230px;height:230px;border-radius:12px;background:#fff;padding:8px;">
+    <a id="qrModalLink" href="#" style="display:block;font-size:10px;word-break:break-all;color:#c9a84c;margin:10px 0 14px;"></a>
+    <button onclick="closeQrModal()">បិទ（閉じる）</button>
+  </div>
+</div>
+
 <!-- Success Modal -->
 <div class="modal-overlay" id="successModal">
   <div class="modal">
@@ -873,6 +885,8 @@ body {
 // ===== CONFIG =====
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var GAS_URL = APPS_SCRIPT_URL;  // chat_history / chat_send で使用
+// 予約Bot（QR連携ディープリンクの宛先。ShopProvisioning と同じ既定値）
+var BOT_USERNAME = 'SAMURAI_MOTORS_BOOKING_BOT';
 
 // ===== STATE =====
 var currentStep = 0;  // 0 = ダッシュボード（顧客一覧）
@@ -889,6 +903,15 @@ var SESSION_KEY = 'samurai_active_job';
 // 予約連携: 紐付け中の予約ID（null = 通常モード）
 var selectedBookingId = null;
 var selectedBookingInfo = null;
+
+// QR連携: 手動ジョブ（予約なし）ごとの連携コード。
+// job_start/job_end/job のボディで GAS に送り、お客さんの
+// QRスキャン（t.me/Bot?start=link_<code>）と作業記録を突き合わせる。
+var linkToken = null;
+
+function newLinkToken() {
+  return 'L' + Date.now().toString(36) + Math.floor(Math.random() * 1679616).toString(36);
+}
 
 // ===== セッション保存・復元 =====
 // 画面を閉じてもデータが残るようにlocalStorageに保存
@@ -927,6 +950,8 @@ function saveSession() {
         id: selectedBookingId,
         info: selectedBookingInfo
       },
+      // QR連携コード（手動ジョブ）
+      linkToken: linkToken,
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(state));
@@ -994,6 +1019,9 @@ function restoreSession() {
       selectedBookingInfo = state.booking.info || null;
       renderBookingLink();
     }
+
+    // QR連携コード復元（手動ジョブ）
+    if (state.linkToken) linkToken = state.linkToken;
 
     // ステップ復元（Step 0はダッシュボードなので1以上のみ復元）
     currentStep = (state.currentStep && state.currentStep >= 1) ? state.currentStep : 0;
@@ -1139,12 +1167,43 @@ function renderButtons() {
       area.innerHTML = '<button class="btn btn-secondary" onclick="goPrev()">← ថយក្រោយ（戻る）</button><button class="btn btn-start" onclick="startWork()">▶ ចាប់ផ្តើម（スタート）</button>';
       break;
     case 4:
-      area.innerHTML = '<button class="btn btn-end" onclick="endWork()">⏹ បញ្ចប់（作業終了）</button>';
+      area.innerHTML = qrButtonHtml_() + '<button class="btn btn-end" onclick="endWork()">⏹ បញ្ចប់（作業終了）</button>';
       break;
     case 5:
-      area.innerHTML = '<button class="btn btn-secondary" onclick="goPrev()">← ថយក្រោយ（戻る）</button><button class="btn btn-success" id="submitBtn" onclick="submitAll()">✅ រក្សាទុក（保存・送信）</button>';
+      area.innerHTML = qrButtonHtml_() + '<button class="btn btn-secondary" onclick="goPrev()">← ថយក្រោយ（戻る）</button><button class="btn btn-success" id="submitBtn" onclick="submitAll()">✅ រក្សាទុក（保存・送信）</button>';
       break;
   }
+}
+
+// ===== QR連携（手入力客にBefore/After写真を届ける・2026-08-28） =====
+
+// QRボタンを出す条件: 連携先payloadがあり、かつ顧客が未連携（chatId無し）の時のみ
+function qrButtonHtml_() {
+  if (selectedBookingInfo && selectedBookingInfo.chatId) return '';  // 既にTelegram連携済み
+  if (!getLinkPayload_()) return '';
+  return '<button class="btn btn-secondary" onclick="showQrModal()" style="flex:0 0 auto;padding:14px 12px;">📲 QR</button>';
+}
+
+function getLinkPayload_() {
+  if (selectedBookingId) return 'bk_' + selectedBookingId;
+  if (linkToken) return 'link_' + linkToken;
+  return null;
+}
+
+function showQrModal(payloadOpt) {
+  var payload = payloadOpt || getLinkPayload_();
+  if (!payload) { showToast('連携コードがありません'); return; }
+  var link = 'https://t.me/' + BOT_USERNAME + '?start=' + payload;
+  document.getElementById('qrModalImg').src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=2&data=' + encodeURIComponent(link);
+  var a = document.getElementById('qrModalLink');
+  a.textContent = link;
+  a.href = link;
+  document.getElementById('qrModal').classList.add('show');
+}
+
+function closeQrModal() {
+  document.getElementById('qrModal').classList.remove('show');
 }
 
 function goNext() {
@@ -1216,6 +1275,9 @@ function startWork() {
   timestamps.start = new Date();
   document.getElementById('startTimeDisplay').textContent = formatTime(timestamps.start);
 
+  // 手動ジョブ（予約なし）でトークン未発行なら発行（復元セッション等の保険）
+  if (!selectedBookingId && !linkToken) linkToken = newLinkToken();
+
   // リアルタイム通知: 作業開始をGASに送信
   var buildingVal = document.getElementById('building').value;
   if (buildingVal === 'other') buildingVal = document.getElementById('buildingOther').value;
@@ -1234,7 +1296,8 @@ function startWork() {
     amount: (function(){ var a = document.getElementById('amount'); return (a && a.value !== '') ? Number(a.value) : ''; })(),
     startTime: timestamps.start.toISOString(),
     beforePhotos: photos.before.filter(function(p){return p !== null;}),
-    bookingId: selectedBookingId || ''
+    bookingId: selectedBookingId || '',
+    linkToken: linkToken || ''
   };
   if (APPS_SCRIPT_URL) {
     fetch(APPS_SCRIPT_URL, {
@@ -1288,7 +1351,8 @@ function endWork() {
     endTime: timestamps.end.toISOString(),
     duration: Math.round((timestamps.end - timestamps.start) / 60000),
     afterPhotos: photos.after.filter(function(p){return p !== null;}),
-    bookingId: selectedBookingId || ''
+    bookingId: selectedBookingId || '',
+    linkToken: linkToken || ''
   };
   if (APPS_SCRIPT_URL) {
     fetch(APPS_SCRIPT_URL, {
@@ -1415,7 +1479,8 @@ function submitAll() {
     duration: duration,
     beforePhotos: photos.before.filter(function(p){return p !== null;}),
     afterPhotos: photos.after.filter(function(p){return p !== null;}),
-    bookingId: selectedBookingId || ''
+    bookingId: selectedBookingId || '',
+    linkToken: linkToken || ''
   };
 
   if (APPS_SCRIPT_URL) {
@@ -1495,6 +1560,7 @@ function resetAll() {
   currentStep = 0;  // ダッシュボードに戻る
   photos = { before:[null,null,null,null], after:[null,null,null,null] };
   timestamps = { registered:null, scheduled:null, start:null, end:null };
+  linkToken = null;  // QR連携コードはジョブ毎に使い捨て
   if (timerInterval) clearInterval(timerInterval);
   // Reset form fields
   document.getElementById('name').value = '';
@@ -1902,6 +1968,7 @@ function sendChatMessage() {
 function startManualEntry() {
   clearBookingSelection();
   cameFromThread = false;
+  linkToken = newLinkToken();  // QR連携コードをジョブ毎に発行
   currentStep = 1;
   renderStep();
 }
@@ -2000,6 +2067,8 @@ function submitManualCampaign() {
         currentStep = 0;
         renderStep();
         loadDashboardBookings();
+        // お客さんが目の前にいるうちにTelegram連携QRを提示（写真・通知・台帳紐付け）
+        if (res.bookingId) showQrModal('bk_' + res.bookingId);
       } else {
         showToast('❌ ' + (res.message || 'エラー'));
       }
