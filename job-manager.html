@@ -573,6 +573,10 @@ body {
       <span style="font-size:22px;">✍️</span>
       <span>បញ្ចូលដោយដៃ（手動で新規登録）</span>
     </button>
+    <button class="dash-manual-btn" onclick="showDashboardQr()" style="border-style:dashed;">
+      <span style="font-size:22px;">📲</span>
+      <span>QR Telegram（お客さん連携QRを表示）</span>
+    </button>
   </div>
 
   <!-- ==================== CAMPAIGN: 手動特価キャンペーン予約 ==================== -->
@@ -911,6 +915,40 @@ var linkToken = null;
 
 function newLinkToken() {
   return 'L' + Date.now().toString(36) + Math.floor(Math.random() * 1679616).toString(36);
+}
+
+// ── ウォークインQR（ダッシュボード常設ボタン用） ──
+// 「次の1台分の引換券」: 先にスキャンしてもらい、次に登録する手動ジョブ／
+// キャンペーン売上に自動で紐付ける（GAS側の pendlink 待避機構で解決）。
+// 使い捨て運用のため、ジョブ完了(resetAll)・売上連携成立で破棄する。
+var WALKIN_TOKEN_KEY = 'samurai_walkin_token';
+var WALKIN_TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 古いスキャンとの誤紐付け防止で12時間使い捨て
+
+function getStoredWalkinToken_() {
+  try {
+    var raw = localStorage.getItem(WALKIN_TOKEN_KEY);
+    if (!raw) return null;
+    var obj = JSON.parse(raw);
+    if (!obj || !obj.token) return null;
+    if (Date.now() - Number(obj.ts || 0) > WALKIN_TOKEN_TTL_MS) return null;
+    return obj.token;
+  } catch (e) { return null; }
+}
+
+function getOrCreateWalkinToken_() {
+  var t = getStoredWalkinToken_();
+  if (t) return t;
+  t = newLinkToken();
+  try { localStorage.setItem(WALKIN_TOKEN_KEY, JSON.stringify({ token: t, ts: Date.now() })); } catch (e) {}
+  return t;
+}
+
+function clearWalkinToken_() {
+  try { localStorage.removeItem(WALKIN_TOKEN_KEY); } catch (e) {}
+}
+
+function showDashboardQr() {
+  showQrModal('link_' + getOrCreateWalkinToken_());
 }
 
 // ===== セッション保存・復元 =====
@@ -1561,6 +1599,7 @@ function resetAll() {
   photos = { before:[null,null,null,null], after:[null,null,null,null] };
   timestamps = { registered:null, scheduled:null, start:null, end:null };
   linkToken = null;  // QR連携コードはジョブ毎に使い捨て
+  clearWalkinToken_();  // ウォークインQRも消費済みとして破棄（次の客には新コード）
   if (timerInterval) clearInterval(timerInterval);
   // Reset form fields
   document.getElementById('name').value = '';
@@ -1968,7 +2007,8 @@ function sendChatMessage() {
 function startManualEntry() {
   clearBookingSelection();
   cameFromThread = false;
-  linkToken = newLinkToken();  // QR連携コードをジョブ毎に発行
+  // ダッシュボードQRを先にスキャンした客がいればそのコードを引き継ぐ（無ければ新規発行）
+  linkToken = getStoredWalkinToken_() || newLinkToken();
   currentStep = 1;
   renderStep();
 }
@@ -2042,7 +2082,9 @@ function submitManualCampaign() {
     name: name,
     carModel: (document.getElementById('saleCarModel').value || '').trim(),
     plate: (document.getElementById('salePlate').value || '').trim(),
-    phone: (document.getElementById('salePhone').value || '').trim()
+    phone: (document.getElementById('salePhone').value || '').trim(),
+    // ダッシュボードQRを先にスキャンした客がいれば紐付け（無ければ空）
+    linkToken: getStoredWalkinToken_() || ''
   };
 
   var btn = document.getElementById('campaignSubmitBtn');
@@ -2067,8 +2109,14 @@ function submitManualCampaign() {
         currentStep = 0;
         renderStep();
         loadDashboardBookings();
-        // お客さんが目の前にいるうちにTelegram連携QRを提示（写真・通知・台帳紐付け）
-        if (res.bookingId) showQrModal('bk_' + res.bookingId);
+        if (res.linked) {
+          // 先スキャン済み → 連携成立。ウォークインQRは消費済みとして破棄
+          clearWalkinToken_();
+          showToast('✅ 売上記録＋Telegram連携済み: ' + res.bookingId);
+        } else if (res.bookingId) {
+          // 未連携ならお客さんが目の前にいるうちにQRを提示（写真・通知・台帳紐付け）
+          showQrModal('bk_' + res.bookingId);
+        }
       } else {
         showToast('❌ ' + (res.message || 'エラー'));
       }
