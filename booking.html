@@ -323,6 +323,126 @@ body {
   letter-spacing: 1px;
 }
 
+/* ───────── メニューカテゴリ (Menu v4: WASH / GLASS / HEADLIGHT / BODY) ───────── */
+.menu-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.menu-card {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 12px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.menu-card:active { transform: scale(0.97); }
+.menu-card.open { border-color: var(--gold-muted); }
+.menu-card.selected {
+  border-color: var(--gold);
+  background:
+    linear-gradient(135deg, rgba(201,168,92,0.08) 0%, rgba(201,168,92,0.02) 100%),
+    var(--card);
+  box-shadow:
+    inset 0 0 24px rgba(201,168,92,0.06),
+    0 6px 20px rgba(201,168,92,0.10);
+}
+.menu-card.selected::after {
+  content: '✓';
+  position: absolute; top: 8px; right: 8px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+  color: #000;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px;
+  box-shadow: 0 2px 6px rgba(201,168,92,0.4);
+}
+.menu-card .menu-letter {
+  display: inline-block;
+  width: 36px; height: 36px; line-height: 34px; text-align: center;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: var(--serif);
+  border-radius: 50%;
+  font-weight: 600; font-size: 16px;
+  margin-bottom: 10px;
+}
+.menu-card.selected .menu-letter, .menu-card.open .menu-letter { color: var(--gold-bright); border-color: var(--gold-bright); }
+.menu-card .menu-name {
+  font-family: var(--serif);
+  font-size: 13px; font-weight: 600; color: var(--gold);
+  letter-spacing: 1.2px; text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.menu-card .menu-km {
+  font-size: 11px; color: var(--text-dim);
+  margin-bottom: 10px;
+  letter-spacing: 0.3px;
+}
+.menu-card .menu-price {
+  font-family: var(--serif);
+  font-size: 22px; font-weight: 600; color: var(--gold);
+  letter-spacing: 1px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 10px; margin-top: 4px;
+}
+.menu-card .menu-price.quote { font-size: 15px; color: var(--gold-muted); letter-spacing: 1.5px; }
+.menu-card .menu-price .from { font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px; font-family: inherit; margin-right: 4px; }
+.menu-card .menu-hint-badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 9px; font-weight: 600;
+  color: var(--gold);
+  background: var(--gold-soft);
+  border: 1px solid rgba(201,168,92,0.35);
+  border-radius: 2px;
+  padding: 3px 8px;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.menu-detail { margin-top: 12px; }
+.menu-detail:empty { display: none; }
+.menu-detail .menu-detail-title {
+  font-family: var(--serif);
+  font-size: 11px; color: var(--text-dim);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin: 4px 0 10px; text-align: center;
+}
+.menu-detail .menu-detail-title .km { display: block; font-family: inherit; font-size: 10px; letter-spacing: 0.3px; text-transform: none; margin-top: 2px; opacity: 0.8; }
+.menu-hint {
+  margin-top: 14px; padding: 10px 12px;
+  font-size: 11px; color: var(--text-dim); text-align: center;
+  border: 1px dashed var(--border); border-radius: var(--radius);
+  letter-spacing: 0.3px;
+}
+/* 見積り(BODY)案内カード */
+.inquiry-card {
+  background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+  border: 1px solid var(--gold-muted);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.inquiry-card .inquiry-title {
+  font-family: var(--serif);
+  font-size: 15px; font-weight: 600; color: var(--gold);
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+.inquiry-card .inquiry-km { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+.inquiry-card .inquiry-body { font-size: 12px; color: var(--text); line-height: 1.7; margin-top: 12px; }
+.inquiry-card .inquiry-body .km { display: block; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+.inquiry-card .btn-inquiry {
+  margin-top: 14px; width: 100%;
+  padding: 12px; border-radius: var(--radius);
+  border: 1px solid var(--gold); background: var(--gold-soft);
+  color: var(--gold-bright); font-family: var(--serif);
+  font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600;
+  cursor: pointer;
+}
+.inquiry-card .btn-inquiry .km { display: block; font-family: var(--sans, inherit); font-size: 11px; letter-spacing: 0; text-transform: none; margin-top: 3px; opacity: 0.85; }
+
 /* ───────── Required / Optional バッジ (refined) ───────── */
 .badge-required, .badge-optional {
   display: inline-block;
@@ -1427,18 +1547,15 @@ body {
       </div>
     </div>
 
-    <!-- 2. SAMURAI WASH (toggle) -->
-    <div class="section-title"><span class="step-num">2</span>SAMURAI WASH <span class="km">លាងសម្អាត</span></div>
-    <div class="card-list" id="planList"></div>
-
-    <!-- 3. SAMURAI GLASS -->
-    <div class="section-title"><span class="step-num">3</span>SAMURAI GLASS <span class="km">ស្រោបកញ្ចក់</span></div>
-    <div class="card-list" id="optionList"></div>
+    <!-- 2. Menu (Menu v4 2026-09-22): カテゴリ(WASH / GLASS / HEADLIGHT / BODY)を選ぶ → 下に詳細パネルが開く2段構成 -->
+    <div class="section-title"><span class="step-num">2</span>Menu <span class="km">ជម្រើសសេវា</span></div>
+    <div class="menu-grid" id="menuGrid"></div>
+    <div class="menu-detail" id="menuDetail"></div>
 
     <!-- 注意ヒント -->
-    <div style="margin-top:14px; padding:10px 12px; font-size:11px; color:var(--text-dim); text-align:center; border:1px dashed var(--border); border-radius:var(--radius); letter-spacing:0.3px;">
-      Pick at least one — WASH or GLASS (or both)<br>
-      <span class="km" style="opacity:0.7;">ជ្រើសរើសយ៉ាងតិច 1 — WASH ឬ GLASS</span>
+    <div class="menu-hint">
+      Select one or more services<br>
+      <span class="km" style="opacity:0.7;">ជ្រើសរើសសេវាមួយ ឬច្រើន</span>
     </div>
   </div>
 
@@ -1628,10 +1745,11 @@ var state = {
   customerName: '',
   customer: null,
   plans: [],
-  options: [],                  // Menu v2: GLASS add-on一覧 (booking_initから取得)
+  options: [],                  // WASH 以外のメニュー一覧 (booking_initから取得。kind='GLASS'/'HEADLIGHT')
   campaign: null,               // Menu v2: { active, percent, nameEn, nameKm } or null
-  selectedPlan: null,
-  selectedGlassOption: null,    // Menu v2: 'GLASS_3' / 'GLASS_ALL' / null
+  selectedPlan: null,           // WASH の letter ('W') or null
+  selectedOptions: [],          // Menu v4: 選択中コード配列 ['GLASS_3','HEADLIGHT'] (同 kind は排他)
+  openMenu: null,               // Menu v4: 開いているカテゴリ 'WASH'/'GLASS'/'HEADLIGHT'/'BODY' or null
   selectedSize: '',
   selectedDate: '',
   selectedSlot: '',
@@ -1768,8 +1886,7 @@ function showView(viewId) {
       if (labKm) labKm.textContent = state.campaign.nameKm || '';
       if (disc)  disc.textContent  = '-' + state.campaign.percent + '% OFF';
     }
-    renderPlans();
-    renderOptions();
+    renderMenu();
   }
   if (viewId === 'view-datetime') renderDates();
   if (viewId === 'view-location') {
@@ -1820,8 +1937,8 @@ function updateActionButton() {
   switch (state.currentView) {
     case 'view-plan':
       btn.textContent = 'Next / បន្ទាប់';
-      // Menu v2.1 (2026-05-08): WASH か GLASS のどちらか1つ以上 + 車種選択 で next 可
-      btn.disabled = !state.selectedSize || (!state.selectedPlan && !state.selectedGlassOption);
+      // Menu v4: WASH / GLASS / HEADLIGHT のいずれか1つ以上 + 車種選択 で next 可
+      btn.disabled = !state.selectedSize || (!state.selectedPlan && state.selectedOptions.length === 0);
       btn.classList.add('btn-primary');
       break;
     case 'view-datetime':
@@ -1847,73 +1964,236 @@ function updateActionButton() {
 }
 
 // ═══════════════════════════════════════════
-//  Step 1: プラン + 車種サイズ
+//  Step 1: 車種サイズ + メニュー (Menu v4 2026-09-22)
+//  カテゴリ(WASH / GLASS / HEADLIGHT / BODY) → 詳細パネル の2段構成。
+//  WASH / GLASS / HEADLIGHT は対等な単品メニュー(組み合わせ自由)。
+//  BODY は車ごとの見積りのため予約対象外(チャット問い合わせへ誘導)。
 // ═══════════════════════════════════════════
 
-function renderPlans() {
-  var container = document.getElementById('planList');
-  container.innerHTML = '';
-  // キャンペーン割引(案a: サービスのみ -X%)
-  var campActive = state.campaign && state.campaign.active && state.campaign.percent > 0;
-  state.plans.forEach(function(plan) {
-    var card = document.createElement('div');
-    card.className = 'choice-card plan-card';
-    if (state.selectedPlan === plan.letter) card.classList.add('selected');
-    // 車種サイズに応じて価格表示を変える
-    var priceDisplay;
-    if (state.selectedSize) {
-      var origPrice = state.selectedSize === 'SUV以上' ? plan.priceSuv : plan.priceSedan;
-      if (campActive) {
-        var discPrice = (origPrice * (1 - state.campaign.percent/100)).toFixed(2);
-        priceDisplay = '<span class="price-original">$' + origPrice + '</span><span class="price-discount">$' + discPrice + '</span>';
-      } else {
-        priceDisplay = '$' + origPrice;
-      }
-    } else {
-      priceDisplay = '$' + plan.priceSedan + ' ~ $' + plan.priceSuv;
-    }
-    var durationDisplay = state.selectedSize === 'SUV以上'
-      ? plan.durationSuv + 'min'
-      : state.selectedSize === 'セダン以下'
-        ? plan.durationSedan + 'min'
-        : plan.durationSedan + '~' + plan.durationSuv + 'min';
-    // 出張料は「料金設定シート」の値を動的取得（state.dispatchFee）
-    var feeForCard = state.selectedSize === 'SUV以上'
-      ? (state.dispatchFee && state.dispatchFee.suv) || 0
-      : state.selectedSize === 'セダン以下'
-        ? (state.dispatchFee && state.dispatchFee.sedan) || 0
-        : (state.dispatchFee && state.dispatchFee.sedan) || 0;
-    var feeNote = feeForCard
-      ? '<div class="plan-fee-note">+ $' + feeForCard + ' Delivery fee / + $' + feeForCard + ' ថ្លៃដឹកជញ្ជូន</div>'
-      : '';
-    card.innerHTML =
-      '<div>'
-      + '<span class="plan-letter">' + plan.letter + '</span>'
-      + '<span class="plan-name">' + escapeHtml(plan.name) + '</span>'
-      + '</div>'
-      + '<div class="plan-desc">' + escapeHtml(plan.descEn || plan.desc || plan.jp || '') + '</div>'
-      + '<div class="plan-meta">'
-      + '<div class="plan-duration">⏱ ' + durationDisplay + '</div>'
-      + '<div class="plan-price">' + priceDisplay + '</div>'
-      + '</div>'
-      + feeNote;
-    // Menu v2.1 (2026-05-08): WASH カードもトグル動作(タップで選択/解除)
-    card.onclick = function() {
-      if (state.selectedPlan === plan.letter) {
-        selectPlan(null); // 再タップで解除
-      } else {
-        selectPlan(plan.letter);
-      }
-    };
-    container.appendChild(card);
+// 対外表記: USD は「数字+$」後置で統一(カンボジア慣習)。"$12" ではなく "12$"
+function fmtUsd(n)  { return (Number(n) || 0) + '$'; }
+function fmtUsd2(n) { return (Number(n) || 0).toFixed(2) + '$'; }
+
+// カテゴリ定義(表示名・クメール語は Panha 校閲済み 2026-09-22)
+var MENU_CATEGORIES = [
+  { key: 'WASH',      letter: 'W', nameEn: 'SAMURAI WASH',      nameKm: 'លាងសម្អាត' },
+  { key: 'GLASS',     letter: 'G', nameEn: 'SAMURAI GLASS',     nameKm: 'ស្រោបកញ្ចក់' },
+  { key: 'HEADLIGHT', letter: 'H', nameEn: 'SAMURAI HEADLIGHT', nameKm: 'ស្ដារភ្លើងមុខ' },
+  { key: 'BODY',      letter: 'B', nameEn: 'SAMURAI BODY',      nameKm: 'ខាត់ខ្លួនរថយន្ត + ស្រោបទឹកមិនជាប់', inquiry: true }
+];
+
+// カテゴリごとの品目(WASH は plans、それ以外は options の kind で振り分け)
+function menuItemsFor(catKey) {
+  if (catKey === 'WASH') {
+    return (state.plans || []).map(function(p) {
+      return { code: p.letter, kind: 'WASH', nameEn: p.name, nameKm: '', description: p.descEn || p.desc || '',
+               priceSedan: p.priceSedan, priceSuv: p.priceSuv, durationSedan: p.durationSedan, durationSuv: p.durationSuv };
+    });
+  }
+  return (state.options || []).filter(function(o) {
+    return String(o.kind || 'GLASS').toUpperCase() === catKey;
   });
 }
 
-function selectPlan(letter) {
-  state.selectedPlan = letter; // letter or null
-  renderPlans();
-  renderOptions(); // GLASS 側の表示更新(WASH 解除でも GLASS は残せる)
+function itemPriceFor(item) {
+  return state.selectedSize === 'SUV以上' ? item.priceSuv : item.priceSedan;
+}
+function itemDurationFor(item) {
+  return state.selectedSize === 'SUV以上' ? item.durationSuv : item.durationSedan;
+}
+function isItemSelected(item) {
+  if (item.kind === 'WASH') return state.selectedPlan === item.code;
+  return state.selectedOptions.indexOf(item.code) >= 0;
+}
+function isCategorySelected(catKey) {
+  return menuItemsFor(catKey).some(isItemSelected);
+}
+
+// 価格表示(割引対応)。車種未選択時はセダン〜SUV の範囲
+function priceHtmlFor(item) {
+  var campActive = state.campaign && state.campaign.active && state.campaign.percent > 0;
+  if (!state.selectedSize) {
+    return item.priceSedan === item.priceSuv
+      ? fmtUsd(item.priceSedan)
+      : fmtUsd(item.priceSedan) + ' ~ ' + fmtUsd(item.priceSuv);
+  }
+  var price = itemPriceFor(item);
+  if (campActive) {
+    var disc = (price * (1 - state.campaign.percent / 100)).toFixed(2);
+    return '<span class="price-original">' + fmtUsd(price) + '</span><span class="price-discount">' + disc + '$</span>';
+  }
+  return fmtUsd(price);
+}
+
+// カテゴリカードの価格ラベル: 品目1つ=その価格 / 複数=最安に "from" / 見積り=Quote
+function categoryPriceHtml(cat, items) {
+  if (cat.inquiry) return '<div class="menu-price quote">Quote</div>';
+  if (!items.length) return '<div class="menu-price quote">—</div>';
+  if (items.length === 1) return '<div class="menu-price">' + priceHtmlFor(items[0]) + '</div>';
+  var min = items.reduce(function(m, it) {
+    var p = state.selectedSize ? itemPriceFor(it) : it.priceSedan;
+    return (m === null || p < m) ? p : m;
+  }, null);
+  return '<div class="menu-price"><span class="from">from</span>' + fmtUsd(min) + '</div>';
+}
+
+function renderMenu() {
+  var grid = document.getElementById('menuGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  MENU_CATEGORIES.forEach(function(cat) {
+    var items = cat.inquiry ? [] : menuItemsFor(cat.key);
+    if (!cat.inquiry && items.length === 0) return; // シートで無効化されたカテゴリは出さない
+    var selected = !cat.inquiry && isCategorySelected(cat.key);
+    var card = document.createElement('div');
+    card.className = 'menu-card' + (selected ? ' selected' : '') + (state.openMenu === cat.key ? ' open' : '');
+    var badge = cat.inquiry
+      ? 'Ask'
+      : (selected ? '✓ Selected · បានជ្រើសរើស' : 'Add · បន្ថែម');
+    card.innerHTML =
+      '<div class="menu-letter">' + cat.letter + '</div>'
+      + '<div class="menu-name">' + escapeHtml(cat.nameEn) + '</div>'
+      + '<div class="menu-km">' + escapeHtml(cat.nameKm) + '</div>'
+      + categoryPriceHtml(cat, items)
+      + '<div class="menu-hint-badge">' + badge + '</div>';
+    card.onclick = function() { openMenuCategory(cat.key); };
+    grid.appendChild(card);
+  });
+
+  renderMenuDetail();
+}
+
+// カテゴリをタップ: 詳細パネルを開く。品目が1つだけのカテゴリは同時に選択もする(タップ数削減)
+function openMenuCategory(catKey) {
+  var cat = MENU_CATEGORIES.filter(function(c) { return c.key === catKey; })[0];
+  state.openMenu = catKey;
+  if (cat && !cat.inquiry) {
+    var items = menuItemsFor(catKey);
+    if (items.length === 1 && !isItemSelected(items[0])) {
+      toggleMenuItem(items[0]);
+      return; // toggleMenuItem 内で再描画済み
+    }
+  }
+  renderMenu();
   updateActionButton();
+  var panel = document.getElementById('menuDetail');
+  if (panel && panel.scrollIntoView) {
+    setTimeout(function() { panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 50);
+  }
+}
+
+// 品目トグル: WASH は letter、それ以外はコード配列。同じカテゴリ内(GLASS 3面/全面)は排他
+function toggleMenuItem(item) {
+  if (item.kind === 'WASH') {
+    state.selectedPlan = (state.selectedPlan === item.code) ? null : item.code;
+  } else {
+    var idx = state.selectedOptions.indexOf(item.code);
+    if (idx >= 0) {
+      state.selectedOptions.splice(idx, 1);
+    } else {
+      var sameKind = menuItemsFor(item.kind).map(function(i) { return i.code; });
+      state.selectedOptions = state.selectedOptions.filter(function(c) { return sameKind.indexOf(c) < 0; });
+      state.selectedOptions.push(item.code);
+    }
+  }
+  renderMenu();
+  updateActionButton();
+}
+
+function renderMenuDetail() {
+  var panel = document.getElementById('menuDetail');
+  if (!panel) return;
+  panel.innerHTML = '';
+  if (!state.openMenu) return;
+  var cat = MENU_CATEGORIES.filter(function(c) { return c.key === state.openMenu; })[0];
+  if (!cat) return;
+
+  if (cat.inquiry) {
+    // BODY: 車ごとの見積り → チャットで写真を送ってもらう(予約フローには乗せない)
+    panel.innerHTML =
+      '<div class="inquiry-card">'
+      + '<div class="inquiry-title">' + escapeHtml(cat.nameEn) + '</div>'
+      + '<div class="inquiry-km">' + escapeHtml(cat.nameKm) + '</div>'
+      + '<div class="inquiry-body">Price by quotation — body coating is quoted per car.<br>'
+      +   'Please send us a photo of your car in this chat and we will reply with a price.'
+      +   '<span class="km">គិតតម្លៃដោយប៉ាន់ប្រមាណ — ការស្រោបខ្លួនរថយន្ត ត្រូវប៉ាន់ប្រមាណតម្លៃតាមរថយន្តនីមួយៗ។ '
+      +   'សូមផ្ញើរូបថតរថយន្តរបស់អ្នកមកក្នុងជជែកនេះ ហើយយើងខ្ញុំនឹងឆ្លើយតបជាមួយតម្លៃមកវិញ។</span>'
+      + '</div>'
+      + '<button type="button" class="btn-inquiry" onclick="openBodyInquiry()">Contact us for a quote<span class="km">ទាក់ទងសុំតម្លៃ</span></button>'
+      + '</div>';
+    return;
+  }
+
+  var items = menuItemsFor(cat.key);
+  var title = document.createElement('div');
+  title.className = 'menu-detail-title';
+  title.innerHTML = escapeHtml(cat.nameEn) + '<span class="km">' + escapeHtml(cat.nameKm) + '</span>';
+  panel.appendChild(title);
+
+  var list = document.createElement('div');
+  list.className = 'card-list';
+  // 出張料は「料金設定シート」の値を動的取得(state.dispatchFee)。WASH カードにだけ注記
+  var feeForCard = state.selectedSize === 'SUV以上'
+    ? (state.dispatchFee && state.dispatchFee.suv) || 0
+    : (state.dispatchFee && state.dispatchFee.sedan) || 0;
+
+  items.forEach(function(item) {
+    var card = document.createElement('div');
+    card.className = 'choice-card plan-card';
+    if (isItemSelected(item)) card.classList.add('selected');
+    var durationDisplay = state.selectedSize
+      ? itemDurationFor(item) + 'min'
+      : item.durationSedan + '~' + item.durationSuv + 'min';
+    var feeNote = (item.kind === 'WASH' && feeForCard)
+      ? '<div class="plan-fee-note">+ ' + fmtUsd(feeForCard) + ' Delivery fee / + ' + fmtUsd(feeForCard) + ' ថ្លៃដឹកជញ្ជូន</div>'
+      : '';
+    card.innerHTML =
+      '<div>'
+      + '<span class="plan-letter">' + cat.letter + '</span>'
+      + '<span class="plan-name">' + escapeHtml(item.nameEn || item.code) + '</span>'
+      + '</div>'
+      + (item.nameKm ? '<div class="option-name-km" style="margin-top:6px;">' + escapeHtml(item.nameKm) + '</div>' : '')
+      + '<div class="plan-desc">' + escapeHtml(item.description || '') + '</div>'
+      + '<div class="plan-meta">'
+      + '<div class="plan-duration">⏱ ' + durationDisplay + '</div>'
+      + '<div class="plan-price">' + priceHtmlFor(item) + '</div>'
+      + '</div>'
+      + feeNote;
+    card.onclick = function() { toggleMenuItem(item); };
+    list.appendChild(card);
+  });
+  panel.appendChild(list);
+
+  var hint = document.createElement('div');
+  hint.style.cssText = 'text-align:center; padding:10px 4px 0; color:var(--text-dim); font-size:11px; line-height:1.5;';
+  hint.innerHTML = isCategorySelected(cat.key)
+    ? '✓ Tap the selected item again to remove<br><span style="opacity:0.6">ចុចម្តងទៀតដើម្បីដកចេញ</span>'
+    : 'Tap to add<br><span style="opacity:0.6">ចុចដើម្បីបន្ថែម</span>';
+  panel.appendChild(hint);
+}
+
+// BODY 見積り問い合わせ: ミニアプリを閉じてチャットに戻す(顧客がそのまま写真を送れる)
+function openBodyInquiry() {
+  if (window.Telegram && Telegram.WebApp) {
+    Telegram.WebApp.close();
+  } else {
+    showToast('Please send us a photo of your car in the chat', false);
+  }
+}
+
+// 確認画面・送信用: 選択中の品目を [{kind, code, nameEn, price}] で返す
+function selectedMenuItems() {
+  var out = [];
+  MENU_CATEGORIES.forEach(function(cat) {
+    if (cat.inquiry) return;
+    menuItemsFor(cat.key).forEach(function(item) {
+      if (isItemSelected(item)) {
+        out.push({ kind: item.kind, code: item.code, nameEn: item.nameEn, catName: cat.nameEn, price: itemPriceFor(item) });
+      }
+    });
+  });
+  return out;
 }
 
 function selectSize(size) {
@@ -1921,80 +2201,8 @@ function selectSize(size) {
   // UIの更新
   document.getElementById('sizeSedan').classList.toggle('selected', size === 'セダン以下');
   document.getElementById('sizeSuv').classList.toggle('selected', size === 'SUV以上');
-  // 価格をプラン・オプションに反映
-  renderPlans();
-  renderOptions();
-  updateActionButton();
-}
-
-// ═══════════════════════════════════════════
-//  Step 1-c: SAMURAI GLASS オプション (Menu v2)
-// ═══════════════════════════════════════════
-
-function renderOptions() {
-  var container = document.getElementById('optionList');
-  if (!container) return;
-  container.innerHTML = '';
-
-  // Menu v2.1 (2026-05-12 fix): 車種未選択でも GLASS カードを表示・選択可。
-  // 価格は範囲表示(セダン〜SUV)、車種選択後に確定値+割引適用へ更新。
-  var sizeSelected = !!state.selectedSize;
-  var campActive = state.campaign && state.campaign.active && state.campaign.percent > 0;
-
-  (state.options || []).forEach(function(opt) {
-    var card = document.createElement('div');
-    card.className = 'choice-card option-card';
-    if (state.selectedGlassOption === opt.code) card.classList.add('selected');
-
-    var duration;
-    var priceHtml;
-    if (!sizeSelected) {
-      // 車種未選択: 範囲価格(割引前)・時間範囲
-      priceHtml = '+$' + opt.priceSedan + ' ~ +$' + opt.priceSuv;
-      duration = opt.durationSedan + '~' + opt.durationSuv;
-    } else {
-      var price = state.selectedSize === 'SUV以上' ? opt.priceSuv : opt.priceSedan;
-      duration = state.selectedSize === 'SUV以上' ? opt.durationSuv : opt.durationSedan;
-      if (campActive) {
-        var discPrice = (price * (1 - state.campaign.percent/100)).toFixed(2);
-        priceHtml = '<span class="price-original">+$' + price + '</span><span class="price-discount">+$' + discPrice + '</span>';
-      } else {
-        priceHtml = '+$' + price;
-      }
-    }
-
-    card.innerHTML =
-      '<div class="option-info">'
-      + '<div class="option-name">' + escapeHtml(opt.nameEn || opt.code) + '</div>'
-      + '<div class="option-name-km">' + escapeHtml(opt.nameKm || '') + '</div>'
-      + '<div class="option-desc">+' + duration + 'min · ' + escapeHtml(opt.description || '') + '</div>'
-      + '</div>'
-      + '<div class="option-price">' + priceHtml + '</div>';
-    // トグル動作: 既に選択中なら解除、未選択なら選択
-    card.onclick = function() {
-      if (state.selectedGlassOption === opt.code) {
-        selectGlassOption(null);
-      } else {
-        selectGlassOption(opt.code);
-      }
-    };
-    container.appendChild(card);
-  });
-
-  // ヒント表示: 状態に応じてメッセージを変える
-  var hint = document.createElement('div');
-  hint.style.cssText = 'text-align:center; padding:10px 4px 0; color:var(--text-dim); font-size:11px; line-height:1.5;';
-  if (state.selectedGlassOption) {
-    hint.innerHTML = '✓ Tap the selected option again to remove<br><span style="opacity:0.6">ចុចម្តងទៀតដើម្បីដកចេញ</span>';
-  } else {
-    hint.innerHTML = 'Glass coating is optional — skip or tap to add<br><span style="opacity:0.6">ស្រោបកញ្ចក់គឺជាជម្រើសបន្ថែម</span>';
-  }
-  container.appendChild(hint);
-}
-
-function selectGlassOption(code) {
-  state.selectedGlassOption = code;
-  renderOptions();
+  // 価格をメニューに反映
+  renderMenu();
   updateActionButton();
 }
 
@@ -2104,13 +2312,12 @@ function loadTimeSlots() {
     + '<div class="slot-loader-sub">Finding the perfect time<span class="km">កំពុងស្វែងរកម៉ោងល្អបំផុត</span></div>'
     + '</div>';
 
-  // Menu v2.1: plan が null(GLASS-only)でも空文字で送る、glassOption も渡す
+  // Menu v4: plan が null(WASH なし)でも空文字で送る。options はカンマ区切り(GLASS_3,HEADLIGHT 等)
   var url = GAS_URL + '?action=booking_slots'
     + '&date=' + encodeURIComponent(state.selectedDate)
     + '&plan=' + encodeURIComponent(state.selectedPlan || '')
     + '&vehicleType=' + encodeURIComponent(state.selectedSize)
-    + '&glassOption=' + encodeURIComponent(state.selectedGlassOption || '')
-    + '&options=';
+    + '&options=' + encodeURIComponent(state.selectedOptions.join(','));
 
   fetch(url)
     .then(function(r) { return r.json(); })
@@ -2159,29 +2366,17 @@ function selectSlot(time) {
 // ═══════════════════════════════════════════
 
 function renderSummary() {
-  // Menu v2.1 (2026-05-08): plan が null(GLASS-only)も対応
-  var plan = state.selectedPlan ? state.plans.find(function(p) { return p.letter === state.selectedPlan; }) : null;
-  var planName = plan ? plan.name : '';
-  // 基本料金 (WASH) — plan が null なら 0
-  var basePrice = plan
-    ? ((state.selectedSize === 'SUV以上') ? plan.priceSuv : plan.priceSedan)
-    : 0;
-  // GLASS オプション
-  var glassOpt = state.selectedGlassOption
-    ? state.options.find(function(o) { return o.code === state.selectedGlassOption; })
-    : null;
-  var glassPrice = glassOpt
-    ? ((state.selectedSize === 'SUV以上') ? glassOpt.priceSuv : glassOpt.priceSedan)
-    : 0;
+  // Menu v4: 選択中の品目(WASH / GLASS / HEADLIGHT)は対等に列挙。add-on 表記はしない
+  var items = selectedMenuItems();
   // 出張料(料金設定シート由来、ハードコードしない)
-  // 2026-05-20: 店舗作業は出張料 $0
+  // 2026-05-20: 店舗作業は出張料 0
   var isInStore = (state.serviceType === '店舗');
   var baseFee = (state.selectedSize === 'SUV以上')
     ? ((state.dispatchFee && state.dispatchFee.suv) || 0)
     : ((state.dispatchFee && state.dispatchFee.sedan) || 0);
   var fee = isInStore ? 0 : baseFee;
   // キャンペーン割引(案a: サービスのみ -X%)
-  var serviceSubtotal = basePrice + glassPrice;
+  var serviceSubtotal = items.reduce(function(s, it) { return s + (Number(it.price) || 0); }, 0);
   var camp = state.campaign;
   var campActive = camp && camp.active && camp.percent > 0;
   var discount = campActive ? Math.round(serviceSubtotal * camp.percent) / 100 : 0;
@@ -2189,38 +2384,36 @@ function renderSummary() {
   var total = serviceAfter + fee;
   var sizeLabel = (state.selectedSize === 'SUV以上') ? 'SUV & larger' : 'Sedan & smaller';
 
-  var html = '';
-  // Service ラベル: plan のみ / glass のみ / plan + glass のいずれでも表示
-  if (plan && glassOpt) {
-    html += summaryRow('Service', escapeHtml(planName));
-    html += summaryRow('+ Add-on', escapeHtml(glassOpt.nameEn));
-  } else if (plan) {
-    html += summaryRow('Service', escapeHtml(planName));
-  } else if (glassOpt) {
-    html += summaryRow('Service', 'SAMURAI GLASS — ' + escapeHtml(glassOpt.nameEn));
+  // 品目の表示名: WASH はそのまま、他は「SAMURAI GLASS — 3 Windows + Mirrors」
+  function itemLabel(it) {
+    // 品目名がカテゴリ名と同じ(単品カテゴリ)なら重複させない
+    if (it.kind === 'WASH' || String(it.nameEn).toUpperCase() === String(it.catName).toUpperCase()) return escapeHtml(it.nameEn);
+    return escapeHtml(it.catName) + ' — ' + escapeHtml(it.nameEn);
   }
+
+  var html = '';
+  items.forEach(function(it, i) {
+    html += summaryRow(i === 0 ? 'Service' : '', itemLabel(it));
+  });
   html += summaryRow('Vehicle', sizeLabel);
   html += summaryRow('Date', state.selectedDate);
   html += summaryRow('Time', state.selectedSlot + ' (~' + state.selectedDuration + 'min)');
   html += summaryRow('Location', escapeHtml(state.selectedLocation));
-  // 料金内訳: WASH / GLASS / [Subtotal / Discount / After] / Delivery / Total
-  if (plan) {
-    html += summaryRow(escapeHtml(planName), '$' + basePrice.toFixed(2));
-  }
-  if (glassOpt) {
-    html += summaryRow('+ ' + escapeHtml(glassOpt.nameEn), '$' + glassPrice.toFixed(2));
-  }
+  // 料金内訳: 各品目 / [Subtotal / Discount] / Delivery / Total
+  items.forEach(function(it) {
+    html += summaryRow(itemLabel(it), fmtUsd2(it.price));
+  });
   if (campActive) {
-    html += summaryRow('Service subtotal', '$' + serviceSubtotal.toFixed(2));
-    html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">★ ' + escapeHtml(camp.nameEn || 'Campaign') + ' (-' + camp.percent + '%)</div><div class="value" style="color:var(--gold-bright)">-$' + discount.toFixed(2) + '</div></div>';
+    html += summaryRow('Service subtotal', fmtUsd2(serviceSubtotal));
+    html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">★ ' + escapeHtml(camp.nameEn || 'Campaign') + ' (-' + camp.percent + '%)</div><div class="value" style="color:var(--gold-bright)">-' + fmtUsd2(discount) + '</div></div>';
   }
-  // 出張: Delivery fee 表示 / 店舗: In-store ラベル + $0
+  // 出張: Delivery fee 表示 / 店舗: In-store ラベル + 0
   if (isInStore) {
-    html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">🏪 In-store / នៅហាង</div><div class="value" style="color:var(--gold-bright)">$0.00 (saved $' + baseFee.toFixed(2) + ')</div></div>';
+    html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">🏪 In-store / នៅហាង</div><div class="value" style="color:var(--gold-bright)">0$ (saved ' + fmtUsd2(baseFee) + ')</div></div>';
   } else {
-    html += summaryRow('🚚 Delivery fee / ថ្លៃដឹកជញ្ជូន', '$' + fee.toFixed(2));
+    html += summaryRow('🚚 Delivery fee / ថ្លៃដឹកជញ្ជូន', fmtUsd2(fee));
   }
-  html += '<div class="summary-row total"><div class="label">Total / សរុប</div><div class="value">$' + total.toFixed(2) + '</div></div>';
+  html += '<div class="summary-row total"><div class="label">Total / សរុប</div><div class="value">' + fmtUsd2(total) + '</div></div>';
 
   document.getElementById('summaryCard').innerHTML = html;
 }
@@ -2236,13 +2429,13 @@ function summaryRow(label, value) {
 function handleNext() {
   switch (state.currentView) {
     case 'view-plan':
-      // Menu v2.1: 車種 必須 + (WASH か GLASS のどちらか1つ以上)
+      // Menu v4: 車種 必須 + (WASH / GLASS / HEADLIGHT のいずれか1つ以上)
       if (!state.selectedSize) {
         showToast('Please select vehicle size', true);
         return;
       }
-      if (!state.selectedPlan && !state.selectedGlassOption) {
-        showToast('Please select SAMURAI WASH or SAMURAI GLASS (at least one)', true);
+      if (!state.selectedPlan && state.selectedOptions.length === 0) {
+        showToast('Please select at least one service', true);
         return;
       }
       showView('view-datetime');
@@ -2301,7 +2494,11 @@ function submitBooking() {
     vehicleId: '',
     vehicleType: state.selectedSize,
     planLetter: state.selectedPlan,
-    glassOption: state.selectedGlassOption,   // Menu v2: 'GLASS_3' / 'GLASS_ALL' / null
+    optionCodes: state.selectedOptions.slice(), // Menu v4: ['GLASS_3','HEADLIGHT'] 等
+    glassOption: (function() {                  // 互換: 旧サーバー向けに GLASS 1件だけ別送
+      var g = state.selectedOptions.filter(function(c) { return c.indexOf('GLASS') === 0; });
+      return g.length ? g[0] : null;
+    })(),
     optionIds: [],                            // 旧フィールド(後方互換維持)
     date: state.selectedDate,
     startTime: state.selectedSlot,
@@ -2327,7 +2524,7 @@ function submitBooking() {
     document.getElementById('successSummary').innerHTML =
       summaryRow('Booking ID', res.bookingId)
       + summaryRow('Date & Time', state.selectedDate + ' ' + state.selectedSlot + ' - ' + res.endTime)
-      + '<div class="summary-row total"><div class="label">Total</div><div class="value">$' + res.amount + '</div></div>';
+      + '<div class="summary-row total"><div class="label">Total</div><div class="value">' + fmtUsd2(res.amount) + '</div></div>';
     state.history = [];
     showView('view-success');
   }).catch(function(err) {
