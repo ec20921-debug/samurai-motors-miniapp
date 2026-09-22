@@ -1821,7 +1821,7 @@ function loadInit() {
       state.campaign = res.campaign || null;                   // Menu v2: キャンペーン情報
       state.dispatchFee = res.dispatchFee || { sedan: 2, suv: 2 };
       // 単一プラン(WASH のみ)の場合は自動選択(操作削減)
-      if (state.plans.length === 1) state.selectedPlan = state.plans[0].letter;
+      // Menu v4 (2026-09-22 Daisuke 指示): WASH を自動選択しない(必須ではない・顧客が選ぶ)
       // 新規顧客の場合、自動登録
       if (!state.customer && state.customerName) {
         return autoRegister().then(function() { showView('view-plan'); });
@@ -2064,13 +2064,14 @@ function renderMenu() {
   renderMenuDetail();
 }
 
-// カテゴリをタップ: 詳細パネルを開く。品目が1つだけのカテゴリは同時に選択もする(タップ数削減)
+// カテゴリをタップ: 詳細パネルを開く。品目が1つだけのカテゴリ(WASH / HEADLIGHT)は
+// 枠自体が選択/解除のトグル(再タップで外せる。2026-09-22 Daisuke 指摘)
 function openMenuCategory(catKey) {
   var cat = MENU_CATEGORIES.filter(function(c) { return c.key === catKey; })[0];
   state.openMenu = catKey;
   if (cat && !cat.inquiry) {
     var items = menuItemsFor(catKey);
-    if (items.length === 1 && !isItemSelected(items[0])) {
+    if (items.length === 1) {
       toggleMenuItem(items[0]);
       return; // toggleMenuItem 内で再描画済み
     }
