@@ -118,6 +118,17 @@ body {
 .plan-option input:checked + label.plan-card { border-color:var(--gold); background:var(--gold-soft); }
 .plan-name-jp { font-size:16px; font-weight:700; color:var(--gold); }
 .plan-price { font-size:11px; color:var(--text-dim); margin-top:2px; }
+/* Menu v4 (2026-09-22): 4枠(WASH/GLASS/HEADLIGHT/BODY) */
+.menu-block { margin-top:8px; }
+.menu-block-title { font-size:12px; font-weight:700; color:var(--gold); margin:0 0 6px 2px; }
+.menu-block-title .jp { font-size:10px; font-weight:400; color:var(--text-dim); }
+.km-sub { font-size:11px; font-weight:400; color:var(--text-dim); margin-left:6px; }
+.plan-option label.plan-card.wide { flex-direction:row; justify-content:space-between; align-items:center; padding:12px 14px; }
+.plan-option label.plan-card.wide .plan-price { font-size:16px; font-weight:700; color:var(--gold); margin-top:0; }
+.plan-name-jp.small { font-size:13px; text-align:center; line-height:1.3; }
+.plan-price.big { font-size:16px; font-weight:700; color:var(--gold); }
+.service-summary { margin-top:10px; padding:8px 10px; background:var(--card); border:1px dashed var(--border); border-radius:var(--radius); font-size:12px; color:var(--text); }
+.service-summary b { color:var(--gold); }
 
 /* Vehicle type selector（クメール語＋日本語、サイズ感が分かる） */
 .vehicle-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
@@ -594,10 +605,10 @@ body {
         <label>ទឹកប្រាក់ទទួល <span class="jp">（入金額 USD）</span><span class="req">*</span></label>
         <select id="saleAmount">
           <option value="" disabled selected>— ជ្រើសរើស / 選択 —</option>
-          <option value="5">$5</option>
-          <option value="10">$10</option>
-          <option value="15">$15</option>
-          <option value="20">$20</option>
+          <option value="5">5$</option>
+          <option value="10">10$</option>
+          <option value="15">15$</option>
+          <option value="20">20$</option>
         </select>
       </div>
     </div>
@@ -697,62 +708,78 @@ body {
       <div class="section-title">⭐ គម្រោងសេវាកម្ម（サービスプラン）</div>
       <div class="vehicle-grid">
         <div class="vehicle-option">
-          <input type="radio" name="vehicleType" id="vehSedan" value="セダン" checked>
+          <input type="radio" name="vehicleType" id="vehSedan" value="セダン" checked onchange="updateServiceSummary()">
           <label class="vehicle-card" for="vehSedan">
             <span class="vehicle-name-km">🚙 សេដាន ឬ តូចជាង</span>
             <span class="vehicle-name-jp">セダン以下（小型）</span>
           </label>
         </div>
         <div class="vehicle-option">
-          <input type="radio" name="vehicleType" id="vehSuv" value="SUV">
+          <input type="radio" name="vehicleType" id="vehSuv" value="SUV" onchange="updateServiceSummary()">
           <label class="vehicle-card" for="vehSuv">
             <span class="vehicle-name-km">🚘 SUV ឬ ធំជាង</span>
             <span class="vehicle-name-jp">SUV以上（大型）</span>
           </label>
         </div>
       </div>
-      <!-- Menu v2.1 (2026-05-08): WASH 任意化。タップで選択解除でき GLASS 単体予約も可 -->
-      <div class="plan-grid">
+      <!-- Menu v4 (2026-09-22): WASH / GLASS / HEADLIGHT / BODY の4枠。全品目 単品受注可・組み合わせ自由。
+           価格はメニューシート連動(menu_prices)。BODY は見積り済み前提で料金は手入力 -->
+      <p class="hint" style="margin-bottom:8px;">👆 ចុចដើម្បីជ្រើសរើស/ដកចេញ（タップで選択・解除）｜ជ្រើសរើសមួយ ឬច្រើន（1つ以上・組み合わせ可）</p>
+      <div class="menu-block">
         <div class="plan-option">
-          <input type="checkbox" name="plan" id="planW" value="SAMURAI WASH (W)" checked>
-          <label class="plan-card" for="planW">
-            <span class="plan-name-jp">SAMURAI WASH</span>
-            <span class="plan-price">$12 / $15</span>
+          <input type="checkbox" name="plan" id="planW" value="SAMURAI WASH (W)" checked onchange="updateServiceSummary()">
+          <label class="plan-card wide" for="planW">
+            <span class="plan-name-jp">SAMURAI WASH<span class="km-sub">លាងសម្អាត</span></span>
+            <span class="plan-price" id="priceWASH">—</span>
           </label>
         </div>
       </div>
-      <p class="hint" style="margin-top:8px; margin-bottom:6px;">👆 ចុចដើម្បីបិទ/បើក（タップで選択解除可）｜+ SAMURAI GLASS（オプション・任意）</p>
-      <div class="plan-grid">
-        <div class="plan-option">
-          <input type="radio" name="glassOption" id="glassNone" value="" checked>
-          <label class="plan-card" for="glassNone">
-            <span class="plan-name-jp">No glass coating</span>
-            <span class="plan-price">—</span>
-          </label>
+      <div class="menu-block">
+        <div class="menu-block-title">SAMURAI GLASS<span class="km-sub">ស្រោបកញ្ចក់</span> <span class="jp">（ជ្រើសរើសមួយ / どちらか1つ）</span></div>
+        <div class="plan-grid">
+          <div class="plan-option">
+            <input type="checkbox" name="glassOption" id="glass3" value="GLASS_3" onchange="exclusiveGlass(this)">
+            <label class="plan-card" for="glass3">
+              <span class="plan-name-jp small">3 Windows<br>+ Mirrors</span>
+              <span class="plan-price big" id="priceGLASS_3">—</span>
+            </label>
+          </div>
+          <div class="plan-option">
+            <input type="checkbox" name="glassOption" id="glassAll" value="GLASS_ALL" onchange="exclusiveGlass(this)">
+            <label class="plan-card" for="glassAll">
+              <span class="plan-name-jp small">All Windows<br>+ Mirrors</span>
+              <span class="plan-price big" id="priceGLASS_ALL">—</span>
+            </label>
+          </div>
         </div>
+      </div>
+      <div class="menu-block">
         <div class="plan-option">
-          <input type="radio" name="glassOption" id="glass3" value="GLASS_3">
-          <label class="plan-card" for="glass3">
-            <span class="plan-name-jp">3 Windows + Mirrors</span>
-            <span class="plan-price">+$15 / +$20</span>
-          </label>
-        </div>
-        <div class="plan-option">
-          <input type="radio" name="glassOption" id="glassAll" value="GLASS_ALL">
-          <label class="plan-card" for="glassAll">
-            <span class="plan-name-jp">All Windows + Mirrors</span>
-            <span class="plan-price">+$30 / +$40</span>
+          <input type="checkbox" name="optionCode" id="optHeadlight" value="HEADLIGHT" onchange="updateServiceSummary()">
+          <label class="plan-card wide" for="optHeadlight">
+            <span class="plan-name-jp">SAMURAI HEADLIGHT<span class="km-sub">ស្ដារភ្លើងមុខ</span></span>
+            <span class="plan-price" id="priceHEADLIGHT">—</span>
           </label>
         </div>
       </div>
-      <p class="hint" style="margin-top:6px;">💰 + $2 ថ្លៃធ្វើដំណើរ（＋$2 出張費別途）｜🎌 GRAND OPENING -30% 適用中</p>
+      <div class="menu-block">
+        <div class="plan-option">
+          <input type="checkbox" name="optionCode" id="optBody" value="BODY" onchange="updateServiceSummary()">
+          <label class="plan-card wide" for="optBody">
+            <span class="plan-name-jp">SAMURAI BODY<span class="km-sub">ខាត់ខ្លួនរថយន្ត</span></span>
+            <span class="plan-price">តម្លៃប៉ាន់ប្រមាណ<br><span class="jp" style="font-size:10px;">（見積り・料金は下に入力）</span></span>
+          </label>
+        </div>
+      </div>
+      <div class="service-summary" id="serviceSummary">—</div>
+      <p class="hint" style="margin-top:6px;" id="feeHint">💰 ថ្លៃធ្វើដំណើរ（出張費）は別途</p>
     </div>
     <div class="section">
       <div class="section-title">💵 តម្លៃ（料金）</div>
       <div class="field">
         <label>តម្លៃទទួល (USD) <span class="jp">（受取料金・特価/無料は自由入力、無料なら 0）</span></label>
         <input type="number" id="amount" placeholder="ឧ. 5（無料なら 0）" min="0" step="0.5" inputmode="decimal">
-        <p class="hint">🎫 $5キャンペーン → 5 ／ 🎁 無料サービス → 0 ／ 通常価格 → 金額を入力</p>
+        <p class="hint">🎫 5$キャンペーン → 5 ／ 🎁 無料サービス → 0 ／ 通常価格 → 金額を入力</p>
       </div>
     </div>
     <div class="section">
@@ -888,6 +915,96 @@ body {
 <script>
 // ===== CONFIG =====
 var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
+
+// ===== Menu v4 (2026-09-22): メニュー価格(シート連動)・サービス集計 =====
+// USD 表記は「数字+$」後置で統一(顧客画面と同じ見え方)
+function fmtUsd(n) { return (Number(n) || 0) + '$'; }
+
+var MENU_PRICES = null;   // { plans:[{letter,priceSedan,priceSuv}], options:[{code,kind,priceSedan,priceSuv}], dispatchFee:{sedan,suv} }
+
+function loadMenuPrices() {
+  if (!APPS_SCRIPT_URL) return;
+  fetch(APPS_SCRIPT_URL + '?action=menu_prices')
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.status !== 'ok') return;
+      MENU_PRICES = res;
+      updateServiceSummary();
+    })
+    .catch(function() { /* 取得失敗時は価格非表示のまま入力は継続可 */ });
+}
+
+function currentVehicleIsSuv() {
+  var v = document.querySelector('input[name="vehicleType"]:checked');
+  return !!(v && v.value === 'SUV');
+}
+
+// コード('W' / 'GLASS_3' / 'HEADLIGHT')から現在の車種の価格を返す。不明なら null
+function menuPriceFor(code) {
+  if (!MENU_PRICES) return null;
+  var suv = currentVehicleIsSuv();
+  var item = null;
+  if (code === 'W') {
+    item = (MENU_PRICES.plans || []).filter(function(p) { return p.letter === 'W'; })[0];
+  } else {
+    item = (MENU_PRICES.options || []).filter(function(o) { return o.code === code; })[0];
+  }
+  if (!item) return null;
+  return suv ? Number(item.priceSuv) : Number(item.priceSedan);
+}
+
+// GLASS は 3面 / 全面 のどちらか1つ(チェックボックスだが排他)
+function exclusiveGlass(el) {
+  if (el.checked) {
+    document.querySelectorAll('input[name="glassOption"]').forEach(function(g) { if (g !== el) g.checked = false; });
+  }
+  updateServiceSummary();
+}
+
+// 選択中のオプションコード配列(送信用): GLASS → HEADLIGHT → BODY の順
+function selectedOptionCodes() {
+  var out = [];
+  document.querySelectorAll('input[name="glassOption"]:checked, input[name="optionCode"]:checked').forEach(function(el) {
+    if (el.value) out.push(el.value);
+  });
+  return out;
+}
+
+// 価格ラベル(車種連動)と参考合計(サービス計のみ・出張費含まず)を更新
+function updateServiceSummary() {
+  var ids = { 'W': 'priceWASH', 'GLASS_3': 'priceGLASS_3', 'GLASS_ALL': 'priceGLASS_ALL', 'HEADLIGHT': 'priceHEADLIGHT' };
+  Object.keys(ids).forEach(function(code) {
+    var el = document.getElementById(ids[code]);
+    if (!el) return;
+    var pr = menuPriceFor(code);
+    el.textContent = (pr === null) ? '—' : fmtUsd(pr);
+  });
+  var feeEl = document.getElementById('feeHint');
+  if (feeEl && MENU_PRICES && MENU_PRICES.dispatchFee) {
+    var fee = currentVehicleIsSuv() ? MENU_PRICES.dispatchFee.suv : MENU_PRICES.dispatchFee.sedan;
+    feeEl.textContent = '💰 + ' + fmtUsd(fee) + ' ថ្លៃធ្វើដំណើរ（＋' + fmtUsd(fee) + ' 出張費別途・下の参考合計には含まず）';
+  }
+
+  var sumEl = document.getElementById('serviceSummary');
+  if (!sumEl) return;
+  var parts = [];
+  var total = 0;
+  var hasQuote = false;
+  var planW = document.getElementById('planW');
+  if (planW && planW.checked) { parts.push('WASH'); total += (menuPriceFor('W') || 0); }
+  selectedOptionCodes().forEach(function(code) {
+    if (code === 'BODY') { parts.push('BODY(見積)'); hasQuote = true; return; }
+    parts.push(code);
+    total += (menuPriceFor(code) || 0);
+  });
+  if (!parts.length) {
+    sumEl.innerHTML = 'សូមជ្រើសរើសសេវាកម្ម（サービスを1つ以上選んでください）';
+    return;
+  }
+  sumEl.innerHTML = '🧾 ' + parts.join(' + ') + '<br>'
+    + 'សរុបសេវា（参考合計・サービス計のみ）: <b>' + fmtUsd(total) + (hasQuote ? ' + BODY 見積額' : '') + '</b>'
+    + (MENU_PRICES ? '' : ' <span style="opacity:0.6">(価格未取得)</span>');
+}
 var GAS_URL = APPS_SCRIPT_URL;  // chat_history / chat_send で使用
 // 予約Bot（QR連携ディープリンクの宛先。ShopProvisioning と同じ既定値）
 var BOT_USERNAME = 'SAMURAI_MOTORS_BOOKING_BOT';
@@ -972,6 +1089,7 @@ function saveSession() {
         carModel: document.getElementById('carModel') ? document.getElementById('carModel').value : '',
         plate: document.getElementById('plate') ? document.getElementById('plate').value : '',
         plan: (function(){ var el = document.querySelector('input[name="plan"]:checked'); return el ? el.id : ''; })(),
+        optionCodes: selectedOptionCodes(),
         vehicleType: (function(){ var el = document.querySelector('input[name="vehicleType"]:checked'); return el ? el.value : ''; })(),
         mapUrl: document.getElementById('mapUrl') ? document.getElementById('mapUrl').value : '',
         notes: document.getElementById('notes') ? document.getElementById('notes').value : '',
@@ -1035,6 +1153,11 @@ function restoreSession() {
       if (state.form.plan) {
         var radio = document.getElementById(state.form.plan);
         if (radio) radio.checked = true;
+      }
+      if (state.form.optionCodes && state.form.optionCodes.length) {
+        document.querySelectorAll('input[name="glassOption"], input[name="optionCode"]').forEach(function(el) {
+          el.checked = state.form.optionCodes.indexOf(el.value) >= 0;
+        });
       }
       if (state.form.vehicleType) {
         var vradios = document.querySelectorAll('input[name="vehicleType"]');
@@ -1116,6 +1239,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // GPS
   document.getElementById('gpsBtn').addEventListener('click', getGPS);
+
+  // Menu v4: メニュー価格(シート連動)を取得して価格ラベル・参考合計を更新
+  loadMenuPrices();
+  updateServiceSummary();
 
   // セッション復元（前回閉じた状態から再開）
   var restored = restoreSession();
@@ -1252,11 +1379,9 @@ function goNext() {
     var building = document.getElementById('building').value;
     if (!name) { showToast('ឈ្មោះអតិថិជន（顧客名）を入力してください'); return; }
     if (!building) { showToast('អគារ（建物）を選択してください'); return; }
-    // WASH 任意化に伴い、WASH か GLASS のどちらか1つは必須
+    // Menu v4: WASH / GLASS / HEADLIGHT / BODY のいずれか1つ以上(全品目 単品可)
     var hasWash = document.getElementById('planW') && document.getElementById('planW').checked;
-    var glassSel = document.querySelector('input[name="glassOption"]:checked');
-    var hasGlass = glassSel && glassSel.value !== '';
-    if (!hasWash && !hasGlass) { showToast('សេវាកម្ម（WASH か GLASS）を1つ以上選んでください'); return; }
+    if (!hasWash && selectedOptionCodes().length === 0) { showToast('សូមជ្រើសរើសសេវាកម្ម（サービスを1つ以上選んでください）'); return; }
     timestamps.registered = new Date();
   }
   if (currentStep === 2) {
@@ -1330,6 +1455,7 @@ function startWork() {
     plate: document.getElementById('plate').value,
     plan: planEl ? planEl.value : '',
     glassOption: (function(){ var g = document.querySelector('input[name="glassOption"]:checked'); return g ? g.value : ''; })(),
+    optionCodes: selectedOptionCodes(),        // Menu v4: ['GLASS_3','HEADLIGHT','BODY'] 等
     vehicleType: vehicleEl ? vehicleEl.value : '',
     amount: (function(){ var a = document.getElementById('amount'); return (a && a.value !== '') ? Number(a.value) : ''; })(),
     startTime: timestamps.start.toISOString(),
@@ -1384,6 +1510,7 @@ function endWork() {
     plate: document.getElementById('plate').value,
     plan: planEl ? planEl.value : '',
     glassOption: (function(){ var g = document.querySelector('input[name="glassOption"]:checked'); return g ? g.value : ''; })(),
+    optionCodes: selectedOptionCodes(),        // Menu v4: ['GLASS_3','HEADLIGHT','BODY'] 等
     vehicleType: vehicleEl ? vehicleEl.value : '',
     amount: (function(){ var a = document.getElementById('amount'); return (a && a.value !== '') ? Number(a.value) : ''; })(),
     endTime: timestamps.end.toISOString(),
@@ -1507,6 +1634,7 @@ function submitAll() {
     plate: document.getElementById('plate').value,
     plan: planEl ? planEl.value : '',
     glassOption: (function(){ var g = document.querySelector('input[name="glassOption"]:checked'); return g ? g.value : ''; })(),
+    optionCodes: selectedOptionCodes(),        // Menu v4: ['GLASS_3','HEADLIGHT','BODY'] 等
     vehicleType: vehicleEl ? vehicleEl.value : '',
     amount: (function(){ var a = document.getElementById('amount'); return (a && a.value !== '') ? Number(a.value) : ''; })(),
     mapUrl: document.getElementById('mapUrl').value,
@@ -1616,6 +1744,8 @@ function resetAll() {
   // WASH は既定で ON に戻す（よく使うため）。GLASS 単体予約時はユーザーがタップで解除。
   var planWReset = document.getElementById('planW');
   if (planWReset) planWReset.checked = true;
+  document.querySelectorAll('input[name="glassOption"], input[name="optionCode"]').forEach(function(el) { el.checked = false; });
+  updateServiceSummary();
   // Reset photo slots
   var labels = ['មុខ（前面）','ក្រោយ（背面）','ឆ្វេង（左側）','ស្ដាំ（右側）'];
   ['beforePhotos','afterPhotos'].forEach(function(id) {
@@ -1728,7 +1858,7 @@ function renderDashboardCard(b) {
   var color = getAvatarColor(name);
   var st = formatTimeDisplay(b.startTime);
   var et = formatTimeDisplay(b.endTime);
-  var amountStr = b.amount ? '$' + b.amount : '';
+  var amountStr = b.amount ? fmtUsd(b.amount) : '';
 
   // ステータスに応じたプレビューテキスト
   var preview = '🕐 ' + st + ' - ' + et;
@@ -1747,8 +1877,11 @@ function renderDashboardCard(b) {
   var planNames = { 'A': '清', 'B': '輝', 'C': '極', 'D': '匠', 'W': 'WASH' };
   var planName = planNames[b.planLetter] || b.planLetter || '';
   // 'W' は重複を避け、 'WASH' のみ表示。旧 A/B/C/D は letter + 日本語名
-  var planDisplay = (b.planLetter === 'W' || !b.planLetter) ? (planName || 'WASH') : (b.planLetter + '(' + planName + ')');
-  var sub = '✨ ' + planDisplay + ' ・ ' + (b.vehicleType || '-');
+  var planDisplay = (b.planLetter === 'W') ? 'WASH' : (b.planLetter ? (b.planLetter + '(' + planName + ')') : '');
+  // Menu v4: オプション(GLASS_3,HEADLIGHT,BODY 等)も並べる
+  var optParts = String(b.options || '').split(',').filter(function(c) { return c.trim(); });
+  var svcParts = (planDisplay ? [planDisplay] : []).concat(optParts);
+  var sub = '✨ ' + (svcParts.length ? svcParts.join(' + ') : 'WASH') + ' ・ ' + (b.vehicleType || '-');
 
   var doneCls = (b.status === '作業完了') ? ' opacity:0.5;' : '';
 
@@ -1829,8 +1962,10 @@ function openThread(b) {
   '</div>' +
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;font-size:13px">' +
     '<div><span style="color:var(--text-dim);font-size:10px">🕐 ម៉ោង / 時間</span><br><b>' + st + ' - ' + et + '</b></div>' +
-    '<div><span style="color:var(--text-dim);font-size:10px">💰 តម្លៃ / 料金</span><br><b>$' + (b.amount || '0') + '</b></div>' +
-    '<div><span style="color:var(--text-dim);font-size:10px">✨ មុខងារ / Plan</span><br><b>' + (b.planLetter === 'W' ? 'WASH' : (b.planLetter + '（' + planName + '）')) + '</b></div>' +
+    '<div><span style="color:var(--text-dim);font-size:10px">💰 តម្លៃ / 料金</span><br><b>' + fmtUsd(b.amount || 0) + '</b></div>' +
+    '<div><span style="color:var(--text-dim);font-size:10px">✨ សេវា / Service</span><br><b>' +
+      ((b.planLetter === 'W' ? ['WASH'] : (b.planLetter ? [b.planLetter + '（' + planName + '）'] : []))
+        .concat(String(b.options || '').split(',').filter(function(c) { return c.trim(); })).join(' + ') || '-') + '</b></div>' +
     '<div><span style="color:var(--text-dim);font-size:10px">🚙 ប្រភេទរថយន្ត / 車種</span><br><b>' + (b.vehicleType || '-') + '</b></div>' +
     '<div style="grid-column:1/-1"><span style="color:var(--text-dim);font-size:10px">📍 ទីតាំង / 場所</span><br>' + loc + '</div>' +
   '</div>' +
@@ -2100,7 +2235,7 @@ function submitManualCampaign() {
     .then(function(res){
       if (res.status === 'ok') {
         var rep = res.isReturning ? '（🔁リピーター: ' + (res.returningName || '') + '）' : '';
-        showToast('✅ 売上記録: ' + res.bookingId + ' / $' + res.amount + rep);
+        showToast('✅ 売上記録: ' + res.bookingId + ' / ' + fmtUsd(res.amount) + rep);
         // 入力をリセット
         ['campaignName','salePhone','saleCarModel','salePlate'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
         var amt = document.getElementById('saleAmount'); if (amt) amt.selectedIndex = 0;
@@ -2255,7 +2390,7 @@ function renderBookingCard(b, key) {
 
   var linkedCls = (selectedBookingId && selectedBookingId === b.bookingId) ? ' linked' : '';
   var doneCls = (b.status === '作業完了') ? ' done' : '';
-  var amountStr = b.amount ? '$' + b.amount : '';
+  var amountStr = b.amount ? fmtUsd(b.amount) : '';
 
   // 時刻表示: Date文字列の場合はHH:mm部分を抽出
   var st = formatTimeDisplay(b.startTime);
@@ -2394,8 +2529,8 @@ function renderBookingLink() {
   document.getElementById('blTitle').textContent = selectedBookingId;
   if (selectedBookingInfo) {
     var detail = (selectedBookingInfo.customerName || '') + ' / ' +
-                 (selectedBookingInfo.startTime || '') + ' / $' +
-                 (selectedBookingInfo.amount || '?');
+                 (selectedBookingInfo.startTime || '') + ' / ' +
+                 (selectedBookingInfo.amount ? fmtUsd(selectedBookingInfo.amount) : '?$');
     document.getElementById('blDetail').textContent = detail;
   }
 }
