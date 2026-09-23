@@ -922,16 +922,20 @@ function fmtUsd(n) { return (Number(n) || 0) + '$'; }
 
 var MENU_PRICES = null;   // { plans:[{letter,priceSedan,priceSuv}], options:[{code,kind,priceSedan,priceSuv}], dispatchFee:{sedan,suv} }
 
-function loadMenuPrices() {
+function loadMenuPrices(attempt) {
   if (!APPS_SCRIPT_URL) return;
-  fetch(APPS_SCRIPT_URL + '?action=menu_prices')
+  attempt = attempt || 1;
+  fetch(APPS_SCRIPT_URL + '?action=menu_prices&t=' + Date.now())
     .then(function(r) { return r.json(); })
     .then(function(res) {
-      if (res.status !== 'ok') return;
+      if (res.status !== 'ok') throw new Error(res.message || 'menu_prices failed');
       MENU_PRICES = res;
       updateServiceSummary();
     })
-    .catch(function() { /* 取得失敗時は価格非表示のまま入力は継続可 */ });
+    .catch(function() {
+      // GAS のコールドスタート・一時的な失敗に備えて最大3回リトライ(5秒間隔)。失敗しても入力は継続可
+      if (attempt < 3) setTimeout(function() { loadMenuPrices(attempt + 1); }, 5000);
+    });
 }
 
 function currentVehicleIsSuv() {
