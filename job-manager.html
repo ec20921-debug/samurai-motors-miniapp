@@ -2512,6 +2512,23 @@ function selectBooking(b) {
     }
   }
 
+  // メニュー選択（Menu v4: WASH / GLASS / HEADLIGHT / BODY）を予約内容から反映（2026-09-25）
+  //   予約の planLetter があれば WASH、options(カンマ区切り)の各コードに対応するチェックを入れる。
+  //   GLASS のみ等 WASH 無しの単品予約にも対応。何も当てはまらなければ既定の WASH に戻す。
+  var bookedOpts = String(b.options || '').split(',')
+    .map(function(c) { return c.trim(); }).filter(function(c) { return c; });
+  if (b.planLetter || bookedOpts.length) {
+    var planWEl = document.getElementById('planW');
+    if (planWEl) planWEl.checked = !!b.planLetter;
+    var anyChecked = !!b.planLetter;
+    document.querySelectorAll('input[name="glassOption"], input[name="optionCode"]').forEach(function(el) {
+      el.checked = bookedOpts.indexOf(el.value) >= 0;
+      if (el.checked) anyChecked = true;
+    });
+    if (!anyChecked && planWEl) planWEl.checked = true;
+    if (typeof updateServiceSummary === 'function') updateServiceSummary();
+  }
+
   // 予約日時を schedule にセット
   if (b.date) document.getElementById('schedDate').value = b.date;
   if (b.startTime) document.getElementById('schedTime').value = b.startTime;
