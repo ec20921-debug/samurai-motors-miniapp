@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>勤怠打刻 / ចុះវត្តមាន</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="tg-auth.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────
+   勤怠打刻 v2（試作）— 現場向け「明るい業務モード」
+   方針: 屋外の日差しでも読める高コントラスト / ラベルは上・欄は全幅 /
+         灰色の帯で区切る / 押すボタンは常に1つ / クメール語を大きく・日本語を下に小さく
+   ロジックは attendance-internal.html と同一（API: whoami / attendance_today / punch_in / punch_out）
+   ───────────────────────────────────────────── */
+:root {
+  --bg: #eef1f5;
+  --card: #ffffff;
+  --band: #e2e7ee;
+  --line: #cdd5df;
+  --text: #151a23;
+  --sub: #4f5968;
+  --brand: #9a7626;        /* Samurai Motors の金（明るい地で読める濃さ） */
+  --in: #15803d;
+  --in-press: #116a33;
+  --out: #b42318;
+  --out-press: #951d13;
+  --ok-bg: #e7f5ec;
+  --warn-bg: #fdf3e1;
+  --warn: #8a5a00;
+  --err-bg: #fdecea;
+  --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Noto Sans Khmer', 'Noto Sans JP', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 12px 14px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+.wrap { max-width: 480px; margin: 0 auto; display: grid; gap: 12px; }
+
+/* 2段ラベル: クメール語（主）＋日本語（従） */
+.km { display: block; font-weight: 700; }
+.jp { display: block; font-family: 'Noto Sans JP', sans-serif; font-weight: 500; font-size: 12px; color: var(--sub); margin-top: 1px; }
+
+/* ヘッダー */
+.head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 2px 2px 0;
+}
+.brand { font-size: 11px; letter-spacing: .16em; font-weight: 700; color: var(--brand); }
+.head-title .km { font-size: 20px; line-height: 1.35; }
+.who-chip {
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 12px; font-size: 13px; font-weight: 700; white-space: nowrap;
+  max-width: 50%; overflow: hidden; text-overflow: ellipsis;
+}
+.who-chip.warn { color: var(--out); border-color: var(--out); }
+
+/* カード */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.band {
+  background: var(--band);
+  padding: 9px 14px;
+  font-size: 14px;
+  display: flex; align-items: baseline; gap: 8px;
+}
+.band .km { font-size: 14px; }
+.band .jp { display: inline; font-size: 12px; margin: 0; }
+.card-body { padding: 14px; display: grid; gap: 12px; }
+
+/* 時計 */
+.clock { text-align: center; padding: 16px 14px 14px; }
+.clock-date { font-size: 14px; color: var(--sub); font-weight: 500; }
+.clock-time {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 52px; font-weight: 700; line-height: 1.1;
+  font-variant-numeric: tabular-nums; letter-spacing: .02em;
+}
+.clock-time .sec { font-size: 24px; color: var(--sub); }
+
+/* 今日の状態 */
+.state-pill {
+  justify-self: start;
+  display: inline-flex; align-items: center; gap: 8px;
+  border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 15px;
+  background: var(--band); color: var(--text);
+}
+.state-pill .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--sub); }
+.state-pill.working { background: var(--ok-bg); color: var(--in); }
+.state-pill.working .dot { background: var(--in); }
+.state-pill.done .dot { background: var(--text); }
+.state-pill.error { background: var(--err-bg); color: var(--out); }
+.state-pill.error .dot { background: var(--out); }
+
+.times { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.time-box {
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 8px; text-align: center;
+  display: grid; gap: 4px;
+}
+.time-box .label .km { font-size: 13px; }
+.time-box .label .jp { font-size: 11px; }
+.time-box .val {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.time-box .val.empty { color: #9aa3b0; }
+
+/* 位置情報 */
+.gps {
+  display: flex; align-items: center; gap: 10px;
+  border-radius: 10px; padding: 10px 12px; font-size: 13px;
+  background: var(--band); color: var(--sub);
+}
+.gps.ok { background: var(--ok-bg); color: var(--in); }
+.gps.warn { background: var(--warn-bg); color: var(--warn); }
+.gps .icon { font-size: 18px; flex: none; }
+.gps .km { font-size: 13px; font-weight: 600; }
+.gps .jp { font-size: 11px; color: inherit; opacity: .85; }
+.gps-retry {
+  margin-left: auto; flex: none; font: inherit; font-size: 12px; font-weight: 700;
+  background: #fff; border: 1px solid currentColor; color: inherit; border-radius: 8px; padding: 6px 10px;
+}
+
+/* 打刻ボタン（常に1つだけ） */
+.punch {
+  width: 100%; border: none; border-radius: var(--radius);
+  padding: 18px 16px; min-height: 76px;
+  color: #fff; font-family: inherit; cursor: pointer;
+  display: grid; gap: 2px; text-align: center;
+  transition: transform .12s, background-color .12s;
+}
+.punch .km { font-size: 22px; }
+.punch .jp { color: rgba(255,255,255,.9); font-size: 13px; }
+.punch.in { background: var(--in); }
+.punch.in:active { background: var(--in-press); transform: scale(.985); }
+.punch.out { background: var(--out); }
+.punch.out:active { background: var(--out-press); transform: scale(.985); }
+.punch:disabled { background: #b6bdc8; cursor: default; transform: none; }
+.punch:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+
+.hint { font-size: 12px; color: var(--sub); text-align: center; line-height: 1.6; }
+
+/* プレビュー（モック）用 */
+.mock-bar {
+  background: #fff7e0; border: 1px dashed var(--warn); color: var(--warn);
+  border-radius: 10px; padding: 8px 10px; font-size: 12px; font-family: 'Noto Sans JP', sans-serif;
+  display: grid; gap: 6px;
+}
+.mock-bar .row { display: flex; gap: 6px; flex-wrap: wrap; }
+.mock-bar button {
+  font: inherit; font-size: 12px; border: 1px solid var(--warn); background: #fff; color: var(--warn);
+  border-radius: 6px; padding: 4px 8px;
+}
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%) translateY(140px);
+  background: var(--text); color: #fff;
+  padding: 12px 18px; border-radius: 10px;
+  font-size: 14px; font-weight: 700; max-width: 90%;
+  transition: transform .25s; z-index: 9999;
+  box-shadow: 0 6px 20px rgba(0,0,0,.18);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.ok { background: var(--in); }
+.toast.err { background: var(--out); }
+@media (prefers-reduced-motion: reduce) { .toast, .punch { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="mock-bar" id="mockBar" hidden>
+    <div>プレビュー（モック）表示中：サーバーには送信しません</div>
+    <div class="row">
+      <button type="button" data-mock="before">出勤前</button>
+      <button type="button" data-mock="working">勤務中</button>
+      <button type="button" data-mock="done">退勤済</button>
+      <button type="button" data-mock="gpsng">GPS不可</button>
+    </div>
+  </div>
+
+  <header class="head">
+    <div class="head-title">
+      <div class="brand">SAMURAI MOTORS</div>
+      <span class="km">ចុះវត្តមាន</span>
+      <span class="jp">勤怠打刻</span>
+    </div>
+    <div class="who-chip" id="whoLine">…</div>
+  </header>
+
+  <section class="card">
+    <div class="clock">
+      <div class="clock-date" id="clockDate">—</div>
+      <div class="clock-time"><span id="clockTime">--:--</span><span class="sec" id="clockSeconds">:--</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="band"><span class="km">ស្ថានភាព</span><span class="jp">今日の状態</span></div>
+    <div class="card-body">
+      <div class="state-pill" id="statePill"><span class="dot"></span><span id="stateText">読み込み中…</span></div>
+      <div class="times">
+        <div class="time-box">
+          <div class="label"><span class="km">ចូល</span><span class="jp">出勤</span></div>
+          <div class="val empty" id="statusIn">--:--</div>
+        </div>
+        <div class="time-box">
+          <div class="label"><span class="km">ចេញ</span><span class="jp">退勤</span></div>
+          <div class="val empty" id="statusOut">--:--</div>
+        </div>
+        <div class="time-box">
+          <div class="label"><span class="km">&nbsp;</span><span class="jp">勤務時間</span></div>
+          <div class="val empty" id="statusDur">--</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="band"><span class="km">GPS</span><span class="jp">位置情報</span></div>
+    <div class="card-body">
+      <div class="gps" id="gpsBox">
+        <span class="icon" aria-hidden="true">📡</span>
+        <span><span class="km">កំពុងស្វែងរកទីតាំង</span><span class="jp">GPS 取得中…</span></span>
+      </div>
+    </div>
+  </section>
+
+  <button type="button" class="punch in" id="btnPunch" disabled>
+    <span class="km">ចូលធ្វើការ</span><span class="jp">出勤する</span>
+  </button>
+
+  <p class="hint">GPS មិនមាន ក៏អាចចុះវត្តមានបាន<br>GPS が取れなくても打刻できます</p>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  GAS URL / chatId 解決（attendance-internal.html と同じ優先順位）
+// ═══════════════════════════════════════════
+var GAS_URL = '';
+var currentChatId = '';
+var currentStaff = null;
+var currentGps = null;
+var currentState = null;   // 'before' | 'working' | 'done'
+
+if (window.Telegram && Telegram.WebApp) {
+  Telegram.WebApp.ready();
+  Telegram.WebApp.expand();
+  try { Telegram.WebApp.setHeaderColor('#eef1f5'); Telegram.WebApp.setBackgroundColor('#eef1f5'); } catch (e) {}
+}
+
+var urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('gas'))    GAS_URL = urlParams.get('gas');
+if (urlParams.get('chatId')) currentChatId = urlParams.get('chatId');
+if (!GAS_URL && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.start_param) {
+  GAS_URL = decodeURIComponent(Telegram.WebApp.initDataUnsafe.start_param);
+}
+if (!currentChatId && window.Telegram && Telegram.WebApp &&
+    Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
+}
+
+// GAS URL が無い（ブラウザで直接開いた）時はプレビュー用モック
+var MOCK = !GAS_URL || urlParams.get('mock') === '1';
+
+// ═══════════════════════════════════════════
+//  スタッフ確認（whoami・最大3回リトライ）
+// ═══════════════════════════════════════════
+function post(payload) {
+  return fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function(r) { return r.json(); });
+}
+
+function fetchWho(attempt) {
+  return post({ action: 'whoami', chatId: currentChatId })
+    .then(function(d) {
+      if (d && d.ok) return d;
+      throw new Error(d && d.error ? d.error : 'SERVER_ERROR');
+    })
+    .catch(function(err) {
+      if (attempt >= 3) throw err;
+      return new Promise(function(res) { setTimeout(res, attempt * 1500); })
+        .then(function() { return fetchWho(attempt + 1); });
+    });
+}
+
+function loadWho() {
+  var chip = document.getElementById('whoLine');
+  chip.className = 'who-chip';
+  if (MOCK) { chip.textContent = '👤 Ron'; return Promise.resolve(); }
+  if (!currentChatId) { chip.className = 'who-chip warn'; chip.textContent = '⚠️ chatId'; return Promise.resolve(); }
+  chip.textContent = '…';
+  chip.onclick = null;
+  return fetchWho(1)
+    .then(function(d) {
+      if (d.staff) {
+        currentStaff = d.staff;
+        chip.textContent = '👤 ' + (d.staff.nameEn || d.staff.nameJp || '');
+      } else {
+        chip.className = 'who-chip warn';
+        chip.textContent = '⚠️ 未登録';
+      }
+    })
+    .catch(function() {
+      chip.className = 'who-chip warn';
+      chip.textContent = '⚠️ 再試行';
+      chip.onclick = function() { loadWho().then(loadToday); };
+    });
+}
+
+// ═══════════════════════════════════════════
+//  時計（プノンペン時間）
+// ═══════════════════════════════════════════
+function ppNow() {
+  var now = new Date();
+  return new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60000);
+}
+function hhmm(d) { return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function updateClock() {
+  var pp = ppNow();
+  var days = ['日','月','火','水','木','金','土'];
+  var daysKh = ['អាទិត្យ','ច័ន្ទ','អង្គារ','ពុធ','ព្រហស្បតិ៍','សុក្រ','សៅរ៍'];
+  document.getElementById('clockDate').textContent =
+    pp.getFullYear() + '/' + String(pp.getMonth()+1).padStart(2,'0') + '/' + String(pp.getDate()).padStart(2,'0') +
+    '  ' + daysKh[pp.getDay()] + '（' + days[pp.getDay()] + '）';
+  document.getElementById('clockTime').textContent = hhmm(pp);
+  document.getElementById('clockSeconds').textContent = ':' + String(pp.getSeconds()).padStart(2,'0');
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════
+//  GPS
+// ═══════════════════════════════════════════
+function setGps(kind, km, jp, retry) {
+  var box = document.getElementById('gpsBox');
+  box.className = 'gps' + (kind ? ' ' + kind : '');
+  box.innerHTML = '<span class="icon" aria-hidden="true">📡</span>' +
+    '<span><span class="km">' + km + '</span><span class="jp">' + jp + '</span></span>' +
+    (retry ? '<button type="button" class="gps-retry" id="gpsRetry">再取得</button>' : '');
+  var r = document.getElementById('gpsRetry');
+  if (r) r.onclick = acquireGps;
+}
+function acquireGps() {
+  setGps('', 'កំពុងស្វែងរកទីតាំង', 'GPS 取得中…', false);
+  if (MOCK) {
+    setTimeout(function() {
+      currentGps = { lat: 11.5564, lng: 104.9282, accuracy: 12 };
+      setGps('ok', 'GPS OK', '精度 ' + currentGps.accuracy + 'm', false);
+    }, 600);
+    return;
+  }
+  if (!navigator.geolocation) {
+    currentGps = null;
+    setGps('warn', 'ឧបករណ៍មិនគាំទ្រ', 'GPS 非対応端末（打刻は可能）', false);
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    currentGps = {
+      lat: Number(pos.coords.latitude.toFixed(6)),
+      lng: Number(pos.coords.longitude.toFixed(6)),
+      accuracy: Math.round(pos.coords.accuracy || 0)
+    };
+    setGps('ok', 'GPS OK', '精度 ' + currentGps.accuracy + 'm', false);
+  }, function() {
+    currentGps = null;
+    setGps('warn', 'មិនអាចស្វែងរកទីតាំង', 'GPS 取得不可（打刻は可能）', true);
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+}
+
+// ═══════════════════════════════════════════
+//  今日の状態
+// ═══════════════════════════════════════════
+var mockToday = { ok: true, clockIn: '', clockOut: '', workMinutes: 0 };
+
+function loadToday() {
+  if (MOCK) { applyStatus(mockToday); return Promise.resolve(); }
+  if (!GAS_URL || !currentChatId) { applyStatus(null); return Promise.resolve(); }
+  return post({ action: 'attendance_today', chatId: currentChatId })
+    .then(applyStatus)
+    .catch(function() { applyStatus(null); });
+}
+
+function fmtDur(min) {
+  var h = Math.floor((min || 0) / 60), m = (min || 0) % 60;
+  return h + 'h' + String(m).padStart(2, '0');
+}
+
+function setVal(id, text) {
+  var el = document.getElementById(id);
+  el.textContent = text || (id === 'statusDur' ? '--' : '--:--');
+  el.className = 'val' + (text ? '' : ' empty');
+}
+
+function applyStatus(d) {
+  var pill = document.getElementById('statePill');
+  var txt  = document.getElementById('stateText');
+  var btn  = document.getElementById('btnPunch');
+
+  if (!d || !d.ok) {
+    pill.className = 'state-pill error';
+    txt.textContent = '取得失敗（画面を開き直してください）';
+    btn.disabled = true;
+    return;
+  }
+
+  setVal('statusIn', d.clockIn);
+  setVal('statusOut', d.clockOut);
+
+  if (!d.clockIn) {
+    currentState = 'before';
+    pill.className = 'state-pill';
+    txt.textContent = 'មិនទាន់ចុះ ／ 未打刻';
+    setVal('statusDur', '');
+    btn.className = 'punch in';
+    btn.innerHTML = '<span class="km">ចូលធ្វើការ</span><span class="jp">出勤する</span>';
+    btn.disabled = false;
+  } else if (!d.clockOut) {
+    currentState = 'working';
+    pill.className = 'state-pill working';
+    txt.textContent = 'កំពុងធ្វើការ ／ 勤務中';
+    setVal('statusDur', '');
+    btn.className = 'punch out';
+    btn.innerHTML = '<span class="km">ចេញពីការងារ</span><span class="jp">退勤する</span>';
+    btn.disabled = false;
+  } else {
+    currentState = 'done';
+    pill.className = 'state-pill done';
+    txt.textContent = '✅ 退勤済';
+    setVal('statusDur', fmtDur(d.workMinutes));
+    btn.className = 'punch';
+    btn.innerHTML = '<span class="km">✅</span><span class="jp">本日の打刻は完了しました</span>';
+    btn.disabled = true;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  打刻
+// ═══════════════════════════════════════════
+function doPunch() {
+  if (currentState !== 'before' && currentState !== 'working') return;
+  var type = currentState === 'before' ? 'in' : 'out';
+  var btn = document.getElementById('btnPunch');
+  btn.disabled = true;
+
+  if (MOCK) {
+    setTimeout(function() {
+      var t = hhmm(ppNow());
+      if (type === 'in') { mockToday.clockIn = t; toast('出勤 ' + t, 'ok'); }
+      else { mockToday.clockOut = t; mockToday.workMinutes = 512; toast('退勤 ' + t + '（' + fmtDur(512) + '）', 'ok'); }
+      haptic('success');
+      loadToday();
+    }, 500);
+    return;
+  }
+
+  if (!currentChatId || !GAS_URL) { toast('chatId / GAS URL 未設定', 'err'); loadToday(); return; }
+
+  post({ action: type === 'in' ? 'punch_in' : 'punch_out', chatId: currentChatId, gps: currentGps })
+    .then(function(d) {
+      if (d.ok) {
+        haptic('success');
+        toast(type === 'in' ? '出勤 ' + d.time : '退勤 ' + d.time + '（' + fmtDur(d.workMinutes) + '）', 'ok');
+      } else {
+        haptic('error');
+        toast('⚠️ ' + (d.message || d.error || 'エラー'), 'err');
+      }
+      loadToday();
+    })
+    .catch(function(err) {
+      haptic('error');
+      toast('通信エラー: ' + err.message, 'err');
+      loadToday();
+    });
+}
+document.getElementById('btnPunch').addEventListener('click', doPunch);
+
+function haptic(kind) {
+  try { Telegram.WebApp.HapticFeedback.notificationOccurred(kind); } catch (e) {}
+}
+
+// ═══════════════════════════════════════════
+//  Toast
+// ═══════════════════════════════════════════
+var toastTimer = null;
+function toast(msg, kind) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind || '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { t.className = 'toast ' + (kind || ''); }, 3000);
+}
+
+// ═══════════════════════════════════════════
+//  プレビュー（モック）切替
+// ═══════════════════════════════════════════
+if (MOCK) {
+  document.getElementById('mockBar').hidden = false;
+  document.querySelectorAll('[data-mock]').forEach(function(b) {
+    b.addEventListener('click', function() {
+      var m = b.getAttribute('data-mock');
+      if (m === 'gpsng') { currentGps = null; setGps('warn', 'មិនអាចស្វែងរកទីតាំង', 'GPS 取得不可（打刻は可能）', true); return; }
+      mockToday = m === 'before' ? { ok: true, clockIn: '', clockOut: '', workMinutes: 0 }
+               : m === 'working' ? { ok: true, clockIn: '08:02', clockOut: '', workMinutes: 0 }
+               : { ok: true, clockIn: '08:02', clockOut: '17:34', workMinutes: 572 };
+      loadToday();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+//  起動
+// ═══════════════════════════════════════════
+loadWho().then(function() {
+  acquireGps();
+  return loadToday();
+});
+</script>
+</body>
+</html>
