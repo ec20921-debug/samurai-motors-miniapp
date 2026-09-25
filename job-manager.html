@@ -2498,6 +2498,8 @@ function selectBooking(b) {
         break;
       }
     }
+    // プログラムで車種を切り替えても onchange が走らないため、価格表示を明示的に更新（2026-09-25 修正）
+    if (typeof updateServiceSummary === 'function') updateServiceSummary();
   }
 
   // プラン選択（A/B/C/D）
