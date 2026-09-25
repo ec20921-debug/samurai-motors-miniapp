@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Samurai 現場アプリ v2（試作）</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Samurai">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Samurai Motors 現場アプリ v2（試作・サンプルデータのみ・通信なし）
+
+   設計の軸（カンボジア現場ファースト）
+   1. 画面は「次に何をするか」を1つだけ示す。フォームを埋めさせない
+   2. クメール語のみを主表示（日本語併記で文字を小さくしない）。管理者は言語切替で全画面を日本語に
+   3. 親指1本・屋外の日差し・手袋: 主ボタンは画面下・高さ64px以上・高コントラスト
+   4. 文字より絵: 写真は1枚ずつ「見本の絵→撮る→次」、傷は車の図をタップ、点検はアイコン
+   5. 記録は作業の副産物として自動で残る（サービス別の時間・傷・支払い・流入経路）
+   6. 地下駐車場でも止まらない: 端末に保存→電波が戻れば送る
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --bg:#f2f4f7; --card:#fff; --band:#e6eaf0; --line:#cfd6df;
+  --text:#141922; --sub:#4d5765; --faint:#98a2b3;
+  --gold:#8a6a1f; --gold-bg:#f6efdc;
+  --blue:#1d4ed8; --blue-bg:#e8eefc;
+  --green:#15803d; --green-bg:#e6f4ea;
+  --red:#b42318; --red-bg:#fbeae7;
+  --amber:#8a5a00; --amber-bg:#fdf3df;
+  --r:14px;
+  --tab-h:66px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Noto Sans Khmer','Noto Sans JP',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:17px;line-height:1.45;padding-top:env(safe-area-inset-top,0px)}
+body[data-lang="ja"]{font-family:'Noto Sans JP','Noto Sans Khmer',system-ui,sans-serif;font-size:16px}
+button{font-family:inherit;font-size:inherit;color:inherit;border:none;background:none;cursor:pointer}
+button:disabled{cursor:default}
+input,select,textarea{font-family:inherit;font-size:18px;color:var(--text)}
+.num{font-family:'Noto Sans JP',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.latin{font-family:'Noto Sans JP',system-ui,sans-serif;letter-spacing:.02em}
+[hidden]{display:none !important}
+
+/* ── 試作用の帯 ── */
+.mock{background:#fff7e0;border-bottom:1px dashed var(--amber);color:var(--amber);font-family:'Noto Sans JP',sans-serif;font-size:12px;font-weight:600;padding:6px 12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.mock b{margin-right:auto}
+.mock button{font-size:11px;border:1px solid var(--amber);background:#fff;color:var(--amber);border-radius:6px;padding:3px 8px}
+.mock button.on{background:var(--amber);color:#fff}
+
+/* ── ヘッダー ── */
+.head{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;display:flex;align-items:center;gap:10px;min-height:58px}
+.head img{width:36px;height:36px;border-radius:9px}
+.head .brand{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.18em;font-weight:700;color:var(--gold)}
+.head .ttl{font-size:17px;font-weight:700;line-height:1.25}
+.head .sub{font-size:12px;color:var(--sub)}
+.head .sp{flex:1;min-width:0}
+.pill{border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700;min-height:38px;display:inline-flex;align-items:center;gap:6px;background:#fff}
+.pill.q{border-color:var(--amber);color:var(--amber);background:var(--amber-bg)}
+.iconbtn{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);display:grid;place-items:center;background:#fff;font-size:20px}
+.stepdots{display:flex;gap:5px}
+.stepdots i{width:10px;height:10px;border-radius:50%;background:#d3d9e2}
+.stepdots i.done{background:var(--green)} .stepdots i.now{background:var(--blue);transform:scale(1.25)}
+
+main{max-width:520px;margin:0 auto;padding:12px 12px calc(var(--tab-h) + 20px + env(safe-area-inset-bottom,0px));display:grid;gap:12px;align-content:start}
+main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+
+/* ── 共通部品 ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.band{background:var(--band);padding:9px 14px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.band .r{margin-left:auto;font-weight:700;color:var(--sub);font-size:13px}
+.body{padding:14px;display:grid;gap:12px}
+.note{font-size:13px;color:var(--sub);line-height:1.5}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;background:var(--band);color:var(--text);white-space:nowrap;font-family:'Noto Sans JP',sans-serif}
+.chip.menu{background:var(--blue-bg);color:var(--blue)}
+.chip.demo{background:var(--gold-bg);color:var(--gold)}
+.chip.ok{background:var(--green-bg);color:var(--green)}
+.chip.warn{background:var(--amber-bg);color:var(--amber)}
+.chip.shop{background:#eee9f8;color:#5b3fa6}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+
+.btn{width:100%;min-height:64px;border-radius:14px;padding:10px 16px;font-size:19px;font-weight:700;color:#fff;background:var(--blue);display:grid;place-items:center;gap:0;line-height:1.25;transition:transform .1s,filter .1s}
+.btn small{font-size:12px;font-weight:600;opacity:.9}
+.btn:active{transform:scale(.985);filter:brightness(.93)}
+.btn.green{background:var(--green)} .btn.red{background:var(--red)} .btn.gold{background:var(--gold)}
+.btn.ghost{background:#fff;color:var(--text);border:2px solid var(--line)}
+.btn.sm{min-height:50px;font-size:16px;border-radius:12px}
+.btn:disabled{background:#b9c0ca;color:#fff;border-color:#b9c0ca}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+
+/* 選択ボタン（大きい・絵つき） */
+.opt{position:relative;border:2px solid var(--line);border-radius:14px;background:#fff;min-height:64px;padding:10px 12px;display:flex;align-items:center;gap:12px;text-align:left;width:100%;font-weight:700;font-size:17px;line-height:1.25}
+.opt .ic{font-size:26px;width:36px;text-align:center;flex:none}
+.opt small{display:block;font-size:12px;font-weight:500;color:var(--sub)}
+.opt.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+.opt.on.g{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.opt.on.r{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+.opt.on.gold{border-color:var(--gold);background:var(--gold-bg);color:var(--gold)}
+.opt .tick{margin-left:auto;font-size:20px}
+.opt.center{justify-content:center;text-align:center;flex-direction:column;gap:4px;padding:12px 8px}
+.opt.center .ic{width:auto}
+
+/* ── 今日: 打刻ストリップ ── */
+.punch{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.punch .clock{font-size:34px;font-weight:700;line-height:1}
+.punch .st{font-size:13px;font-weight:700;margin-top:4px;display:inline-flex;gap:6px;align-items:center}
+.punch .st i{width:9px;height:9px;border-radius:50%;background:#98a2b3;display:inline-block}
+.punch .st.work i{background:var(--green)}
+.punch button{margin-left:auto;min-height:60px;min-width:128px;border-radius:14px;color:#fff;font-weight:700;font-size:18px;padding:6px 14px;display:grid;place-items:center;line-height:1.2}
+.punch button.in{background:var(--green)} .punch button.out{background:var(--red)} .punch button:disabled{background:#b9c0ca}
+
+/* ── 今日: 次の予定（ヒーロー） ── */
+.next{border:2px solid var(--blue);}
+.next .body{gap:10px}
+.next .when{display:flex;align-items:baseline;gap:10px}
+.next .when .t{font-size:44px;font-weight:700;line-height:1}
+.next .when .in{font-size:14px;color:var(--sub);font-weight:600}
+.next .name{font-size:22px;font-weight:700;line-height:1.2}
+.next .meta{display:grid;gap:3px;font-size:15px;color:var(--sub)}
+.next .meta b{color:var(--text)}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.act{border:2px solid var(--line);border-radius:12px;min-height:60px;display:grid;place-items:center;gap:1px;font-size:13px;font-weight:700;background:#fff;color:var(--text)}
+.act .ic{font-size:22px;line-height:1}
+.act.go{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+
+/* ── 今日: タイムライン ── */
+.tl{display:grid}
+.tl-item{display:grid;grid-template-columns:56px 18px 1fr;gap:0 10px;align-items:stretch;min-height:64px;text-align:left;width:100%;padding:0;background:none}
+.tl-item .t{font-size:16px;font-weight:700;padding-top:12px;text-align:right}
+.tl-item .ln{position:relative}
+.tl-item .ln::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:2px;background:#d3d9e2}
+.tl-item:first-child .ln::before{top:18px} .tl-item:last-child .ln::before{bottom:calc(100% - 18px)}
+.tl-item .ln i{position:absolute;left:3px;top:14px;width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid #98a2b3}
+.tl-item.now .ln i{border-color:var(--blue);background:var(--blue)}
+.tl-item.done .ln i{border-color:var(--green);background:var(--green)}
+.tl-item .c{border-bottom:1px solid #e7ebf1;padding:10px 4px 10px 0;display:grid;gap:3px}
+.tl-item:last-child .c{border-bottom:0}
+.tl-item .n{font-size:16px;font-weight:700}
+.tl-item.done .n{color:var(--sub);text-decoration:line-through}
+.tl-item .s{font-size:13px;color:var(--sub)}
+
+/* ── 作業フロー ── */
+.jobhead{display:grid;gap:6px;padding:12px 14px}
+.jobhead .n{font-size:20px;font-weight:700}
+.jobhead .g{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:14px}
+.jobhead .g small{display:block;font-size:11px;color:var(--sub);font-family:'Noto Sans JP',sans-serif;font-weight:600}
+.jobhead .g b{font-size:15px}
+
+/* 点検 */
+.chk{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e7ebf1}
+.chk:last-child{border-bottom:0}
+.chk .l{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:700}
+.chk .l .ic{font-size:26px;width:36px;text-align:center}
+.chk .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;min-width:150px}
+.chk .seg button{min-height:48px;border:2px solid var(--line);border-radius:10px;font-weight:700;font-size:15px;background:#fff;color:var(--sub)}
+.chk .seg button.ok.on{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.chk .seg button.ng.on{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+
+/* 傷マップ */
+.dmap{position:relative;width:100%;aspect-ratio:2/1;background:#f7f9fb;border:2px dashed #b8c2cf;border-radius:12px;overflow:hidden}
+.dmap svg{position:absolute;inset:0;width:100%;height:100%}
+.dmap .mk{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--red);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);font-family:'Noto Sans JP',sans-serif}
+.dmg-list{display:grid;gap:8px}
+.dmg{display:grid;grid-template-columns:30px 72px 1fr;gap:10px;align-items:center}
+.dmg .no{width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;font-weight:700;display:grid;place-items:center;font-family:'Noto Sans JP',sans-serif}
+.dmg .ph{position:relative;width:72px;height:54px;border-radius:8px;overflow:hidden;border:2px dashed #b8c2cf;background:#f7f9fb;display:grid;place-items:center;font-size:22px}
+.dmg .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dmg .ph input{position:absolute;inset:0;opacity:0}
+.dmg input.memo{width:100%;min-height:46px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;background:#fff;font-size:16px}
+
+/* ガイド撮影（1枚ずつ） */
+.cam{display:grid;gap:10px}
+.cam .frame{position:relative;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:#1a1f28;display:grid;place-items:center}
+.cam .frame svg{width:72%;height:auto;color:#fff;opacity:.9}
+.cam .frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cam .frame .lbl{position:absolute;left:12px;bottom:10px;color:#fff;font-weight:700;font-size:20px;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.cam .frame .cnt{position:absolute;right:12px;top:10px;background:rgba(0,0,0,.55);color:#fff;border-radius:999px;padding:3px 10px;font-weight:700;font-size:14px;font-family:'Noto Sans JP',sans-serif}
+.cam .frame .req{position:absolute;left:12px;top:10px;border-radius:8px;padding:2px 8px;font-size:12px;font-weight:700;background:var(--red);color:#fff}
+.cam .frame .req.opt{background:rgba(255,255,255,.85);color:var(--sub)}
+.cam .shoot{position:relative;min-height:72px;border-radius:14px;background:var(--blue);color:#fff;font-size:20px;font-weight:700;display:grid;place-items:center}
+.cam .shoot input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.thumbs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.thumbs button{flex:none;width:64px;height:48px;border-radius:8px;overflow:hidden;border:2px solid var(--line);background:#f7f9fb;position:relative;display:grid;place-items:center;font-size:11px;color:var(--sub);font-weight:700}
+.thumbs button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumbs button.now{border-color:var(--blue)} .thumbs button.has{border-color:var(--green)}
+.thumbs button .k{position:absolute;right:2px;bottom:1px;background:var(--green);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:grid;place-items:center}
+
+/* 作業中 */
+.timer{text-align:center;padding:14px}
+.timer .v{font-size:50px;font-weight:700;color:var(--green);line-height:1.05}
+.timer .l{font-size:13px;color:var(--sub)}
+.svc{display:grid;gap:8px}
+.svc .s{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:10px 14px;min-height:66px;text-align:left;width:100%;background:#fff}
+.svc .s .n{font-weight:700;font-size:17px;line-height:1.2}
+.svc .s .n small{display:block;font-size:12px;color:var(--sub);font-weight:600}
+.svc .s .t{font-size:18px;font-weight:700;color:var(--sub)}
+.svc .s.now{border-color:var(--green);background:var(--green-bg)} .svc .s.now .t{color:var(--green)}
+.svc .s.done{border-color:var(--green)} .svc .s.done .t{color:var(--green)}
+.svc .s.skip{opacity:.55}
+
+/* 締め */
+.big-amt{display:flex;align-items:center;gap:8px}
+.big-amt input{flex:1;min-height:64px;font-size:34px;font-weight:700;text-align:right;border:2px solid var(--line);border-radius:14px;padding:0 14px;background:#fff;font-family:'Noto Sans JP',sans-serif}
+.big-amt span{font-size:30px;font-weight:700}
+.done-screen{text-align:center;padding:26px 14px;display:grid;gap:10px;justify-items:center}
+.done-screen .ic{width:84px;height:84px;border-radius:50%;background:var(--green);color:#fff;font-size:46px;display:grid;place-items:center}
+.done-screen .h{font-size:22px;font-weight:700}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:15px;text-align:left;width:100%}
+.kv b{text-align:right}
+
+/* 下の操作バー（作業中） */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(20,25,34,.07);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
+.bar .in{max-width:520px;margin:0 auto;display:grid;gap:8px}
+.bar .prog{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--sub);font-family:'Noto Sans JP',sans-serif}
+.bar .prog .b{flex:1;height:6px;border-radius:3px;background:#d9dfe7;overflow:hidden}
+.bar .prog .b i{display:block;height:100%;background:var(--green);transition:width .2s}
+.bar .two{display:grid;grid-template-columns:auto 1fr;gap:8px}
+
+/* ── 下タブ ── */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(4,1fr)}
+.tab{height:var(--tab-h);display:grid;place-items:center;align-content:center;gap:2px;color:#6b7686;position:relative;font-size:12px;font-weight:700;line-height:1.15}
+.tab svg{width:26px;height:26px}
+.tab[aria-selected="true"]{color:var(--blue)}
+.tab[aria-selected="true"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--blue)}
+.tab .dot{position:absolute;top:9px;right:calc(50% - 22px);min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;display:grid;place-items:center;font-family:'Noto Sans JP',sans-serif;padding:0 5px}
+
+/* ── 営業 ── */
+.shop{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:12px 0;border-bottom:1px solid #e7ebf1}
+.shop:last-child{border-bottom:0}
+.shop .n{font-size:16px;font-weight:700}
+.shop .d{font-size:13px;color:var(--sub)}
+.shop .a{display:flex;gap:6px}
+.shop .a button{min-width:48px;min-height:48px;border:2px solid var(--line);border-radius:12px;display:grid;place-items:center;font-size:20px;background:#fff}
+.shop .a button.main{border-color:var(--blue);background:var(--blue-bg);font-size:14px;font-weight:700;padding:0 12px;color:var(--blue)}
+.react{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.react .opt{min-height:70px}
+.react .opt .code{font-family:'Noto Sans JP',sans-serif;font-size:22px;font-weight:700;width:30px}
+.voice{display:flex;align-items:center;gap:10px}
+.voice button{flex:none;width:64px;height:64px;border-radius:50%;background:var(--red);color:#fff;font-size:26px;display:grid;place-items:center}
+.voice button.rec{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(180,35,24,.45)}50%{box-shadow:0 0 0 12px rgba(180,35,24,0)}}
+.voice .v{flex:1;font-size:14px;color:var(--sub)}
+.voice .v b{display:block;color:var(--text);font-size:16px}
+
+/* ── 経費 ── */
+.receipt{position:relative;aspect-ratio:16/9;border-radius:14px;border:2px dashed #b8c2cf;background:#f7f9fb;display:grid;place-items:center;align-content:center;gap:6px;color:var(--sub);font-weight:700;overflow:hidden}
+.receipt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.receipt input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.receipt .ic{font-size:40px;line-height:1}
+.receipt.has{border-style:solid;border-color:var(--green)}
+.exp-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e7ebf1;font-size:15px}
+.exp-row:last-child{border-bottom:0}
+.exp-row b{font-size:17px}
+
+/* ── その他 ── */
+.lrow{display:flex;align-items:center;gap:12px;width:100%;padding:14px;text-align:left;min-height:62px;border-bottom:1px solid #e7ebf1;background:#fff}
+.lrow:last-child{border-bottom:0}
+.lrow .ic{width:38px;height:38px;border-radius:10px;background:var(--band);display:grid;place-items:center;font-size:20px;flex:none}
+.lrow .t{font-size:16px;font-weight:700}
+.lrow .t small{display:block;font-size:12px;color:var(--sub);font-weight:500}
+.lrow .ar{margin-left:auto;color:var(--faint);font-size:22px}
+.lang{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px}
+.lang button{min-height:56px;border:2px solid var(--line);border-radius:12px;font-weight:700;font-size:16px;background:#fff}
+.lang button.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
+
+/* トースト */
+.toast{position:fixed;left:50%;top:calc(72px + env(safe-area-inset-top,0px));transform:translateX(-50%) translateY(-16px);background:var(--text);color:#fff;border-radius:12px;padding:12px 18px;font-size:15px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:200;max-width:92%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:var(--green)} .toast.warn{background:var(--amber)}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+</style>
+</head>
+<body data-lang="km">
+
+<div class="mock">
+  <b>試作（サンプルデータ・送信なし）</b>
+  <button type="button" id="mFill">写真を仮で埋める</button>
+  <button type="button" id="mOffline">電波なし</button>
+  <button type="button" id="mEvening">夕方にする</button>
+  <button type="button" id="mReset">最初から</button>
+</div>
+
+<header class="head" id="head"></header>
+<main id="main"></main>
+<div class="bar" id="bar" hidden></div>
+
+<nav class="tabs" id="tabs" role="tablist">
+  <button type="button" class="tab" role="tab" data-tab="today" aria-selected="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span data-t="tab_today"></span>
+  </button>
+  <button type="button" class="tab" role="tab" data-tab="shops" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10l2-5h12l2 5M4 10h16v10H4zM9 20v-5h6v5"/></svg><span data-t="tab_shops"></span><span class="dot" id="shopDot" hidden></span>
+  </button>
+  <button type="button" class="tab" role="tab" data-tab="expense" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span data-t="tab_expense"></span>
+  </button>
+  <button type="button" class="tab" role="tab" data-tab="more" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg><span data-t="tab_more"></span><span class="dot" id="moreDot">2</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  文言（クメール語 = 主表示 / 日本語 = 管理者向け切替）
+//  クメール語は Panha 校閲版に差し替える（KM-START〜KM-END を丸ごと置換）
+// ═══════════════════════════════════════════════════════════════
+var T_JA = {
+  tab_today:'今日', tab_shops:'営業', tab_expense:'経費', tab_more:'その他',
+  punch_title:'勤怠', punch_in:'出勤する', punch_out:'退勤する', st_not_yet:'未打刻', st_working:'勤務中', st_off:'退勤済',
+  next_title:'次の予定', leave_by:'出発の目安', btn_map:'地図', btn_call:'電話', no_jobs:'今日の予約はありません',
+  job_precheck:'作業前チェック', photo_before:'作業前の写真', photo_after:'作業後の写真', btn_start:'作業開始', btn_finish:'作業終了', btn_save:'保存する', btn_next:'次へ', btn_back:'戻る',
+  chk_engine:'エンジン始動', chk_lights:'ライト', chk_windows:'パワーウィンドウ', chk_wipers:'ワイパー', chk_ac:'エアコン', chk_ok:'正常', chk_ng:'不良',
+  damage_title:'傷・へこみ', damage_tap:'傷のある場所を図の上でタップ', damage_none:'傷なし', damage_photo:'傷を撮る',
+  side_front:'前', side_rear:'後ろ', side_left:'左', side_right:'右', part_windshield:'フロントガラス', part_hl_left:'左ヘッドライト', part_hl_right:'右ヘッドライト', part_interior:'室内', part_seat_front:'前の座席', part_seat_rear:'後ろの座席',
+  btn_retake:'撮り直す', btn_ok:'OK', lbl_required:'必須', lbl_optional:'任意', lbl_photos:'写真',
+  now_doing:'いま作業中', svc_wash:'洗車', svc_glass:'ガラスコーティング', svc_headlight:'ヘッドライト再生', svc_body:'ボディ磨き', svc_done_q:'やった作業を全部押してください', work_time:'作業時間',
+  pay_title:'支払い', pay_cash:'現金', pay_aba:'ABA', pay_shop:'提携店が払う', pay_free:'無料（デモ）', pay_later:'未収', amount:'金額',
+  src_title:'お客さんはどこから？', src_shop:'提携店の紹介', src_flyer:'チラシ', src_facebook:'Facebook', src_repeat:'リピーター', src_walkin:'飛び込み',
+  cust_name:'お客さんの名前', cust_phone:'電話番号', car:'車', plate:'ナンバー', size_sedan:'セダン以下', size_suv:'SUV 以上', place_store:'店舗', place_delivery:'出張', note:'メモ', voice_note:'音声でメモ',
+  offline_saved:'スマホに保存しました。電波が戻ったら送ります', sent:'送信しました', cust_got_photos:'お客さんに写真が届きました', link_qr:'お客さんの Telegram とつなぐ（QR）',
+  shop_visit:'訪問を記録', shop_new:'新しい店を追加', react_a:'デモ決定', react_b:'興味あり', react_c:'保留', react_d:'断り', demo_date:'デモ予定日', today:'今日', tomorrow:'明日', pick_date:'日付を選ぶ', owner:'オーナー', visits_today:'今日の訪問', near_you:'近くの店（未訪問）',
+  exp_receipt:'レシートを撮る', exp_fuel:'ガソリン', exp_supplies:'洗車の資材', exp_parking:'駐車・通行料', exp_other:'その他', exp_paid_by_me:'自分で立て替えた', exp_paid_company:'会社が直接払った', exp_recent:'最近の登録',
+  report_title:'日報', report_summary:'1日のまとめ', report_send:'日報を送る', report_tomorrow:'明日の予定', report_sent:'日報を送りました',
+  tasks:'タスク', history:'過去の作業', campaign_sale:'キャンペーン売上を記録', new_job:'予約なしの作業を始める', jobs_done:'完了', jobs_wait:'待機中', total:'合計', gps_ok:'位置情報 OK', gps_ng:'位置情報が取れません（打刻はできます）', free_demo:'無料デモ', minutes:'分'
+};
+/*KM-START*/
+var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_shops": "ហាងដៃគូ", "tab_expense": "ចំណាយ", "tab_more": "ផ្សេងៗ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "next_title": "ការកក់បន្ទាប់", "leave_by": "ចេញដំណើរម៉ោង", "btn_map": "ផែនទី", "btn_call": "ហៅទូរស័ព្ទ", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ភ្លើងមុខឆ្វេង", "part_hl_right": "ភ្លើងមុខស្តាំ", "part_interior": "ខាងក្នុង", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ស្ដារភ្លើងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "cust_phone": "លេខទូរស័ព្ទ", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "voice_note": "ថតសម្លេង", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "cust_got_photos": "អតិថិជនបានទទួលរូបថតហើយ", "link_qr": "ភ្ជាប់ Telegram អតិថិជន (QR)", "shop_visit": "កត់ត្រាការចុះជួប", "shop_new": "បង្កើតហាងថ្មី", "react_a": "កំណត់ការសាកល្បង", "react_b": "ចាប់អារម្មណ៍", "react_c": "រង់ចាំសម្រេច", "react_d": "បដិសេធ", "demo_date": "ថ្ងៃគ្រោងសាកល្បង", "today": "ថ្ងៃនេះ", "tomorrow": "ថ្ងៃស្អែក", "pick_date": "ជ្រើសរើសថ្ងៃ", "owner": "ម្ចាស់ហាង", "visits_today": "ការចុះជួបថ្ងៃនេះ", "near_you": "ហាងនៅជិត (មិនទាន់ចុះជួប)", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_fuel": "សាំង", "exp_supplies": "សម្ភារៈលាង", "exp_parking": "ចតឡាន / ថ្លៃផ្លូវ", "exp_other": "ផ្សេងៗ", "exp_paid_by_me": "ខ្ញុំចេញលុយមុន", "exp_paid_company": "ក្រុមហ៊ុនបង់ផ្ទាល់", "exp_recent": "បានកត់ត្រាថ្មីៗ", "report_title": "របាយការណ៍", "report_summary": "សង្ខេបប្រចាំថ្ងៃ", "report_send": "ផ្ញើរបាយការណ៍", "report_tomorrow": "គម្រោងថ្ងៃស្អែក", "report_sent": "បានផ្ញើរបាយការណ៍ហើយ", "tasks": "កិច្ចការ", "history": "ការងារកន្លងមក", "campaign_sale": "កត់ត្រាការលក់", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "jobs_wait": "រង់ចាំ", "total": "សរុប", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី"};
+/*KM-END*/
+var LANG = 'km';
+function t(k) { var d = LANG === 'km' ? T_KM : T_JA; return (d[k] != null ? d[k] : (T_JA[k] || k)); }
+
+// ═══════════════════════════════════════════════════════════════
+//  メニュー v4（2026-09-22）: セダン / SUV 価格、出張料 2$
+// ═══════════════════════════════════════════════════════════════
+var MENU = {
+  WASH:      { name: 'WASH',      tk: 'svc_wash',      sedan: 12, suv: 15, min: [30, 45] },
+  GLASS_3:   { name: 'GLASS 3',   tk: 'svc_glass',     sedan: 15, suv: 20, min: [30, 50] },
+  GLASS_ALL: { name: 'GLASS ALL', tk: 'svc_glass',     sedan: 30, suv: 40, min: [60, 100] },
+  HEADLIGHT: { name: 'HEADLIGHT', tk: 'svc_headlight', sedan: 10, suv: 10, min: [30, 30] },
+  BODY:      { name: 'BODY',      tk: 'svc_body',      sedan: null, suv: null, min: [60, 90] }
+};
+var DISPATCH = 2;
+function priceOf(job) {
+  var suv = job.size === 'SUV', sum = 0;
+  job.menu.forEach(function (c) { var m = MENU[c]; if (m && m[suv ? 'suv' : 'sedan'] != null) sum += m[suv ? 'suv' : 'sedan']; });
+  if (!job.store) sum += DISPATCH;
+  return sum;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  サンプルデータ（Ron の1日: 営業訪問 → 無料デモ → 有料 → 店舗 → 営業）
+// ═══════════════════════════════════════════════════════════════
+function freshState() {
+  return {
+    tab: 'today', view: 'home', punch: { in: '', out: '' }, gps: true, offline: false, queue: 0, evening: false, reportSent: false,
+    items: [
+      { id: 'V1', kind: 'visit', time: '08:30', shopId: 0 },
+      { id: 'D1', kind: 'demo',  time: '09:30', name: 'Lucky Motors', shopId: 2, place: 'Lucky Motors (Toul Kork)', store: true, car: 'Toyota Fortuner', plate: '2AB-7788', size: 'SUV', menu: ['WASH'], phone: '', chatId: '', travel: 15, status: 'wait', src: 'shop' },
+      { id: 'J1', kind: 'job',   time: '11:30', name: 'Sok Chanthy', place: 'BKK1 · Star Condo B2', store: false, car: 'Lexus RX350', plate: '2A-1234', size: 'SUV', menu: ['WASH', 'GLASS_3'], phone: '012 345 678', chatId: '1001', travel: 25, status: 'wait', src: 'facebook' },
+      { id: 'J2', kind: 'job',   time: '14:00', name: 'Dara Kim', place: 'Samurai Motors (Toul Kork)', store: true, car: 'Toyota Camry', plate: '2C-5566', size: 'セダン', menu: ['WASH', 'HEADLIGHT'], phone: '', chatId: '', travel: 0, status: 'wait', src: '' },
+      { id: 'V2', kind: 'visit', time: '16:00', shopId: 3 }
+    ],
+    shops: [
+      { n: 'Angkor Auto',           owner: 'Mr. Sopheak', phone: '012 111 222', dist: 1.2, last: '', react: '', demo: '' },
+      { n: 'PP Car Center',         owner: 'Ms. Srey',    phone: '017 333 444', dist: 2.4, last: '9/20 · B', react: '', demo: '' },
+      { n: 'Lucky Motors',          owner: 'Mr. Vireak',  phone: '096 555 666', dist: 0.8, last: '9/18 · A', react: 'A', demo: 'today' },
+      { n: 'TK Used Cars',          owner: '',            phone: '',            dist: 2.0, last: '', react: '', demo: '' },
+      { n: 'Sokha Auto Service',    owner: 'Mr. Sokha',   phone: '070 777 888', dist: 3.1, last: '9/10 · C', react: '', demo: '' }
+    ],
+    expenses: [{ d: '24/9', c: 'exp_fuel', a: 5 }, { d: '23/9', c: 'exp_supplies', a: 8.5 }],
+    // 作業中の状態
+    cur: null
+  };
+}
+var S = freshState();
+var receiptImg = null;
+
+// ═══════════════════════════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════════════════════════
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function ppNow() { var n = new Date(); var d = new Date(n.getTime() + (7 * 60 + n.getTimezoneOffset()) * 60000); if (S.evening) d.setHours(18, 12, 0, 0); return d; }
+function hhmm(d) { return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function toMin(s) { var p = s.split(':'); return +p[0] * 60 + +p[1]; }
+function fromMin(m) { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
+function workSec(c) { var sum = Object.keys(c.svc).reduce(function (a, k) { return a + c.svc[k].sec; }, 0); var el = c.startAt && c.endAt ? Math.round((c.endAt - c.startAt) / 1000) : 0; return Math.max(sum, el); }
+function fmtDur(sec) { var m = Math.round(sec / 60); return m + ' ' + t('minutes'); }
+function hms(sec) { return [Math.floor(sec / 3600), Math.floor(sec % 3600 / 60), sec % 60].map(function (n) { return String(n).padStart(2, '0'); }).join(':'); }
+var toastTimer;
+function toast(msg, kind) { var el = $('toast'); el.textContent = msg; el.className = 'toast show ' + (kind || ''); clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.className = 'toast'; }, 2600); }
+function itemById(id) { return S.items.filter(function (i) { return i.id === id; })[0]; }
+function menuLabel(code) { return MENU[code] ? MENU[code].name : code; }
+function fakePhoto(label, hue) {
+  var c = document.createElement('canvas'); c.width = 480; c.height = 360; var g = c.getContext('2d');
+  g.fillStyle = 'hsl(' + hue + ',30%,58%)'; g.fillRect(0, 0, 480, 360);
+  g.fillStyle = 'rgba(255,255,255,.92)'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.fillText(label, 240, 195);
+  return c.toDataURL('image/jpeg', .7);
+}
+function readShrunk(file, cb) {
+  var fr = new FileReader();
+  fr.onload = function () {
+    var im = new Image();
+    im.onload = function () {
+      var max = 1000, sc = Math.min(1, max / Math.max(im.width, im.height));
+      var c = document.createElement('canvas'); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', .8));
+    };
+    im.onerror = function () { cb(fr.result); }; im.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+// 送信（試作）: 電波なしなら端末に溜める
+function send(what) {
+  if (S.offline) { S.queue++; toast('📥 ' + t('offline_saved'), 'warn'); }
+  else { toast('✅ ' + t('sent'), 'ok'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  絵（撮影ガイド・傷マップ）
+// ═══════════════════════════════════════════════════════════════
+var SIDE = '<path d="M4 22h40M7 22v-4l5-6h16l7 6h6v4"/><path d="M13 12l-2 6h22l-6-6"/><circle cx="14" cy="23" r="3.2"/><circle cx="36" cy="23" r="3.2"/>';
+var G = {
+  front: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z"/><circle cx="14" cy="20" r="2.4"/><circle cx="34" cy="20" r="2.4"/><path d="M20 22h8"/></svg>',
+  rear:  '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z"/><rect x="10" y="18" width="6" height="3"/><rect x="32" y="18" width="6" height="3"/><rect x="19" y="20" width="10" height="4"/></svg>',
+  left:  '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5">' + SIDE + '</svg>',
+  right: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5"><g transform="translate(48 0) scale(-1 1)">' + SIDE + '</g></svg>',
+  glass: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z" fill="currentColor" fill-opacity=".35"/></svg>',
+  hlL:   '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z"/><circle cx="14" cy="20" r="3.6" fill="currentColor" fill-opacity=".55"/><circle cx="34" cy="20" r="2.4"/></svg>',
+  hlR:   '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z"/><circle cx="14" cy="20" r="2.4"/><circle cx="34" cy="20" r="3.6" fill="currentColor" fill-opacity=".55"/></svg>',
+  seatF: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4h8l1 14h8l1 8H14z"/><circle cx="36" cy="10" r="5"/><path d="M36 10l3-2"/></svg>',
+  seatR: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 8h36v10H6zM4 18h40v7H4z"/></svg>'
+};
+// 上から見た車（傷の位置をタップ）
+var CAR_TOP = '<svg viewBox="0 0 200 100" fill="none" stroke="#5c6675" stroke-width="2"><rect x="22" y="14" width="156" height="72" rx="26" fill="#fff"/><path d="M60 22h80M60 78h80" stroke-dasharray="3 3"/><path d="M62 30q38-8 76 0v40q-38 8-76 0z" fill="#dfe6ee"/><rect x="30" y="8" width="18" height="10" rx="3" fill="#fff"/><rect x="152" y="8" width="18" height="10" rx="3" fill="#fff"/><rect x="30" y="82" width="18" height="10" rx="3" fill="#fff"/><rect x="152" y="82" width="18" height="10" rx="3" fill="#fff"/><text x="18" y="54" font-size="9" fill="#98a2b3" text-anchor="end" font-family="sans-serif">F</text><text x="182" y="54" font-size="9" fill="#98a2b3" font-family="sans-serif">R</text></svg>';
+
+// ═══════════════════════════════════════════════════════════════
+//  撮影枠（メニュー連動）
+// ═══════════════════════════════════════════════════════════════
+function shotsFor(job, phase) {
+  var s = [
+    { id: phase + '_F', g: 'front', tk: 'side_front', req: true },
+    { id: phase + '_B', g: 'rear',  tk: 'side_rear',  req: true },
+    { id: phase + '_L', g: 'left',  tk: 'side_left',  req: true },
+    { id: phase + '_R', g: 'right', tk: 'side_right', req: true }
+  ];
+  if (job.menu.some(function (c) { return c.indexOf('GLASS') === 0; })) s.push({ id: phase + '_G', g: 'glass', tk: 'part_windshield', req: true });
+  if (job.menu.indexOf('HEADLIGHT') >= 0) { s.push({ id: phase + '_HL', g: 'hlL', tk: 'part_hl_left', req: true }); s.push({ id: phase + '_HR', g: 'hlR', tk: 'part_hl_right', req: true }); }
+  if (phase === 'before') { s.push({ id: 'before_IF', g: 'seatF', tk: 'part_seat_front', req: false }); s.push({ id: 'before_IR', g: 'seatR', tk: 'part_seat_rear', req: false }); }
+  return s;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ヘッダー
+// ═══════════════════════════════════════════════════════════════
+function renderHead() {
+  var h = $('head');
+  var q = S.queue ? '<span class="pill q">📥 <span class="num">' + S.queue + '</span></span>' : (S.offline ? '<span class="pill q">📵</span>' : '');
+  if (S.view === 'job') {
+    var c = S.cur, order = ['check', 'before', 'work', 'after', 'close'], i = order.indexOf(c.step);
+    var dots = order.map(function (o, k) { return '<i class="' + (k < i ? 'done' : k === i ? 'now' : '') + '"></i>'; }).join('');
+    h.innerHTML = '<button type="button" class="iconbtn" id="hBack">‹</button><div class="sp"><div class="ttl">' + esc(c.job.name) + '</div><div class="sub">' + esc(c.job.car) + ' · ' + esc(c.job.plate) + '</div></div>' + q + '<div class="stepdots">' + dots + '</div>';
+    $('hBack').onclick = function () { S.view = 'home'; render(); };
+  } else if (S.view === 'visit') {
+    var sh = S.shops[S.cur.shopId];
+    h.innerHTML = '<button type="button" class="iconbtn" id="hBack">‹</button><div class="sp"><div class="ttl">' + esc(sh.n) + '</div><div class="sub">' + esc(sh.owner || '') + '</div></div>' + q;
+    $('hBack').onclick = function () { S.view = 'home'; render(); };
+  } else {
+    h.innerHTML = '<img src="logo.png" alt=""><div class="sp"><div class="brand">SAMURAI MOTORS</div><div class="ttl">👤 Ron</div></div>' + q + '<button type="button" class="pill latin" id="hLang">' + (LANG === 'km' ? 'ខ្មែរ' : '日本語') + '</button>';
+    $('hLang').onclick = function () { LANG = LANG === 'km' ? 'ja' : 'km'; document.body.setAttribute('data-lang', LANG); render(); };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  今日タブ
+// ═══════════════════════════════════════════════════════════════
+function nextItem() {
+  var now = toMin(hhmm(ppNow()));
+  var pend = S.items.filter(function (i) { return i.status !== 'done' && i.status !== 'skip'; });
+  var up = pend.filter(function (i) { return toMin(i.time) + 90 >= now; });
+  return (up[0] || pend[0]) || null;
+}
+function itemTitle(i) {
+  if (i.kind === 'visit') return S.shops[i.shopId].n;
+  return i.name;
+}
+function itemSub(i) {
+  if (i.kind === 'visit') return '🏪 ' + t('shop_visit') + ' · ' + S.shops[i.shopId].dist + ' km';
+  var chips = i.menu.map(function (c) { return '<span class="chip menu">' + menuLabel(c) + '</span>'; }).join('');
+  if (i.kind === 'demo') chips = '<span class="chip demo">' + t('free_demo') + '</span>' + chips;
+  return chips + ' <span class="chip">' + (i.store ? '🏪 ' + t('place_store') : '🛵 ' + t('place_delivery')) + '</span>';
+}
+
+function renderToday() {
+  var now = ppNow();
+  var html = '';
+
+  // 勤怠ストリップ
+  var st, btn;
+  if (!S.punch.in) { st = '<span class="st"><i></i>' + t('st_not_yet') + '</span>'; btn = '<button type="button" class="in" id="punch">' + t('punch_in') + '</button>'; }
+  else if (!S.punch.out) { st = '<span class="st work"><i></i>' + t('st_working') + ' · <span class="num">' + S.punch.in + '</span></span>'; btn = '<button type="button" class="out" id="punch">' + t('punch_out') + '</button>'; }
+  else { st = '<span class="st"><i></i>' + t('st_off') + ' · <span class="num">' + S.punch.in + '–' + S.punch.out + '</span></span>'; btn = '<button type="button" id="punch" disabled>✓</button>'; }
+  html += '<div class="card"><div class="punch"><div><div class="clock num" id="clock">' + hhmm(now) + '</div>' + st + '<div class="note">' + (S.gps ? '📡 ' + t('gps_ok') : '📡 ' + t('gps_ng')) + '</div></div>' + btn + '</div></div>';
+
+  // 次の予定
+  var nx = nextItem();
+  if (nx) {
+    var leave = fromMin(toMin(nx.time) - (nx.travel || 15));
+    var mins = toMin(nx.time) - toMin(hhmm(now));
+    var inTxt = mins > 0 ? '<span class="num">' + (mins >= 60 ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm' : mins + 'm') + '</span>' : '';
+    var meta = nx.kind === 'visit'
+      ? '<div>🏪 <b>' + esc(S.shops[nx.shopId].owner || '—') + '</b> · <span class="num">' + S.shops[nx.shopId].dist + ' km</span></div>'
+      : '<div>📍 <b>' + esc(nx.place) + '</b></div><div>🚗 <b>' + esc(nx.car) + '</b> <span class="num">' + esc(nx.plate) + '</span> · ' + (nx.size === 'SUV' ? 'SUV' : t('size_sedan')) + '</div>';
+    var main = nx.kind === 'visit'
+      ? '<button type="button" class="btn sm" data-open="' + nx.id + '">' + t('shop_visit') + '</button>'
+      : '<button type="button" class="btn sm green" data-open="' + nx.id + '">▶ ' + t('btn_start') + '</button>';
+    html += '<div class="card next"><div class="band">⏭ ' + t('next_title') + '<span class="r">' + t('leave_by') + ' <span class="num">' + leave + '</span></span></div>' +
+      '<div class="body"><div class="when"><span class="t num">' + nx.time + '</span><span class="in">' + inTxt + '</span></div>' +
+      '<div class="name">' + esc(itemTitle(nx)) + '</div><div class="chips">' + itemSub(nx) + '</div><div class="meta">' + meta + '</div>' +
+      '<div class="acts"><button type="button" class="act go" data-map="1"><span class="ic">🗺</span>' + t('btn_map') + '</button>' +
+      '<button type="button" class="act" data-call="' + esc(nx.phone || (nx.kind === 'visit' ? S.shops[nx.shopId].phone : '')) + '"><span class="ic">📞</span>' + t('btn_call') + '</button>' +
+      '<button type="button" class="act" data-tg="1"><span class="ic">✈️</span><span class="latin">Telegram</span></button></div>' + main + '</div></div>';
+  }
+
+  // 1日の流れ
+  var done = S.items.filter(function (i) { return i.status === 'done'; }).length;
+  html += '<div class="card"><div class="band">📋 ' + t('tab_today') + '<span class="r num">' + done + '/' + S.items.length + '</span></div><div class="body" style="padding:6px 14px 4px"><div class="tl">' +
+    S.items.map(function (i) {
+      var cls = i.status === 'done' ? 'done' : (nx && nx.id === i.id ? 'now' : '');
+      return '<button type="button" class="tl-item ' + cls + '" data-open="' + i.id + '"><span class="t num">' + i.time + '</span><span class="ln"><i></i></span><span class="c"><span class="n">' + esc(itemTitle(i)) + '</span><span class="s chips">' + itemSub(i) + '</span></span></button>';
+    }).join('') + '</div></div></div>';
+
+  // 日報（夕方・退勤後に前へ出る）
+  var jobsDone = S.items.filter(function (i) { return i.status === 'done' && i.kind !== 'visit'; });
+  var sales = jobsDone.reduce(function (a, i) { return a + (i.paid ? i.amount || 0 : 0); }, 0);
+  var visits = S.shops.filter(function (s) { return s.visitedToday; }).length;
+  var ready = !!S.punch.out && !S.reportSent;
+  html += '<div class="card" style="' + (ready ? 'border:2px solid var(--gold)' : '') + '"><div class="band">📝 ' + t('report_title') + '</div><div class="body">' +
+    (S.reportSent ? '<div class="note">✅ ' + t('report_sent') + '</div>' :
+      '<div class="kv"><span>' + t('jobs_done') + '</span><b class="num">' + jobsDone.length + '</b><span>' + t('total') + ' $</span><b class="num">' + sales + '$</b><span>' + t('visits_today') + '</span><b class="num">' + visits + '</b><span>' + t('work_time') + '</span><b class="num">' + (S.punch.in || '--:--') + ' – ' + (S.punch.out || '--:--') + '</b></div>' +
+      '<div class="voice"><button type="button" id="repVoice">🎤</button><div class="v"><b>' + t('voice_note') + '</b>' + t('report_tomorrow') + '</div></div>' +
+      '<button type="button" class="btn ' + (ready ? 'gold' : 'ghost') + '" id="repSend" ' + (S.punch.out ? '' : 'disabled') + '>' + t('report_send') + '</button>') +
+    '</div></div>';
+
+  $('main').innerHTML = html;
+
+  $('punch').onclick = function () {
+    var tm = hhmm(ppNow());
+    if (!S.punch.in) { S.punch.in = tm; toast('🟢 ' + t('punch_in') + ' ' + tm, 'ok'); }
+    else if (!S.punch.out) { S.punch.out = tm; toast('🔴 ' + t('punch_out') + ' ' + tm, 'ok'); }
+    send(); renderToday();
+  };
+  document.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { openItem(b.getAttribute('data-open')); }; });
+  document.querySelectorAll('[data-map]').forEach(function (b) { b.onclick = function () { toast('🗺 Google Maps（試作では開きません）'); }; });
+  document.querySelectorAll('[data-call]').forEach(function (b) { b.onclick = function () { var p = b.getAttribute('data-call'); toast(p ? '📞 ' + p : '📞 —'); }; });
+  document.querySelectorAll('[data-tg]').forEach(function (b) { b.onclick = function () { toast('✈️ Telegram（試作では開きません）'); }; });
+  var rv = $('repVoice'); if (rv) rv.onclick = function () { voiceDemo(rv); };
+  var rs = $('repSend'); if (rs) rs.onclick = function () { S.reportSent = true; send(); renderToday(); };
+}
+
+function openItem(id) {
+  var i = itemById(id);
+  if (i.status === 'done') { toast('✅ ' + t('jobs_done')); return; }
+  if (i.kind === 'visit') { S.cur = { shopId: i.shopId, itemId: i.id, react: '', demo: '', voice: 0 }; S.view = 'visit'; render(); return; }
+  S.cur = { job: i, step: 'check', checks: {}, dmg: [], photos: {}, shotIdx: 0, svc: {}, active: null, startAt: null, endAt: null, pay: i.kind === 'demo' ? 'free' : '', amount: i.kind === 'demo' ? 0 : priceOf(i), src: i.src || '', linked: !!i.chatId };
+  i.menu.forEach(function (c) { S.cur.svc[c] = { sec: 0, done: false, skip: false }; });
+  S.view = 'job'; render(); window.scrollTo(0, 0);
+}
+
+// 音声メモ（試作: 録音の見た目だけ）
+function voiceDemo(btn) {
+  if (btn.classList.contains('rec')) { btn.classList.remove('rec'); btn.textContent = '🎤'; toast('🎤 0:06 ✓', 'ok'); return; }
+  btn.classList.add('rec'); btn.textContent = '■';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  作業フロー: check → before → work → after → close → done
+// ═══════════════════════════════════════════════════════════════
+var timerId = null;
+function jobHead() {
+  var j = S.cur.job;
+  return '<div class="card"><div class="jobhead"><div class="chips">' + itemSub(j) + '</div><div class="g">' +
+    '<div><small>🕐</small><b class="num">' + j.time + '</b></div><div><small>💰</small><b class="num">' + (S.cur.pay === 'free' ? '0$' : priceOf(j) + '$') + '</b></div>' +
+    '<div style="grid-column:1/-1"><small>📍</small><b>' + esc(j.place) + '</b></div></div></div></div>';
+}
+
+function renderJob() {
+  var c = S.cur, j = c.job, html = '';
+  if (timerId) { clearInterval(timerId); timerId = null; }
+
+  if (c.step === 'check') {
+    html += jobHead();
+    var items = [['engine', '🔑', 'chk_engine'], ['lights', '💡', 'chk_lights'], ['windows', '🪟', 'chk_windows'], ['wipers', '🌧', 'chk_wipers'], ['ac', '❄️', 'chk_ac']];
+    html += '<div class="card"><div class="band">🔍 ' + t('job_precheck') + '<span class="r num">' + Object.keys(c.checks).length + '/5</span></div><div class="body" style="gap:0">' +
+      items.map(function (it) {
+        var v = c.checks[it[0]];
+        return '<div class="chk"><div class="l"><span class="ic">' + it[1] + '</span>' + t(it[2]) + '</div><div class="seg">' +
+          '<button type="button" class="ok ' + (v === 'ok' ? 'on' : '') + '" data-chk="' + it[0] + '" data-v="ok">✓ ' + t('chk_ok') + '</button>' +
+          '<button type="button" class="ng ' + (v === 'ng' ? 'on' : '') + '" data-chk="' + it[0] + '" data-v="ng">✕ ' + t('chk_ng') + '</button></div></div>';
+      }).join('') + '</div></div>';
+    html += '<div class="card"><div class="band">🩹 ' + t('damage_title') + '<span class="r num">' + c.dmg.length + '</span></div><div class="body">' +
+      '<div class="note">👆 ' + t('damage_tap') + '</div><div class="dmap" id="dmap">' + CAR_TOP +
+      c.dmg.map(function (d, i) { return '<span class="mk" style="left:' + d.x + '%;top:' + d.y + '%">' + (i + 1) + '</span>'; }).join('') + '</div>' +
+      (c.dmg.length ? '<div class="dmg-list">' + c.dmg.map(function (d, i) {
+        return '<div class="dmg"><span class="no">' + (i + 1) + '</span><span class="ph">' + (d.img ? '<img src="' + d.img + '" alt="">' : '📷') + '<input type="file" accept="image/*" capture="environment" data-dmgph="' + i + '"></span><input class="memo" data-dmgmemo="' + i + '" value="' + esc(d.memo) + '" placeholder="' + esc(t('note')) + '"></div>';
+      }).join('') + '</div>' : '') +
+      '<button type="button" class="btn sm ghost" id="dmgNone">' + (c.dmg.length ? '＋ ' + t('damage_photo') : '✓ ' + t('damage_none')) + '</button></div></div>';
+  }
+
+  else if (c.step === 'before' || c.step === 'after') {
+    var shots = shotsFor(j, c.step), idx = Math.min(c.shotIdx, shots.length - 1), sh = shots[idx], img = c.photos[sh.id];
+    var reqShots = shots.filter(function (s) { return s.req; }), got = reqShots.filter(function (s) { return c.photos[s.id]; }).length;
+    if (c.step === 'after') html += '<div class="card"><div class="timer"><div class="l">⏱ ' + t('work_time') + '</div><div class="v num" style="color:var(--text)">' + hms(workSec(c)) + '</div></div></div>';
+    html += '<div class="card"><div class="band">📷 ' + t(c.step === 'before' ? 'photo_before' : 'photo_after') + '<span class="r num">' + got + '/' + reqShots.length + '</span></div><div class="body cam">' +
+      '<div class="frame">' + (img ? '<img src="' + img + '" alt="">' : G[sh.g]) + '<span class="req ' + (sh.req ? '' : 'opt') + '">' + t(sh.req ? 'lbl_required' : 'lbl_optional') + '</span><span class="cnt">' + (idx + 1) + '/' + shots.length + '</span><span class="lbl">' + t(sh.tk) + '</span></div>' +
+      (img ? '<div class="row2"><button type="button" class="btn sm ghost" id="retake">↺ ' + t('btn_retake') + '</button><button type="button" class="btn sm green" id="okNext">' + t('btn_ok') + ' ›</button></div>'
+           : '<div class="shoot">📷 ' + t(sh.tk) + '<input type="file" accept="image/*" capture="environment" id="shoot"></div>' + (sh.req ? '' : '<button type="button" class="btn sm ghost" id="skipShot">' + t('btn_next') + ' ›</button>')) +
+      '<div class="thumbs">' + shots.map(function (s, i) { var p = c.photos[s.id]; return '<button type="button" data-shot="' + i + '" class="' + (i === idx ? 'now' : '') + (p ? ' has' : '') + '">' + (p ? '<img src="' + p + '" alt="">' : t(s.tk)) + (p ? '<span class="k">✓</span>' : '') + '</button>'; }).join('') + '</div>' +
+      '</div></div>';
+  }
+
+  else if (c.step === 'work') {
+    var total = Object.keys(c.svc).reduce(function (a, k) { return a + c.svc[k].sec; }, 0);
+    html += '<div class="card"><div class="timer"><div class="l">⏱ ' + t('work_time') + ' · <span class="num">' + hhmm(new Date(c.startAt.getTime() + (7 * 60 + c.startAt.getTimezoneOffset()) * 60000)) + '</span></div><div class="v num" id="tv">' + hms(total) + '</div></div></div>';
+    html += '<div class="card"><div class="band">👉 ' + t('now_doing') + '</div><div class="body"><div class="svc">' +
+      Object.keys(c.svc).map(function (k) {
+        var s = c.svc[k], cls = c.active === k ? 'now' : (s.done ? 'done' : (s.skip ? 'skip' : ''));
+        return '<button type="button" class="s ' + cls + '" data-svc="' + k + '"><span class="n"><span class="latin">' + menuLabel(k) + '</span><small>' + t(MENU[k].tk) + '</small></span><span class="t num" data-tv="' + k + '">' + (c.active === k ? '▶ ' : (s.done ? '✓ ' : '')) + hms(s.sec) + '</span></button>';
+      }).join('') + '</div>' +
+      '<button type="button" class="btn sm ghost" id="addSvc">＋ ' + t('svc_done_q').split('।')[0].slice(0, 0) + '<span class="latin">HEADLIGHT / GLASS / BODY</span></button></div></div>';
+  }
+
+  else if (c.step === 'close') {
+    var dur = workSec(c);
+    html += '<div class="card"><div class="band">✅ ' + t('svc_done_q') + '</div><div class="body"><div class="svc">' +
+      Object.keys(c.svc).map(function (k) { var s = c.svc[k]; return '<button type="button" class="s ' + (s.skip ? 'skip' : 'done') + '" data-tog="' + k + '"><span class="n"><span class="latin">' + menuLabel(k) + '</span><small>' + t(MENU[k].tk) + '</small></span><span class="t num">' + (s.skip ? '—' : '✓ ' + fmtDur(s.sec)) + '</span></button>'; }).join('') +
+      '</div><div class="note">⏱ ' + t('work_time') + ': <b class="num">' + fmtDur(dur) + '</b> · 📷 <b class="num">' + Object.keys(c.photos).length + '</b> · 🩹 <b class="num">' + c.dmg.length + '</b></div></div></div>';
+    html += '<div class="card"><div class="band">💰 ' + t('pay_title') + '</div><div class="body">' +
+      '<div class="big-amt"><input type="number" inputmode="decimal" id="amt" value="' + c.amount + '"><span>$</span></div>' +
+      '<div class="row2">' + [['cash', '💵', 'pay_cash', 'g'], ['aba', '📱', 'pay_aba', 'g'], ['shop', '🏪', 'pay_shop', 'gold'], ['free', '🎁', 'pay_free', 'gold'], ['later', '⏳', 'pay_later', 'r']].map(function (p) {
+        return '<button type="button" class="opt ' + (c.pay === p[0] ? 'on ' + p[3] : '') + '" data-pay="' + p[0] + '"><span class="ic">' + p[1] + '</span><span class="latin">' + t(p[2]) + '</span>' + (c.pay === p[0] ? '<span class="tick">✓</span>' : '') + '</button>';
+      }).join('') + '</div></div></div>';
+    if (j.kind !== 'demo' && !j.src) html += '<div class="card"><div class="band">📣 ' + t('src_title') + '</div><div class="body"><div class="row2">' +
+      [['shop', '🏪', 'src_shop'], ['flyer', '📄', 'src_flyer'], ['facebook', '📘', 'src_facebook'], ['repeat', '🔁', 'src_repeat'], ['walkin', '🤝', 'src_walkin']].map(function (p) {
+        return '<button type="button" class="opt center ' + (c.src === p[0] ? 'on' : '') + '" data-src="' + p[0] + '"><span class="ic">' + p[1] + '</span>' + t(p[2]) + '</button>';
+      }).join('') + '</div></div></div>';
+    if (!c.linked) html += '<div class="card"><div class="body"><button type="button" class="btn sm ghost" id="linkQr">📲 ' + t('link_qr') + '</button><div class="note">' + t('cust_got_photos') + ' ← Telegram</div></div></div>';
+    html += '<div class="card"><div class="body"><div class="voice"><button type="button" id="jobVoice">🎤</button><div class="v"><b>' + t('voice_note') + '</b>' + t('note') + '</div></div></div></div>';
+  }
+
+  else if (c.step === 'done') {
+    html += '<div class="card"><div class="done-screen"><div class="ic">✓</div><div class="h">' + t('btn_finish') + '</div>' +
+      '<div class="kv"><span>' + t('work_time') + '</span><b class="num">' + fmtDur(workSec(c)) + '</b>' +
+      Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }).map(function (k) { return '<span class="latin">' + menuLabel(k) + '</span><b class="num">' + fmtDur(c.svc[k].sec) + '</b>'; }).join('') +
+      '<span>' + t('lbl_photos') + '</span><b class="num">' + Object.keys(c.photos).length + '</b><span>' + t('pay_title') + '</span><b class="num">' + (c.pay === 'free' ? '0$' : c.amount + '$') + ' · ' + t('pay_' + (c.pay || 'later')) + '</b></div>' +
+      '<div class="chip ' + (S.offline ? 'warn' : 'ok') + '">' + (S.offline ? '📥 ' + t('offline_saved') : '✈️ ' + t('cust_got_photos')) + '</div></div></div>';
+  }
+
+  $('main').innerHTML = html;
+  $('main').className = 'flow';
+  bindJob();
+  renderBar();
+}
+
+function bindJob() {
+  var c = S.cur;
+  document.querySelectorAll('[data-chk]').forEach(function (b) { b.onclick = function () { c.checks[b.getAttribute('data-chk')] = b.getAttribute('data-v'); renderJob(); }; });
+  var dm = $('dmap'); if (dm) dm.onclick = function (e) {
+    var r = dm.getBoundingClientRect(); var x = Math.round((e.clientX - r.left) / r.width * 100), y = Math.round((e.clientY - r.top) / r.height * 100);
+    if (x < 8 || x > 92 || y < 8 || y > 92) return; c.dmg.push({ x: x, y: y, img: '', memo: '' }); renderJob();
+  };
+  document.querySelectorAll('[data-dmgph]').forEach(function (inp) { inp.onchange = function () { if (!inp.files[0]) return; readShrunk(inp.files[0], function (u) { c.dmg[+inp.getAttribute('data-dmgph')].img = u; renderJob(); }); }; });
+  document.querySelectorAll('[data-dmgmemo]').forEach(function (inp) { inp.oninput = function () { c.dmg[+inp.getAttribute('data-dmgmemo')].memo = inp.value; }; });
+  var dn = $('dmgNone'); if (dn) dn.onclick = function () { if (!c.dmg.length) { c.noDamage = true; toast('✓ ' + t('damage_none'), 'ok'); goStep('before'); } else toast('👆 ' + t('damage_tap')); };
+
+  var sh = $('shoot'); if (sh) sh.onchange = function () { if (!sh.files[0]) return; var shots = shotsFor(c.job, c.step); readShrunk(sh.files[0], function (u) { c.photos[shots[c.shotIdx].id] = u; renderJob(); }); };
+  var rt = $('retake'); if (rt) rt.onclick = function () { var shots = shotsFor(c.job, c.step); delete c.photos[shots[c.shotIdx].id]; renderJob(); };
+  var ok = $('okNext'); if (ok) ok.onclick = function () { advanceShot(); };
+  var sk = $('skipShot'); if (sk) sk.onclick = function () { advanceShot(); };
+  document.querySelectorAll('[data-shot]').forEach(function (b) { b.onclick = function () { c.shotIdx = +b.getAttribute('data-shot'); renderJob(); }; });
+
+  document.querySelectorAll('[data-svc]').forEach(function (b) { b.onclick = function () {
+    var k = b.getAttribute('data-svc');
+    if (c.active === k) { c.svc[k].done = true; c.active = null; }   // もう一度押す = このサービス完了
+    else { if (c.active) c.svc[c.active].done = true; c.active = k; c.svc[k].done = false; }
+    renderJob();
+  }; });
+  var as = $('addSvc'); if (as) as.onclick = function () {
+    var cands = Object.keys(MENU).filter(function (k) { return !c.svc[k] && k !== 'GLASS_ALL'; });
+    if (!cands.length) return; var k = cands[0]; c.svc[k] = { sec: 0, done: false, skip: false }; c.job.menu.push(k); toast('＋ ' + menuLabel(k)); renderJob();
+  };
+  document.querySelectorAll('[data-tog]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-tog'); c.svc[k].skip = !c.svc[k].skip; renderJob(); }; });
+  document.querySelectorAll('[data-pay]').forEach(function (b) { b.onclick = function () { c.pay = b.getAttribute('data-pay'); if (c.pay === 'free') c.amount = 0; else if (!c.amount) c.amount = priceOf(c.job); renderJob(); }; });
+  document.querySelectorAll('[data-src]').forEach(function (b) { b.onclick = function () { c.src = b.getAttribute('data-src'); renderJob(); }; });
+  var am = $('amt'); if (am) am.oninput = function () { c.amount = parseFloat(am.value) || 0; };
+  var lq = $('linkQr'); if (lq) lq.onclick = function () { c.linked = true; toast('📲 QR → Telegram ✓', 'ok'); renderJob(); };
+  var jv = $('jobVoice'); if (jv) jv.onclick = function () { voiceDemo(jv); };
+
+  if (c.step === 'work') {
+    timerId = setInterval(function () {
+      if (c.active) c.svc[c.active].sec++;
+      var total = Object.keys(c.svc).reduce(function (a, k) { return a + c.svc[k].sec; }, 0);
+      var tv = $('tv'); if (tv) tv.textContent = hms(total);
+      if (c.active) { var el = document.querySelector('[data-tv="' + c.active + '"]'); if (el) el.textContent = '▶ ' + hms(c.svc[c.active].sec); }
+    }, 1000);
+  }
+}
+
+function advanceShot() {
+  var c = S.cur, shots = shotsFor(c.job, c.step);
+  var next = -1;
+  for (var i = c.shotIdx + 1; i < shots.length; i++) { if (!c.photos[shots[i].id]) { next = i; break; } }
+  if (next < 0) for (var k = 0; k < shots.length; k++) { if (shots[k].req && !c.photos[shots[k].id]) { next = k; break; } }
+  if (next < 0) next = Math.min(c.shotIdx + 1, shots.length - 1);
+  c.shotIdx = next; renderJob(); window.scrollTo(0, 0);
+}
+
+function goStep(s) { S.cur.step = s; S.cur.shotIdx = 0; renderJob(); window.scrollTo(0, 0); }
+
+function renderBar() {
+  var c = S.cur, bar = $('bar'), html = '', j = c.job;
+  var shots, req, got;
+  if (c.step === 'check') {
+    var ok = Object.keys(c.checks).length === 5 && (c.dmg.length || c.noDamage);
+    html = '<div class="prog"><span class="num">' + Object.keys(c.checks).length + '/5</span><span class="b"><i style="width:' + (Object.keys(c.checks).length * 20) + '%"></i></span><span>🩹 <span class="num">' + c.dmg.length + '</span></span></div>' +
+      '<button type="button" class="btn" id="next" ' + (Object.keys(c.checks).length === 5 ? '' : 'disabled') + '>' + t('btn_next') + ' › <small>' + t('photo_before') + '</small></button>';
+  } else if (c.step === 'before') {
+    shots = shotsFor(j, 'before'); req = shots.filter(function (s) { return s.req; }); got = req.filter(function (s) { return c.photos[s.id]; }).length;
+    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + Math.round(got / req.length * 100) + '%"></i></span><span class="num">' + got + '/' + req.length + '</span></div>' +
+      '<button type="button" class="btn green" id="next" ' + (got < req.length ? 'disabled' : '') + '>▶ ' + t('btn_start') + (got < req.length ? ' <small class="num">' + (req.length - got) + ' 📷</small>' : '') + '</button>';
+  } else if (c.step === 'work') {
+    var allDone = Object.keys(c.svc).every(function (k) { return c.svc[k].sec > 0 || c.svc[k].skip; });
+    html = '<button type="button" class="btn red" id="next" ' + (allDone ? '' : 'disabled') + '>■ ' + t('btn_finish') + '</button>';
+  } else if (c.step === 'after') {
+    shots = shotsFor(j, 'after'); req = shots.filter(function (s) { return s.req; }); got = req.filter(function (s) { return c.photos[s.id]; }).length;
+    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + Math.round(got / req.length * 100) + '%"></i></span><span class="num">' + got + '/' + req.length + '</span></div>' +
+      '<button type="button" class="btn" id="next" ' + (got < req.length ? 'disabled' : '') + '>' + t('btn_next') + ' › <small>' + t('pay_title') + '</small></button>';
+  } else if (c.step === 'close') {
+    html = '<button type="button" class="btn green" id="next" ' + (c.pay ? '' : 'disabled') + '>💾 ' + t('btn_save') + '</button>';
+  } else {
+    html = '<button type="button" class="btn" id="next">‹ ' + t('tab_today') + '</button>';
+  }
+  bar.innerHTML = '<div class="in">' + html + '</div>';
+  bar.hidden = false;
+  $('next').onclick = function () {
+    if (c.step === 'check') goStep('before');
+    else if (c.step === 'before') { c.startAt = new Date(); c.active = j.menu[0]; send(); goStep('work'); }
+    else if (c.step === 'work') { if (c.active) { c.svc[c.active].done = true; c.active = null; } c.endAt = new Date(); goStep('after'); }
+    else if (c.step === 'after') goStep('close');
+    else if (c.step === 'close') { j.status = 'done'; j.paid = c.pay !== 'later' && c.pay !== 'free'; j.amount = c.amount; j.src = c.src; send(); goStep('done'); }
+    else { S.view = 'home'; S.cur = null; render(); }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  営業タブ ＋ 訪問記録
+// ═══════════════════════════════════════════════════════════════
+function renderShops() {
+  var todayV = S.shops.filter(function (s) { return s.visitedToday; });
+  var demos = S.shops.filter(function (s) { return s.demo; });
+  var near = S.shops.map(function (s, i) { s._i = i; return s; }).filter(function (s) { return !s.visitedToday; }).sort(function (a, b) { return a.dist - b.dist; });
+  var html = '<div class="row2"><div class="card" style="text-align:center;padding:12px"><div class="num" style="font-size:30px;font-weight:700">' + todayV.length + '</div><div class="note">' + t('visits_today') + '</div></div>' +
+    '<div class="card" style="text-align:center;padding:12px;border-color:var(--gold)"><div class="num" style="font-size:30px;font-weight:700;color:var(--gold)">' + demos.length + '</div><div class="note">' + t('react_a') + '</div></div></div>';
+  html += '<div class="card"><div class="band">📍 ' + t('near_you') + '</div><div class="body" style="padding:2px 14px">' + near.map(function (s) {
+    return '<div class="shop"><div><div class="n">' + esc(s.n) + '</div><div class="d"><span class="num">' + s.dist + ' km</span>' + (s.last ? ' · ' + esc(s.last) : '') + (s.demo ? ' · <span class="chip demo">' + t('demo_date') + ' ' + t(s.demo) + '</span>' : '') + '</div></div>' +
+      '<div class="a"><button type="button" data-map="1">🗺</button><button type="button" class="main" data-visit="' + s._i + '">' + t('shop_visit') + '</button></div></div>';
+  }).join('') + '</div></div>';
+  html += '<div class="card"><div class="body"><button type="button" class="btn sm ghost" id="shopNew">＋ ' + t('shop_new') + '</button></div></div>';
+  $('main').innerHTML = html;
+  document.querySelectorAll('[data-visit]').forEach(function (b) { b.onclick = function () { S.cur = { shopId: +b.getAttribute('data-visit'), react: '', demo: '', voice: 0 }; S.view = 'visit'; render(); }; });
+  document.querySelectorAll('[data-map]').forEach(function (b) { b.onclick = function () { toast('🗺 Google Maps（試作では開きません）'); }; });
+  $('shopNew').onclick = function () { toast('📍 GPS + 📷 → ' + t('shop_new') + '（試作）'); };
+}
+
+function renderVisit() {
+  var c = S.cur, sh = S.shops[c.shopId];
+  var html = '<div class="card"><div class="body"><div class="kv"><span>👤 ' + t('owner') + '</span><b>' + esc(sh.owner || '—') + '</b><span>📞</span><b class="num">' + esc(sh.phone || '—') + '</b><span>🕘</span><b>' + esc(sh.last || '—') + '</b></div>' +
+    '<div class="acts"><button type="button" class="act go" data-map="1"><span class="ic">🗺</span>' + t('btn_map') + '</button><button type="button" class="act"><span class="ic">📞</span>' + t('btn_call') + '</button><button type="button" class="act" id="vPhoto"><span class="ic">📷</span>' + t('lbl_photos') + '</button></div></div></div>';
+  html += '<div class="card"><div class="band">💬 ' + t('shop_visit') + '</div><div class="body"><div class="react">' +
+    [['A', 'react_a', 'g'], ['B', 'react_b', ''], ['C', 'react_c', ''], ['D', 'react_d', 'r']].map(function (r) {
+      return '<button type="button" class="opt ' + (c.react === r[0] ? 'on ' + r[2] : '') + '" data-react="' + r[0] + '"><span class="code">' + r[0] + '</span>' + t(r[1]) + '</button>';
+    }).join('') + '</div>' +
+    (c.react === 'A' ? '<div><div class="note" style="margin-bottom:6px">📅 ' + t('demo_date') + '</div><div class="row3">' + [['today', 'today'], ['tomorrow', 'tomorrow'], ['pick', 'pick_date']].map(function (d) { return '<button type="button" class="opt center ' + (c.demo === d[0] ? 'on gold' : '') + '" data-demo="' + d[0] + '" style="min-height:56px">' + t(d[1]) + '</button>'; }).join('') + '</div></div>' : '') +
+    '<div class="voice"><button type="button" id="vVoice">🎤</button><div class="v"><b>' + t('voice_note') + '</b>' + t('note') + '</div></div></div></div>';
+  $('main').innerHTML = html;
+  document.querySelectorAll('[data-react]').forEach(function (b) { b.onclick = function () { c.react = b.getAttribute('data-react'); if (c.react !== 'A') c.demo = ''; renderVisit(); renderBar2(); }; });
+  document.querySelectorAll('[data-demo]').forEach(function (b) { b.onclick = function () { c.demo = b.getAttribute('data-demo'); renderVisit(); renderBar2(); }; });
+  document.querySelectorAll('[data-map]').forEach(function (b) { b.onclick = function () { toast('🗺 Google Maps（試作では開きません）'); }; });
+  $('vVoice').onclick = function () { voiceDemo($('vVoice')); };
+  $('vPhoto').onclick = function () { toast('📷 ' + sh.n); };
+  renderBar2();
+}
+function renderBar2() {
+  var c = S.cur, ok = c.react && (c.react !== 'A' || c.demo);
+  $('bar').innerHTML = '<div class="in"><button type="button" class="btn green" id="vSave" ' + (ok ? '' : 'disabled') + '>💾 ' + t('btn_save') + '</button></div>';
+  $('bar').hidden = false;
+  $('vSave').onclick = function () {
+    var sh = S.shops[c.shopId]; sh.visitedToday = true; sh.react = c.react; sh.last = t('today') + ' · ' + c.react; if (c.demo) sh.demo = c.demo;
+    if (c.itemId) itemById(c.itemId).status = 'done';
+    send(); S.view = 'home'; S.cur = null; render();
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  経費タブ
+// ═══════════════════════════════════════════════════════════════
+var expCat = 'exp_fuel', expWho = 'me';
+function renderExpense() {
+  var html = '<div class="card"><div class="body">' +
+    '<div class="receipt ' + (receiptImg ? 'has' : '') + '">' + (receiptImg ? '<img src="' + receiptImg + '" alt="">' : '<span class="ic">🧾</span><span>' + t('exp_receipt') + '</span>') + '<input type="file" accept="image/*" capture="environment" id="rcpt"></div>' +
+    '<div class="big-amt"><input type="number" inputmode="decimal" id="expAmt" placeholder="0"><span>$</span></div>' +
+    '<div class="row2">' + [['exp_fuel', '⛽'], ['exp_supplies', '🧴'], ['exp_parking', '🅿️'], ['exp_other', '📦']].map(function (c) { return '<button type="button" class="opt center ' + (expCat === c[0] ? 'on' : '') + '" data-cat="' + c[0] + '" style="min-height:58px"><span class="ic">' + c[1] + '</span>' + t(c[0]) + '</button>'; }).join('') + '</div>' +
+    '<div class="row2"><button type="button" class="opt ' + (expWho === 'me' ? 'on' : '') + '" data-who="me"><span class="ic">🙋</span>' + t('exp_paid_by_me') + '</button><button type="button" class="opt ' + (expWho === 'co' ? 'on' : '') + '" data-who="co"><span class="ic">🏢</span>' + t('exp_paid_company') + '</button></div>' +
+    '<button type="button" class="btn" id="expSave">💾 ' + t('btn_save') + '</button></div></div>';
+  html += '<div class="card"><div class="band">🕘 ' + t('exp_recent') + '</div><div class="body" style="padding:2px 14px">' + S.expenses.map(function (e) { return '<div class="exp-row"><span><span class="num">' + e.d + '</span> · ' + t(e.c) + '</span><b class="num">' + e.a + '$</b></div>'; }).join('') + '</div></div>';
+  $('main').innerHTML = html;
+  $('rcpt').onchange = function () { if (!this.files[0]) return; readShrunk(this.files[0], function (u) { receiptImg = u; renderExpense(); }); };
+  document.querySelectorAll('[data-cat]').forEach(function (b) { b.onclick = function () { expCat = b.getAttribute('data-cat'); renderExpense(); }; });
+  document.querySelectorAll('[data-who]').forEach(function (b) { b.onclick = function () { expWho = b.getAttribute('data-who'); renderExpense(); }; });
+  $('expSave').onclick = function () {
+    var a = parseFloat($('expAmt').value);
+    if (!receiptImg) { toast('🧾 ' + t('exp_receipt'), 'warn'); return; }
+    if (!(a > 0)) { toast('💰 ' + t('amount'), 'warn'); return; }
+    var d = ppNow(); S.expenses.unshift({ d: d.getDate() + '/' + (d.getMonth() + 1), c: expCat, a: a }); receiptImg = null; send(); renderExpense();
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  その他タブ
+// ═══════════════════════════════════════════════════════════════
+function renderMore() {
+  var rows = [['✅', 'tasks', '2'], ['🗂', 'history', ''], ['✍️', 'new_job', ''], ['💰', 'campaign_sale', ''], ['📲', 'link_qr', '']];
+  var html = '<div class="card">' + rows.map(function (r) { return '<button type="button" class="lrow" data-more="' + r[1] + '"><span class="ic">' + r[0] + '</span><span class="t">' + t(r[1]) + '</span>' + (r[2] ? '<span class="chip" style="background:var(--red);color:#fff;margin-left:auto">' + r[2] + '</span>' : '<span class="ar">›</span>') + '</button>'; }).join('') + '</div>';
+  html += '<div class="card"><div class="band">🌐</div><div class="lang"><button type="button" class="' + (LANG === 'km' ? 'on' : '') + '" data-lang="km">ខ្មែរ</button><button type="button" class="latin ' + (LANG === 'ja' ? 'on' : '') + '" data-lang="ja">日本語</button></div></div>';
+  $('main').innerHTML = html;
+  document.querySelectorAll('[data-more]').forEach(function (b) { b.onclick = function () { toast(t(b.getAttribute('data-more')) + '（試作では未実装）'); }; });
+  document.querySelectorAll('[data-lang]').forEach(function (b) { b.onclick = function () { LANG = b.getAttribute('data-lang'); document.body.setAttribute('data-lang', LANG); render(); }; });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  描画の入口
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  document.querySelectorAll('[data-t]').forEach(function (el) { el.textContent = t(el.getAttribute('data-t')); });
+  document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === S.tab)); });
+  var inFlow = S.view === 'job' || S.view === 'visit';
+  $('tabs').hidden = inFlow; $('bar').hidden = !inFlow; $('main').className = inFlow ? 'flow' : '';
+  if (timerId && S.view !== 'job') { clearInterval(timerId); timerId = null; }
+  renderHead();
+  if (S.view === 'job') renderJob();
+  else if (S.view === 'visit') renderVisit();
+  else if (S.tab === 'today') renderToday();
+  else if (S.tab === 'shops') renderShops();
+  else if (S.tab === 'expense') renderExpense();
+  else renderMore();
+  $('shopDot').hidden = !S.shops.some(function (s) { return s.demo === 'today' && !s.visitedToday; });
+}
+document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { S.tab = b.getAttribute('data-tab'); S.view = 'home'; render(); window.scrollTo(0, 0); }; });
+setInterval(function () { var c = $('clock'); if (c) c.textContent = hhmm(ppNow()); }, 1000);
+
+// ── 試作用の帯 ──
+$('mFill').onclick = function () {
+  if (S.view !== 'job') { toast('予約を開いてから押してください'); return; }
+  var c = S.cur;
+  if (c.step === 'check') { ['engine', 'lights', 'windows', 'wipers', 'ac'].forEach(function (k) { c.checks[k] = 'ok'; }); if (!c.dmg.length) { c.dmg.push({ x: 68, y: 22, img: fakePhoto('🩹', 10), memo: 'small scratch' }); } renderJob(); return; }
+  if (c.step === 'before' || c.step === 'after') { shotsFor(c.job, c.step).forEach(function (s, i) { if (s.req && !c.photos[s.id]) c.photos[s.id] = fakePhoto(t(s.tk), (i * 47) % 360); }); renderJob(); return; }
+  if (c.step === 'work') { Object.keys(c.svc).forEach(function (k, i) { if (!c.svc[k].sec) c.svc[k].sec = 60 * (25 + i * 10); c.svc[k].done = true; }); c.active = null; renderJob(); return; }
+};
+$('mOffline').onclick = function () { S.offline = !S.offline; this.classList.toggle('on', S.offline); if (!S.offline && S.queue) { toast('📤 ' + S.queue + ' → ' + t('sent'), 'ok'); S.queue = 0; } render(); };
+$('mEvening').onclick = function () { S.evening = !S.evening; this.classList.toggle('on', S.evening); render(); };
+$('mReset').onclick = function () { S = freshState(); receiptImg = null; render(); window.scrollTo(0, 0); };
+
+render();
+</script>
+</body>
+</html>
