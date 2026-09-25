@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Samurai 現場アプリ（試作）</title>
+<!-- ホーム画面に追加したときのアイコンと名前（1アイコン方式の体験用） -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Samurai">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────
+   Samurai 現場アプリ（試作・サンプルデータのみ・サーバー通信なし）
+   1アイコン × 下タブ4つ（今日 / 営業 / 経費 / その他）
+   写真はメニューに応じて撮影枠が自動で増える（GLASS・HEADLIGHT）＋ 傷・凹み ＋ 室内
+   ───────────────────────────────────────────── */
+:root {
+  --bg: #eef1f5; --card: #fff; --band: #e2e7ee; --line: #cdd5df;
+  --text: #151a23; --sub: #4f5968; --faint: #98a2b3;
+  --brand: #9a7626;
+  --primary: #1d4ed8; --primary-bg: #e8eefc;
+  --in: #15803d; --in-bg: #e7f5ec;
+  --out: #b42318; --out-bg: #fdecea;
+  --warn: #8a5a00; --warn-bg: #fdf3e1;
+  --radius: 12px;
+  --tabbar-h: 64px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height:100%; }
+body {
+  font-family:'Noto Sans Khmer','Noto Sans JP',system-ui,sans-serif;
+  background:var(--bg); color:var(--text);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+button { font-family:inherit; }
+.km { display:block; font-weight:700; }
+.jp { display:block; font-family:'Noto Sans JP',sans-serif; font-weight:500; font-size:12px; color:var(--sub); }
+.jp-only { font-family:'Noto Sans JP',sans-serif; }
+.num { font-family:'Noto Sans JP',sans-serif; font-variant-numeric:tabular-nums; }
+
+/* プレビュー帯 */
+.mock-band {
+  background:#fff7e0; border-bottom:1px dashed var(--warn); color:var(--warn);
+  font-family:'Noto Sans JP',sans-serif; font-size:12px; font-weight:600;
+  padding:6px 12px; display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+}
+.mock-band button { font-size:11px; border:1px solid var(--warn); background:#fff; color:var(--warn); border-radius:6px; padding:3px 8px; }
+
+/* ヘッダー */
+.app-head {
+  position:sticky; top:0; z-index:50;
+  background:#fff; border-bottom:1px solid var(--line);
+  padding:10px 14px; display:flex; align-items:center; gap:10px;
+}
+.app-head img { width:34px; height:34px; border-radius:8px; }
+.app-head .brand { font-size:10px; letter-spacing:.16em; font-weight:700; color:var(--brand); }
+.app-head .title { font-size:16px; font-weight:700; line-height:1.3; }
+.app-head .who { margin-left:auto; border:1px solid var(--line); border-radius:999px; padding:5px 12px; font-size:13px; font-weight:700; }
+.app-head .back {
+  border:1.5px solid var(--line); background:#fff; border-radius:10px; min-height:40px; padding:0 12px;
+  font-size:14px; font-weight:700; color:var(--text);
+}
+
+main { padding:12px 14px calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom, 0px)); max-width:520px; margin:0 auto; display:grid; gap:12px; }
+main.job-mode { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.view[hidden] { display:none !important; }
+.view { display:grid; gap:12px; }
+
+/* カード＋灰色帯 */
+.card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+.band { background:var(--band); padding:9px 14px; display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.band .km { font-size:14px; }
+.band .jp { display:inline; }
+.band .right { margin-left:auto; font-size:12px; font-weight:700; color:var(--sub); font-family:'Noto Sans JP',sans-serif; }
+.card-body { padding:14px; display:grid; gap:12px; }
+
+/* 打刻カード */
+.punch-row { display:flex; align-items:center; gap:12px; }
+.punch-clock { font-size:34px; font-weight:700; line-height:1; }
+.punch-state { font-size:13px; font-weight:700; border-radius:999px; padding:4px 10px; background:var(--band); display:inline-block; }
+.punch-state.working { background:var(--in-bg); color:var(--in); }
+.punch-meta { font-size:12px; color:var(--sub); margin-top:4px; font-family:'Noto Sans JP',sans-serif; }
+.punch-btn {
+  margin-left:auto; border:none; border-radius:12px; color:#fff; min-height:60px; min-width:120px; padding:8px 14px;
+  display:grid; gap:1px; text-align:center;
+}
+.punch-btn .km { font-size:17px; }
+.punch-btn .jp { color:rgba(255,255,255,.92); font-size:11px; }
+.punch-btn.in { background:var(--in); }
+.punch-btn.out { background:var(--out); }
+.punch-btn:disabled { background:#b6bdc8; }
+
+/* 統計 */
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.stat { background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:10px 6px; text-align:center; }
+.stat .n { font-size:26px; font-weight:700; line-height:1.2; }
+.stat .km { font-size:13px; }
+.stat .jp { font-size:11px; }
+
+/* 予約カード */
+.job {
+  display:flex; gap:12px; align-items:center; width:100%; text-align:left;
+  background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; color:var(--text);
+}
+.job:active { border-color:var(--primary); transform:scale(.99); }
+.job.done { opacity:.55; }
+.job .time { font-size:20px; font-weight:700; min-width:58px; }
+.job .body { flex:1; min-width:0; display:grid; gap:4px; }
+.job .name { font-size:16px; font-weight:700; }
+.chips { display:flex; flex-wrap:wrap; gap:4px; }
+.chip { font-family:'Noto Sans JP',sans-serif; font-size:11px; font-weight:700; border-radius:999px; padding:2px 8px; background:var(--band); color:var(--text); white-space:nowrap; }
+.chip.menu { background:var(--primary-bg); color:var(--primary); }
+.chip.store { background:#f7f0dc; color:#7a5c14; }
+.chip.dlv { background:#e8eefc; color:#1d4ed8; }
+.chip.ok { background:var(--in-bg); color:var(--in); }
+.job .amt { font-size:15px; font-weight:700; color:var(--in); }
+.job .arrow { color:var(--faint); font-size:20px; }
+
+/* 日報カード */
+.close-card { border:2px dashed var(--line); }
+.close-card.ready { border:2px solid var(--primary); }
+.btn {
+  border:none; border-radius:10px; min-height:54px; padding:12px 16px; width:100%;
+  font-size:16px; font-weight:700; display:grid; gap:1px; place-items:center; color:#fff; background:var(--primary);
+}
+.btn .jp { color:rgba(255,255,255,.92); }
+.btn.green { background:var(--in); }
+.btn.red { background:var(--out); }
+.btn.ghost { background:#fff; color:var(--text); border:1.5px solid var(--line); }
+.btn.ghost .jp { color:var(--sub); }
+.btn:disabled { background:#b6bdc8; color:#fff; }
+
+/* ─ 作業フロー ─ */
+.cust-head { display:grid; gap:6px; }
+.cust-head .name { font-size:19px; font-weight:700; }
+.cust-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; font-size:14px; }
+.cust-grid .k { font-size:11px; color:var(--sub); font-family:'Noto Sans JP',sans-serif; font-weight:600; }
+.cust-grid .v { font-weight:700; }
+
+.steps { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+.stepi { text-align:center; font-size:11px; font-weight:700; color:var(--faint); font-family:'Noto Sans JP',sans-serif; display:grid; gap:4px; }
+.stepi::before { content:""; height:6px; border-radius:3px; background:#d5dbe3; }
+.stepi.now { color:var(--primary); } .stepi.now::before { background:var(--primary); }
+.stepi.done { color:var(--in); } .stepi.done::before { background:var(--in); }
+
+.timer { text-align:center; padding:16px; }
+.timer .v { font-size:46px; font-weight:700; color:var(--in); line-height:1.1; }
+.timer .l { font-size:12px; color:var(--sub); font-family:'Noto Sans JP',sans-serif; }
+
+/* 撮影枠 */
+.shots { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.shot {
+  position:relative; aspect-ratio:4/3; border-radius:10px; overflow:hidden;
+  border:2px dashed #aab4c2; background:#f8fafc; color:#6b7686;
+  display:grid; place-items:center; align-content:center; gap:4px; text-align:center; padding:6px;
+}
+.shot.req { border-color:#8ea0b8; }
+.shot.has { border-style:solid; border-color:var(--in); }
+.shot svg { width:58%; max-width:96px; height:auto; }
+.shot .lbl { font-size:13px; font-weight:700; color:var(--text); line-height:1.25; }
+.shot .lbl small { display:block; font-size:11px; font-weight:500; color:var(--sub); font-family:'Noto Sans JP',sans-serif; }
+.shot .tag { position:absolute; top:6px; left:6px; font-size:10px; font-weight:700; border-radius:6px; padding:1px 6px; font-family:'Noto Sans JP',sans-serif; }
+.shot .tag.req { background:var(--out-bg); color:var(--out); }
+.shot .tag.opt { background:var(--band); color:var(--sub); }
+.shot img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.shot .ok { position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:50%; background:var(--in); color:#fff; font-size:14px; display:grid; place-items:center; z-index:2; }
+.shot input[type=file] { position:absolute; inset:0; opacity:0; width:100%; height:100%; z-index:3; }
+.shot.add { border-style:dashed; border-color:var(--primary); color:var(--primary); background:var(--primary-bg); }
+.shot.add .plus { font-size:30px; line-height:1; font-weight:700; }
+.dmg-note {
+  width:100%; margin-top:6px; border:1.5px solid var(--line); border-radius:8px; padding:8px 10px; font-size:14px;
+  font-family:'Noto Sans JP',sans-serif; min-height:42px; background:#fff;
+}
+.sec-note { font-size:12px; color:var(--sub); font-family:'Noto Sans JP',sans-serif; line-height:1.5; }
+
+/* 作業フローの下部操作バー */
+.job-bar {
+  position:fixed; left:0; right:0; bottom:0; z-index:60;
+  background:#fff; border-top:1px solid var(--line); box-shadow:0 -4px 16px rgba(21,26,35,.06);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+}
+.job-bar .inner { max-width:520px; margin:0 auto; display:grid; gap:6px; }
+.job-bar .prog { display:flex; justify-content:space-between; font-size:12px; font-weight:700; color:var(--sub); font-family:'Noto Sans JP',sans-serif; }
+.job-bar .prog .bar { flex:1; height:6px; background:#d5dbe3; border-radius:3px; margin:6px 10px 0; overflow:hidden; }
+.job-bar .prog .bar i { display:block; height:100%; background:var(--in); width:0; transition:width .2s; }
+
+/* 下タブ */
+.tabbar {
+  position:fixed; left:0; right:0; bottom:0; z-index:40;
+  background:#fff; border-top:1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  display:grid; grid-template-columns:repeat(4,1fr);
+}
+.tabbar[hidden] { display:none; }
+.tab {
+  border:none; background:none; height:var(--tabbar-h); display:grid; place-items:center; align-content:center; gap:2px;
+  color:#6b7686; position:relative;
+}
+.tab svg { width:24px; height:24px; }
+.tab .km { font-size:12px; line-height:1.2; }
+.tab .jp { font-size:10px; color:inherit; }
+.tab[aria-selected="true"] { color:var(--primary); }
+.tab[aria-selected="true"]::before { content:""; position:absolute; top:0; left:25%; right:25%; height:3px; border-radius:0 0 3px 3px; background:var(--primary); }
+.tab .dot { position:absolute; top:10px; right:calc(50% - 20px); width:8px; height:8px; border-radius:50%; background:var(--out); }
+
+/* フォーム */
+.field { display:grid; gap:6px; }
+.field label { font-size:14px; font-weight:700; }
+.field label .jp { display:inline; margin-left:4px; }
+.field input, .field select, .field textarea {
+  width:100%; min-height:50px; padding:12px 14px; border:1.5px solid var(--line); border-radius:10px;
+  background:#f8fafc; font-size:16px; font-family:inherit; color:var(--text);
+}
+.field textarea { min-height:76px; }
+.seg { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.seg label { border:2px solid var(--line); border-radius:10px; background:#f8fafc; min-height:50px; display:grid; place-items:center; font-weight:700; font-size:14px; font-family:'Noto Sans JP',sans-serif; }
+.seg input { position:absolute; opacity:0; }
+.seg input:checked + span { color:var(--primary); }
+.seg label:has(input:checked) { border-color:var(--primary); background:var(--primary-bg); color:var(--primary); }
+
+/* 営業 */
+.shop { display:flex; gap:12px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; }
+.shop .n { font-size:15px; font-weight:700; }
+.shop .d { font-size:12px; color:var(--sub); font-family:'Noto Sans JP',sans-serif; }
+.shop button { margin-left:auto; border:1.5px solid var(--primary); color:var(--primary); background:#fff; border-radius:10px; min-height:40px; padding:0 12px; font-weight:700; font-size:13px; font-family:'Noto Sans JP',sans-serif; white-space:nowrap; }
+
+/* その他 */
+.list-row { display:flex; align-items:center; gap:12px; width:100%; background:#fff; border:none; border-bottom:1px solid #e5e9ef; padding:14px; text-align:left; color:var(--text); min-height:58px; }
+.list-row:last-child { border-bottom:0; }
+.list-row .ic { width:34px; height:34px; border-radius:9px; background:var(--band); display:grid; place-items:center; font-size:17px; flex:none; }
+.list-row .t { font-size:15px; font-weight:700; }
+.list-row .t small { display:block; font-size:12px; font-weight:500; color:var(--sub); font-family:'Noto Sans JP',sans-serif; }
+.list-row .arrow { margin-left:auto; color:var(--faint); font-size:20px; }
+.badge { font-size:11px; font-weight:700; border-radius:999px; padding:1px 8px; background:var(--out-bg); color:var(--out); margin-left:auto; font-family:'Noto Sans JP',sans-serif; }
+
+.toast {
+  position:fixed; left:50%; top:calc(70px + env(safe-area-inset-top, 0px)); transform:translateX(-50%) translateY(-20px);
+  background:var(--text); color:#fff; border-radius:10px; padding:11px 18px; font-size:14px; font-weight:700;
+  opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:200; max-width:90%; text-align:center;
+  font-family:'Noto Sans JP',sans-serif;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.ok { background:var(--in); }
+@media (prefers-reduced-motion: reduce) { .toast, .job-bar .prog .bar i { transition:none; } }
+</style>
+</head>
+<body>
+
+<div class="mock-band">
+  <span>試作（サンプルデータ・送信なし）</span>
+  <span style="display:flex;gap:6px">
+    <button type="button" id="fillShots">写真を仮で埋める</button>
+    <button type="button" id="resetAll">最初から</button>
+  </span>
+</div>
+
+<header class="app-head" id="appHead"></header>
+
+<main id="main">
+
+  <!-- ══════════ 今日 ══════════ -->
+  <section class="view" id="view-today">
+    <div class="card">
+      <div class="band"><span class="km">ចុះវត្តមាន</span><span class="jp">勤怠</span></div>
+      <div class="card-body">
+        <div class="punch-row">
+          <div>
+            <div class="punch-clock num" id="clock">--:--</div>
+            <div class="punch-meta" id="punchMeta">—</div>
+          </div>
+          <button type="button" class="punch-btn in" id="punchBtn"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="n num" id="stTotal">0</div><span class="km">សរុប</span><span class="jp">合計</span></div>
+      <div class="stat"><div class="n num" id="stWait">0</div><span class="km">រង់ចាំ</span><span class="jp">待機中</span></div>
+      <div class="stat"><div class="n num" id="stDone">0</div><span class="km">បានបញ្ចប់</span><span class="jp">完了</span></div>
+    </div>
+
+    <div class="card">
+      <div class="band"><span class="km">ថ្ងៃនេះ</span><span class="jp">今日の予約</span><span class="right" id="todayDate"></span></div>
+      <div class="card-body" id="jobList"></div>
+    </div>
+
+    <div class="card close-card" id="closeCard">
+      <div class="band"><span class="km">របាយការណ៍</span><span class="jp">日報（今日を締める）</span></div>
+      <div class="card-body">
+        <div class="sec-note" id="closeSummary"></div>
+        <button type="button" class="btn ghost" id="closeBtn"><span class="km">របាយការណ៍</span><span class="jp">日報を送る</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 作業（今日タブの中の詳細画面） ══════════ -->
+  <section class="view" id="view-job" hidden></section>
+
+  <!-- ══════════ 営業 ══════════ -->
+  <section class="view" id="view-sales" hidden>
+    <div class="card">
+      <div class="band"><span class="km">ហាងដៃគូ</span><span class="jp">車屋提携・訪問記録</span><span class="right" id="salesCount"></span></div>
+      <div class="card-body" id="shopList"></div>
+    </div>
+    <p class="sec-note">※ 試作では一覧と「訪問を記録」だけを再現。地図・コミッション集計は今の営業ログの機能をここに移します。</p>
+  </section>
+
+  <!-- ══════════ 経費 ══════════ -->
+  <section class="view" id="view-expense" hidden>
+    <div class="card">
+      <div class="band"><span class="km">ចំណាយ</span><span class="jp">経費を登録</span></div>
+      <div class="card-body">
+        <div class="shots" style="grid-template-columns:1fr">
+          <div class="shot req" id="receiptShot" style="aspect-ratio:3/2">
+            <span class="tag req">必須</span>
+            <svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M16 3h16v26l-3-2-2.5 2-2.5-2-2.5 2-2.5-2-3 2z"/><path d="M19 9h10M19 13h10M19 17h6"/></svg>
+            <span class="lbl jp-only">レシートを撮る</span>
+            <input type="file" accept="image/*" capture="environment" id="receiptInput">
+          </div>
+        </div>
+        <div class="field">
+          <label for="expAmount">ទឹកប្រាក់<span class="jp">金額（USD）</span></label>
+          <input type="number" id="expAmount" inputmode="decimal" placeholder="例: 12.5">
+        </div>
+        <div class="field">
+          <label for="expCat">ប្រភេទ<span class="jp">種類</span></label>
+          <select id="expCat">
+            <option>燃料</option><option>洗剤・資材</option><option>駐車・通行</option><option>その他</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="expNote">កំណត់សម្គាល់<span class="jp">メモ（任意）</span></label>
+          <input type="text" id="expNote" placeholder="例: ガソリン満タン">
+        </div>
+        <button type="button" class="btn" id="expSave"><span class="km">រក្សាទុក</span><span class="jp">登録する</span></button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="band"><span class="jp" style="font-weight:700;color:var(--text)">最近の登録</span></div>
+      <div class="card-body" id="expList" style="gap:0;padding:0 14px"></div>
+    </div>
+  </section>
+
+  <!-- ══════════ その他 ══════════ -->
+  <section class="view" id="view-more" hidden>
+    <div class="card">
+      <button type="button" class="list-row" data-todo="タスク"><span class="ic">✅</span><span class="t">ភារកិច្ច<small>タスク</small></span><span class="badge">2</span></button>
+      <button type="button" class="list-row" data-todo="過去の作業記録"><span class="ic">🗂</span><span class="t jp-only">過去の作業記録<small>写真・時間・サービスを日付で見る</small></span><span class="arrow">›</span></button>
+      <button type="button" class="list-row" data-todo="お客さん連携QR"><span class="ic">📲</span><span class="t jp-only">お客さん連携QR<small>写真をTelegramで届ける</small></span><span class="arrow">›</span></button>
+      <button type="button" class="list-row" data-todo="キャンペーン売上入力"><span class="ic">💰</span><span class="t jp-only">キャンペーン売上入力<small>5$ 特価などの入金記録</small></span><span class="arrow">›</span></button>
+      <button type="button" class="list-row" data-todo="手動で新規登録"><span class="ic">✍️</span><span class="t jp-only">予約なしの作業を登録<small>飛び込み客など</small></span><span class="arrow">›</span></button>
+    </div>
+    <p class="sec-note">※ たまにしか使わない機能はここにまとめ、よく使うものだけ上のタブに出します（タブは最大4つ）。</p>
+  </section>
+</main>
+
+<div class="job-bar" id="jobBar" hidden></div>
+
+<nav class="tabbar" id="tabbar" role="tablist" aria-label="メニュー">
+  <button type="button" class="tab" role="tab" data-tab="today" aria-selected="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15" r="2" fill="currentColor"/></svg>
+    <span class="km">ថ្ងៃនេះ</span><span class="jp">今日</span>
+  </button>
+  <button type="button" class="tab" role="tab" data-tab="sales" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 10l2-5h12l2 5M4 10h16v10H4zM9 20v-5h6v5"/></svg>
+    <span class="km">ហាងដៃគូ</span><span class="jp">営業</span>
+  </button>
+  <button type="button" class="tab" role="tab" data-tab="expense" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+    <span class="km">ចំណាយ</span><span class="jp">経費</span>
+  </button>
+  <button type="button" class="tab" role="tab" data-tab="more" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    <span class="km">&nbsp;</span><span class="jp">その他</span>
+    <span class="dot" aria-label="新しいタスクあり"></span>
+  </button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  撮影ガイド（車の向きの見本）
+// ═══════════════════════════════════════════
+var CAR_SIDE = '<path d="M4 22h40M7 22v-4l5-6h16l7 6h6v4"/><path d="M13 12l-2 6h22l-6-6"/><circle cx="14" cy="23" r="3.2" fill="#fff"/><circle cx="36" cy="23" r="3.2" fill="#fff"/>';
+var GUIDE = {
+  front: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z"/><circle cx="14" cy="20" r="2.4"/><circle cx="34" cy="20" r="2.4"/><path d="M20 22h8"/></svg>',
+  rear:  '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z"/><rect x="10" y="18" width="6" height="3"/><rect x="32" y="18" width="6" height="3"/><rect x="19" y="20" width="10" height="4"/></svg>',
+  left:  '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6">' + CAR_SIDE + '</svg>',
+  right: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><g transform="translate(48 0) scale(-1 1)">' + CAR_SIDE + '</g></svg>',
+  glass: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z" fill="currentColor" fill-opacity=".25"/></svg>',
+  hlL:   '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z"/><circle cx="14" cy="20" r="3.4" fill="currentColor" fill-opacity=".45"/><circle cx="34" cy="20" r="2.4"/></svg>',
+  hlR:   '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 26V15l5-8h22l5 8v11z"/><path d="M14 9l-3 6h26l-3-6z"/><circle cx="14" cy="20" r="2.4"/><circle cx="34" cy="20" r="3.4" fill="currentColor" fill-opacity=".45"/></svg>',
+  seatF: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M16 4h8l1 14h8l1 8H14z"/><circle cx="36" cy="10" r="5"/><path d="M36 10l3-2"/></svg>',
+  seatR: '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 8h36v10H6zM4 18h40v7H4z"/></svg>',
+  dmg:   '<svg viewBox="0 0 48 32" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="21" cy="14" r="8"/><path d="M27 20l7 7"/><path d="M18 11l6 6M24 11l-6 6"/></svg>'
+};
+
+// ═══════════════════════════════════════════
+//  撮影枠の定義（メニューに応じて自動で増える）
+//   クメール語は既存の現行画面の訳のみ。新しい枠名（傷・室内・左右ライト等）は Panha 校閲後に追加
+// ═══════════════════════════════════════════
+function slotsFor(job, phase) {
+  var s = [];
+  var base = [
+    { k: 'F', g: 'front', km: 'មុខ', jp: '前' },
+    { k: 'B', g: 'rear',  km: 'ក្រោយ', jp: '後ろ' },
+    { k: 'L', g: 'left',  km: 'ឆ្វេង', jp: '左側' },
+    { k: 'R', g: 'right', km: 'ស្ដាំ', jp: '右側' }
+  ];
+  base.forEach(function (b) { s.push({ id: phase + '_' + b.k, group: 'base', req: true, g: b.g, km: b.km, jp: b.jp }); });
+  if (job.menu.indexOf('GLASS') >= 0) {
+    s.push({ id: phase + '_GLASS', group: 'glass', req: true, g: 'glass', km: '', jp: 'フロントガラス' });
+  }
+  if (job.menu.indexOf('HEADLIGHT') >= 0) {
+    s.push({ id: phase + '_HL_L', group: 'hl', req: true, g: 'hlL', km: '', jp: '左ライト' });
+    s.push({ id: phase + '_HL_R', group: 'hl', req: true, g: 'hlR', km: '', jp: '右ライト' });
+  }
+  if (phase === 'before') {
+    s.push({ id: 'before_IN_F', group: 'interior', req: false, g: 'seatF', km: '', jp: '運転席まわり' });
+    s.push({ id: 'before_IN_R', group: 'interior', req: false, g: 'seatR', km: '', jp: '後部座席' });
+  }
+  return s;
+}
+
+// ═══════════════════════════════════════════
+//  サンプルデータ
+// ═══════════════════════════════════════════
+function freshState() {
+  return {
+    tab: 'today',
+    punch: { in: '', out: '' },
+    jobs: [
+      { id: 'J1', time: '09:00', end: '10:00', name: 'Sok Chanthy', place: 'Toul Kork（出張）', store: false, car: 'Lexus RX350', size: 'SUV', menu: ['WASH', 'GLASS'], amount: 27, status: 'wait' },
+      { id: 'J2', time: '11:30', end: '12:30', name: 'Dara Kim', place: '店舗', store: true, car: 'Toyota Camry', size: 'セダン', menu: ['WASH', 'HEADLIGHT'], amount: 22, status: 'wait' },
+      { id: 'J3', time: '15:00', end: '16:00', name: 'Rithy Chea', place: 'BKK1（出張）', store: false, car: 'Honda CR-V', size: 'SUV', menu: ['WASH'], amount: 15, status: 'wait' }
+    ],
+    photos: {},        // slotId -> dataURL
+    damages: {},       // jobId -> [{id, img, note}]
+    jobId: null,
+    phase: 'before',   // before / working / done
+    startAt: null, endAt: null,
+    shops: [
+      { n: 'Angkor Auto', d: '未訪問・1.2km', st: '' },
+      { n: 'Phnom Penh Car Center', d: '前回 9/20 訪問・反応あり', st: '' },
+      { n: 'Lucky Motors', d: '提携中・今月 紹介2件', st: '' },
+      { n: 'TK Used Cars', d: '未訪問・2.0km', st: '' }
+    ],
+    expenses: [ { t: '9/24', c: '燃料', a: 12 }, { t: '9/23', c: '洗剤・資材', a: 8.5 } ],
+    reportSent: false
+  };
+}
+var S = freshState();
+
+function ppOf(n) { return new Date(n.getTime() + (7 * 60 + n.getTimezoneOffset()) * 60000); }
+function ppNow() { return ppOf(new Date()); }
+function hhmm(d) { return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function $(id) { return document.getElementById(id); }
+function currentJob() { return S.jobs.filter(function (j) { return j.id === S.jobId; })[0]; }
+
+// ═══════════════════════════════════════════
+//  ヘッダー
+// ═══════════════════════════════════════════
+function renderHead() {
+  var h = $('appHead');
+  if (S.jobId) {
+    var j = currentJob();
+    h.innerHTML = '<button type="button" class="back" id="backBtn">‹ <span class="jp-only">一覧</span></button>' +
+      '<div><div class="brand">SAMURAI MOTORS</div><div class="title">' + esc(j.name) + '</div></div>' +
+      '<span class="who num">' + esc(j.time) + '</span>';
+    $('backBtn').onclick = function () { S.jobId = null; render(); };
+  } else {
+    h.innerHTML = '<img src="logo.png" alt="">' +
+      '<div><div class="brand">SAMURAI MOTORS</div><div class="title jp-only">現場アプリ</div></div>' +
+      '<span class="who">👤 Ron</span>';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  今日タブ
+// ═══════════════════════════════════════════
+function renderToday() {
+  var pp = ppNow();
+  $('todayDate').textContent = (pp.getMonth() + 1) + '/' + pp.getDate();
+
+  var btn = $('punchBtn'), meta = $('punchMeta');
+  if (!S.punch.in) {
+    btn.className = 'punch-btn in'; btn.disabled = false;
+    btn.innerHTML = '<span class="km">ចូលធ្វើការ</span><span class="jp">出勤する</span>';
+    meta.innerHTML = '<span class="punch-state">មិនទាន់ចុះ ／ 未打刻</span>';
+  } else if (!S.punch.out) {
+    btn.className = 'punch-btn out'; btn.disabled = false;
+    btn.innerHTML = '<span class="km">ចេញពីការងារ</span><span class="jp">退勤する</span>';
+    meta.innerHTML = '<span class="punch-state working">កំពុងធ្វើការ ／ 勤務中</span><div class="punch-meta">出勤 ' + S.punch.in + '・GPS OK</div>';
+  } else {
+    btn.className = 'punch-btn'; btn.disabled = true;
+    btn.innerHTML = '<span class="km">✅</span><span class="jp">打刻完了</span>';
+    meta.innerHTML = '<span class="punch-state">✅ 退勤済</span><div class="punch-meta">' + S.punch.in + ' – ' + S.punch.out + '</div>';
+  }
+
+  var done = S.jobs.filter(function (j) { return j.status === 'done'; }).length;
+  $('stTotal').textContent = S.jobs.length;
+  $('stWait').textContent = S.jobs.length - done;
+  $('stDone').textContent = done;
+
+  $('jobList').innerHTML = S.jobs.map(function (j) {
+    var chips = j.menu.map(function (m) { return '<span class="chip menu">' + m + '</span>'; }).join('') +
+      '<span class="chip ' + (j.store ? 'store' : 'dlv') + '">' + (j.store ? '🏪 STORE' : '🚗 DELIVERY') + '</span>' +
+      (j.status === 'done' ? '<span class="chip ok">✅ បានបញ្ចប់</span>' : '');
+    return '<button type="button" class="job' + (j.status === 'done' ? ' done' : '') + '" data-job="' + j.id + '">' +
+      '<span class="time num">' + j.time + '</span>' +
+      '<span class="body"><span class="name">' + esc(j.name) + '</span><span class="chips">' + chips + '</span>' +
+      '<span class="jp">' + esc(j.car) + '・' + esc(j.size) + '</span></span>' +
+      '<span class="amt num">' + j.amount + '$</span><span class="arrow">›</span></button>';
+  }).join('');
+  document.querySelectorAll('[data-job]').forEach(function (b) {
+    b.onclick = function () {
+      var j = S.jobs.filter(function (x) { return x.id === b.getAttribute('data-job'); })[0];
+      if (j.status === 'done') { toast('この作業は完了しています'); return; }
+      if (S.lastJobId !== j.id) { S.photos = {}; S.phase = 'before'; S.startAt = null; S.endAt = null; }
+      S.jobId = j.id; S.lastJobId = j.id; render();
+    };
+  });
+
+  var sales = S.jobs.filter(function (j) { return j.status === 'done'; }).reduce(function (a, j) { return a + j.amount; }, 0);
+  var cc = $('closeCard'), cb = $('closeBtn');
+  $('closeSummary').innerHTML = S.reportSent
+    ? '✅ 日報を送信しました（試作）'
+    : '完了 ' + done + '件 / 売上 ' + sales + '$ / 勤務 ' + (S.punch.in || '--:--') + ' – ' + (S.punch.out || '--:--') + '<br>作業記録から自動でまとめます。入力は一言メモだけ。';
+  var ready = !!S.punch.out && !S.reportSent;
+  cc.className = 'card close-card' + (ready ? ' ready' : '');
+  cb.className = 'btn ' + (ready ? '' : 'ghost');
+  cb.disabled = S.reportSent;
+}
+
+// ═══════════════════════════════════════════
+//  作業フロー（作業前 → 作業中＋作業後 → 完了）
+// ═══════════════════════════════════════════
+function shotHtml(slot) {
+  var img = S.photos[slot.id];
+  return '<div class="shot' + (slot.req ? ' req' : '') + (img ? ' has' : '') + '">' +
+    (img ? '<img src="' + img + '" alt=""><span class="ok">✓</span>'
+         : '<span class="tag ' + (slot.req ? 'req' : 'opt') + '">' + (slot.req ? '必須' : '任意') + '</span>' + GUIDE[slot.g] +
+           '<span class="lbl">' + (slot.km ? esc(slot.km) + '<small>' + esc(slot.jp) + '</small>' : '<span class="jp-only">' + esc(slot.jp) + '</span>') + '</span>') +
+    '<input type="file" accept="image/*" capture="environment" data-slot="' + slot.id + '" aria-label="' + esc(slot.jp) + 'を撮影">' +
+    '</div>';
+}
+
+function groupCard(title, note, slots) {
+  if (!slots.length) return '';
+  var got = slots.filter(function (s) { return S.photos[s.id]; }).length;
+  return '<div class="card"><div class="band">' + title + '<span class="right num">' + got + '/' + slots.length + '</span></div>' +
+    '<div class="card-body">' + (note ? '<div class="sec-note">' + note + '</div>' : '') +
+    '<div class="shots">' + slots.map(shotHtml).join('') + '</div></div></div>';
+}
+
+function damageCard(j) {
+  var list = S.damages[j.id] || [];
+  var items = list.map(function (d, i) {
+    return '<div><div class="shot has"><img src="' + d.img + '" alt=""><span class="ok">✓</span></div>' +
+      '<input class="dmg-note" data-dmg="' + i + '" placeholder="場所・内容（例: 左後ドアに小さな凹み）" value="' + esc(d.note) + '"></div>';
+  }).join('');
+  return '<div class="card"><div class="band"><span class="jp" style="font-weight:700;color:var(--text)">傷・凹みの記録</span><span class="right">任意・何枚でも</span></div>' +
+    '<div class="card-body"><div class="sec-note">作業前に見つけた傷・凹みは必ず撮影。「最初からあった」証拠になり、トラブルを防ぎます。</div>' +
+    '<div class="shots">' + items +
+    '<div class="shot add">' + GUIDE.dmg + '<span class="plus">＋</span><span class="lbl jp-only">傷・凹みを追加</span>' +
+    '<input type="file" accept="image/*" capture="environment" id="dmgInput" aria-label="傷・凹みを撮影"></div>' +
+    '</div></div></div>';
+}
+
+var timerId = null;
+function renderJob() {
+  var j = currentJob();
+  var v = $('view-job');
+  var stepCls = function (p) {
+    var order = ['before', 'working', 'done'];
+    var i = order.indexOf(p), cur = order.indexOf(S.phase);
+    return i < cur ? 'done' : (i === cur ? 'now' : '');
+  };
+  var html =
+    '<div class="card"><div class="card-body cust-head">' +
+      '<div class="chips">' + j.menu.map(function (m) { return '<span class="chip menu">' + m + '</span>'; }).join('') +
+      '<span class="chip ' + (j.store ? 'store' : 'dlv') + '">' + (j.store ? '🏪 STORE' : '🚗 DELIVERY') + '</span></div>' +
+      '<div class="cust-grid">' +
+        '<div><div class="k">🕐 時間</div><div class="v num">' + j.time + ' – ' + j.end + '</div></div>' +
+        '<div><div class="k">💰 料金</div><div class="v num">' + j.amount + '$</div></div>' +
+        '<div><div class="k">🚙 車両</div><div class="v">' + esc(j.car) + '・' + esc(j.size) + '</div></div>' +
+        '<div><div class="k">📍 場所</div><div class="v">' + esc(j.place) + '</div></div>' +
+      '</div></div></div>' +
+    '<div class="steps"><div class="stepi ' + stepCls('before') + '">① 作業前</div><div class="stepi ' + stepCls('working') + '">② 作業・作業後</div><div class="stepi ' + stepCls('done') + '">③ 保存</div></div>';
+
+  if (S.phase === 'before') {
+    var sl = slotsFor(j, 'before');
+    html += groupCard('<span class="km">រូបថតមុនលាង</span><span class="jp">作業前の写真（4方向）</span>', '', sl.filter(function (s) { return s.group === 'base'; }));
+    html += groupCard('<span class="km">ស្រោបកញ្ចក់</span><span class="jp">GLASS 作業前</span>', '同じ角度で作業後も撮ります。', sl.filter(function (s) { return s.group === 'glass'; }));
+    html += groupCard('<span class="km">ស្ដារភ្លើងមុខ</span><span class="jp">HEADLIGHT 作業前</span>', '左右それぞれ正面から。作業後も同じ位置で撮ります。', sl.filter(function (s) { return s.group === 'hl'; }));
+    html += damageCard(j);
+    html += groupCard('<span class="jp" style="font-weight:700;color:var(--text)">室内</span>', '任意。汚れ・忘れ物の状態を残したいときに。', sl.filter(function (s) { return s.group === 'interior'; }));
+  } else if (S.phase === 'working') {
+    html += '<div class="card"><div class="timer"><div class="l">⏱ 作業時間（開始 ' + hhmm(ppOf(S.startAt)) + '）</div><div class="v num" id="timerV">00:00:00</div></div></div>';
+    var sa = slotsFor(j, 'after');
+    html += groupCard('<span class="km">រូបថតក្រោយលាង</span><span class="jp">作業後の写真（4方向）</span>', '作業前と同じ角度で撮ると、ビフォー・アフターが並べやすくなります。', sa.filter(function (s) { return s.group === 'base'; }));
+    html += groupCard('<span class="km">ស្រោបកញ្ចក់</span><span class="jp">GLASS 作業後</span>', '', sa.filter(function (s) { return s.group === 'glass'; }));
+    html += groupCard('<span class="km">ស្ដារភ្លើងមុខ</span><span class="jp">HEADLIGHT 作業後</span>', '', sa.filter(function (s) { return s.group === 'hl'; }));
+  } else {
+    var mins = Math.max(1, Math.round((S.endAt - S.startAt) / 60000));
+    var nPhotos = Object.keys(S.photos).length + (S.damages[j.id] || []).length;
+    html += '<div class="card"><div class="band"><span class="jp" style="font-weight:700;color:var(--text)">作業サマリー</span></div><div class="card-body">' +
+      '<div class="cust-grid">' +
+        '<div><div class="k">作業時間</div><div class="v num">' + hhmm(ppOf(S.startAt)) + ' – ' + hhmm(ppOf(S.endAt)) + '（' + mins + '分）</div></div>' +
+        '<div><div class="k">写真</div><div class="v num">' + nPhotos + '枚</div></div>' +
+        '<div><div class="k">サービス</div><div class="v">' + j.menu.join(' + ') + '</div></div>' +
+        '<div><div class="k">傷・凹み</div><div class="v num">' + (S.damages[j.id] || []).length + '件</div></div>' +
+      '</div>' +
+      '<div class="sec-note">保存すると、お客さん・管理グループ・シートに写真と記録が届きます（今の仕組みと同じ）。</div>' +
+    '</div></div>';
+  }
+  v.innerHTML = html;
+  bindShotInputs();
+  renderJobBar();
+
+  if (timerId) { clearInterval(timerId); timerId = null; }
+  if (S.phase === 'working') {
+    var tick = function () {
+      var s = Math.floor((Date.now() - S.startAt.getTime()) / 1000);
+      var el = $('timerV'); if (!el) return;
+      el.textContent = [Math.floor(s / 3600), Math.floor(s % 3600 / 60), s % 60].map(function (n) { return String(n).padStart(2, '0'); }).join(':');
+    };
+    tick(); timerId = setInterval(tick, 1000);
+  }
+}
+
+function requiredProgress() {
+  var j = currentJob();
+  var ph = S.phase === 'before' ? 'before' : 'after';
+  var req = slotsFor(j, ph).filter(function (s) { return s.req; });
+  var got = req.filter(function (s) { return S.photos[s.id]; }).length;
+  return { got: got, total: req.length };
+}
+
+function renderJobBar() {
+  var bar = $('jobBar');
+  var p = requiredProgress();
+  var pct = p.total ? Math.round(p.got / p.total * 100) : 100;
+  var btn;
+  if (S.phase === 'before') {
+    btn = '<button type="button" class="btn green" id="jobNext"' + (p.got < p.total ? ' disabled' : '') + '><span class="km">ចាប់ផ្តើម</span><span class="jp">' + (p.got < p.total ? 'あと ' + (p.total - p.got) + '枚で作業開始' : '作業開始') + '</span></button>';
+  } else if (S.phase === 'working') {
+    btn = '<button type="button" class="btn red" id="jobNext"' + (p.got < p.total ? ' disabled' : '') + '><span class="km">បញ្ចប់</span><span class="jp">' + (p.got < p.total ? 'あと ' + (p.total - p.got) + '枚で作業終了' : '作業終了') + '</span></button>';
+  } else {
+    btn = '<button type="button" class="btn" id="jobNext"><span class="km">រក្សាទុក</span><span class="jp">保存・送信</span></button>';
+  }
+  var prog = S.phase === 'done' ? '' :
+    '<div class="prog"><span>必須の写真</span><span class="bar"><i style="width:' + pct + '%"></i></span><span class="num">' + p.got + '/' + p.total + '</span></div>';
+  bar.innerHTML = '<div class="inner">' + prog + btn + '</div>';
+  $('jobNext').onclick = function () {
+    if (S.phase === 'before') { S.phase = 'working'; S.startAt = new Date(); toast('作業開始 ' + hhmm(ppNow())); }
+    else if (S.phase === 'working') { S.phase = 'done'; S.endAt = new Date(); }
+    else {
+      var j = currentJob(); j.status = 'done';
+      S.jobId = null; S.photos = {};
+      toast('✅ 保存しました（試作・送信なし）', 'ok');
+    }
+    render(); window.scrollTo(0, 0);
+  };
+}
+
+// 写真: 端末内で縮小して表示するだけ（試作では送信しない）
+function readShrunk(file, cb) {
+  var fr = new FileReader();
+  fr.onload = function () {
+    var im = new Image();
+    im.onload = function () {
+      var max = 900, sc = Math.min(1, max / Math.max(im.width, im.height));
+      var c = document.createElement('canvas'); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      cb(c.toDataURL('image/jpeg', 0.8));
+    };
+    im.onerror = function () { cb(fr.result); };
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+
+function bindShotInputs() {
+  document.querySelectorAll('input[data-slot]').forEach(function (inp) {
+    inp.onchange = function () {
+      if (!inp.files || !inp.files[0]) return;
+      readShrunk(inp.files[0], function (url) { S.photos[inp.getAttribute('data-slot')] = url; renderJob(); });
+    };
+  });
+  var d = $('dmgInput');
+  if (d) d.onchange = function () {
+    if (!d.files || !d.files[0]) return;
+    var j = currentJob();
+    readShrunk(d.files[0], function (url) { (S.damages[j.id] = S.damages[j.id] || []).push({ img: url, note: '' }); renderJob(); });
+  };
+  document.querySelectorAll('[data-dmg]').forEach(function (inp) {
+    inp.oninput = function () { var j = currentJob(); S.damages[j.id][+inp.getAttribute('data-dmg')].note = inp.value; };
+  });
+}
+
+// 仮の写真（PC での確認用）
+function fakePhoto(label, hue) {
+  var c = document.createElement('canvas'); c.width = 400; c.height = 300;
+  var g = c.getContext('2d');
+  g.fillStyle = 'hsl(' + hue + ',35%,62%)'; g.fillRect(0, 0, 400, 300);
+  g.fillStyle = 'rgba(255,255,255,.9)'; g.font = 'bold 34px sans-serif'; g.textAlign = 'center'; g.fillText(label, 200, 165);
+  return c.toDataURL('image/jpeg', 0.7);
+}
+
+// ═══════════════════════════════════════════
+//  営業・経費・その他
+// ═══════════════════════════════════════════
+function renderSales() {
+  var visited = S.shops.filter(function (s) { return s.st; }).length;
+  $('salesCount').textContent = '今日の訪問 ' + visited + '件';
+  $('shopList').innerHTML = S.shops.map(function (s, i) {
+    return '<div class="shop"><div><div class="n">' + esc(s.n) + '</div><div class="d">' + esc(s.st ? '✅ 今日訪問済・' + s.st : s.d) + '</div></div>' +
+      (s.st ? '' : '<button type="button" data-shop="' + i + '">訪問を記録</button>') + '</div>';
+  }).join('');
+  document.querySelectorAll('[data-shop]').forEach(function (b) {
+    b.onclick = function () { S.shops[+b.getAttribute('data-shop')].st = '反応あり'; toast('訪問を記録しました（試作）', 'ok'); renderSales(); };
+  });
+}
+
+var receiptImg = null;
+function renderExpense() {
+  var rs = $('receiptShot');
+  rs.className = 'shot req' + (receiptImg ? ' has' : '');
+  var old = rs.querySelector('img'); if (old) old.remove();
+  if (receiptImg) { var im = document.createElement('img'); im.src = receiptImg; rs.insertBefore(im, rs.firstChild); }
+  $('expList').innerHTML = S.expenses.map(function (e) {
+    return '<div class="summary-row" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e5e9ef;font-size:14px"><span class="jp-only">' + e.t + '　' + esc(e.c) + '</span><b class="num">' + e.a + '$</b></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+//  共通
+// ═══════════════════════════════════════════
+var toastTimer = null;
+function toast(msg, kind) {
+  var t = $('toast'); t.textContent = msg; t.className = 'toast show ' + (kind || '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.className = 'toast'; }, 2400);
+}
+
+function render() {
+  var inJob = !!S.jobId;
+  ['today', 'sales', 'expense', 'more'].forEach(function (t) { $('view-' + t).hidden = inJob || S.tab !== t; });
+  $('view-job').hidden = !inJob;
+  $('tabbar').hidden = inJob;
+  $('jobBar').hidden = !inJob;
+  $('main').className = inJob ? 'job-mode' : '';
+  document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === S.tab)); });
+  renderHead();
+  if (inJob) renderJob();
+  else {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+    if (S.tab === 'today') renderToday();
+    if (S.tab === 'sales') renderSales();
+    if (S.tab === 'expense') renderExpense();
+  }
+}
+
+document.querySelectorAll('.tab').forEach(function (b) {
+  b.onclick = function () { S.tab = b.getAttribute('data-tab'); render(); window.scrollTo(0, 0); };
+});
+$('punchBtn').onclick = function () {
+  var t = hhmm(ppNow());
+  if (!S.punch.in) { S.punch.in = t; toast('出勤 ' + t, 'ok'); }
+  else if (!S.punch.out) { S.punch.out = t; toast('退勤 ' + t, 'ok'); }
+  renderToday();
+};
+$('closeBtn').onclick = function () { S.reportSent = true; toast('日報を送信しました（試作）', 'ok'); renderToday(); };
+$('receiptInput').onchange = function () {
+  var f = this.files && this.files[0]; if (!f) return;
+  readShrunk(f, function (u) { receiptImg = u; renderExpense(); });
+};
+$('expSave').onclick = function () {
+  var a = parseFloat($('expAmount').value);
+  if (!receiptImg) { toast('レシートの写真を撮ってください'); return; }
+  if (!(a > 0)) { toast('金額を入れてください'); return; }
+  var pp = ppNow();
+  S.expenses.unshift({ t: (pp.getMonth() + 1) + '/' + pp.getDate(), c: $('expCat').value, a: a });
+  receiptImg = null; $('expAmount').value = ''; $('expNote').value = '';
+  toast('経費を登録しました（試作）', 'ok'); renderExpense();
+};
+document.querySelectorAll('[data-todo]').forEach(function (b) {
+  b.onclick = function () { toast('「' + b.getAttribute('data-todo') + '」は今の機能をここに移します（試作では未実装）'); };
+});
+$('fillShots').onclick = function () {
+  if (!S.jobId) { toast('予約を開いてから押してください'); return; }
+  var ph = S.phase === 'before' ? 'before' : 'after';
+  slotsFor(currentJob(), ph).forEach(function (s, i) { if (s.req && !S.photos[s.id]) S.photos[s.id] = fakePhoto(s.jp, (i * 47) % 360); });
+  renderJob();
+};
+$('resetAll').onclick = function () { S = freshState(); receiptImg = null; render(); window.scrollTo(0, 0); };
+
+setInterval(function () { $('clock').textContent = hhmm(ppNow()); }, 1000);
+$('clock').textContent = hhmm(ppNow());
+render();
+</script>
+</body>
+</html>
