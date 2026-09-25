@@ -65,14 +65,15 @@ input,select,textarea{font-family:inherit;font-size:18px;color:var(--text)}
 .stepdots i{width:10px;height:10px;border-radius:50%;background:#d3d9e2}
 .stepdots i.done{background:var(--green)} .stepdots i.now{background:var(--blue);transform:scale(1.25)}
 
-main{max-width:520px;margin:0 auto;padding:12px 12px calc(var(--tab-h) + 20px + env(safe-area-inset-bottom,0px));display:grid;gap:12px;align-content:start}
+main{max-width:520px;width:100%;min-width:0;margin:0 auto;padding:12px 12px calc(var(--tab-h) + 20px + env(safe-area-inset-bottom,0px));display:grid;gap:12px;align-content:start}
 main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 
 /* ── 共通部品 ── */
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .band{background:var(--band);padding:9px 14px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
 .band .r{margin-left:auto;font-weight:700;color:var(--sub);font-size:13px}
-.body{padding:14px;display:grid;gap:12px}
+.body{padding:14px;display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.body>*,.row2>*,.row3>*,.cam>*,.svc>*,.acts>*{min-width:0}
 .note{font-size:13px;color:var(--sub);line-height:1.5}
 .chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;background:var(--band);color:var(--text);white-space:nowrap;font-family:'Noto Sans JP',sans-serif}
 .chip.menu{background:var(--blue-bg);color:var(--blue)}
@@ -89,8 +90,8 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .btn.ghost{background:#fff;color:var(--text);border:2px solid var(--line)}
 .btn.sm{min-height:50px;font-size:16px;border-radius:12px}
 .btn:disabled{background:#b9c0ca;color:#fff;border-color:#b9c0ca}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 
 /* 選択ボタン（大きい・絵つき） */
 .opt{position:relative;border:2px solid var(--line);border-radius:14px;background:#fff;min-height:64px;padding:10px 12px;display:flex;align-items:center;gap:12px;text-align:left;width:100%;font-weight:700;font-size:17px;line-height:1.25}
@@ -122,14 +123,14 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .next .name{font-size:22px;font-weight:700;line-height:1.2}
 .next .meta{display:grid;gap:3px;font-size:15px;color:var(--sub)}
 .next .meta b{color:var(--text)}
-.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .act{border:2px solid var(--line);border-radius:12px;min-height:60px;display:grid;place-items:center;gap:1px;font-size:13px;font-weight:700;background:#fff;color:var(--text)}
 .act .ic{font-size:22px;line-height:1}
 .act.go{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
 
 /* ── 今日: タイムライン ── */
 .tl{display:grid}
-.tl-item{display:grid;grid-template-columns:56px 18px 1fr;gap:0 10px;align-items:stretch;min-height:64px;text-align:left;width:100%;padding:0;background:none}
+.tl-item{display:grid;grid-template-columns:56px 18px minmax(0,1fr);gap:0 10px;align-items:stretch;min-height:64px;text-align:left;width:100%;padding:0;background:none}
 .tl-item .t{font-size:16px;font-weight:700;padding-top:12px;text-align:right}
 .tl-item .ln{position:relative}
 .tl-item .ln::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:2px;background:#d3d9e2}
@@ -146,16 +147,16 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 /* ── 作業フロー ── */
 .jobhead{display:grid;gap:6px;padding:12px 14px}
 .jobhead .n{font-size:20px;font-weight:700}
-.jobhead .g{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:14px}
+.jobhead .g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;font-size:14px}
 .jobhead .g small{display:block;font-size:11px;color:var(--sub);font-family:'Noto Sans JP',sans-serif;font-weight:600}
 .jobhead .g b{font-size:15px}
 
 /* 点検 */
-.chk{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e7ebf1}
+.chk{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #e7ebf1}
 .chk:last-child{border-bottom:0}
 .chk .l{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:700}
 .chk .l .ic{font-size:26px;width:36px;text-align:center}
-.chk .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;min-width:150px}
+.chk .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;min-width:140px}
 .chk .seg button{min-height:48px;border:2px solid var(--line);border-radius:10px;font-weight:700;font-size:15px;background:#fff;color:var(--sub)}
 .chk .seg button.ok.on{border-color:var(--green);background:var(--green-bg);color:var(--green)}
 .chk .seg button.ng.on{border-color:var(--red);background:var(--red-bg);color:var(--red)}
@@ -165,7 +166,7 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .dmap svg{position:absolute;inset:0;width:100%;height:100%}
 .dmap .mk{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--red);color:#fff;font-weight:700;font-size:14px;display:grid;place-items:center;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);font-family:'Noto Sans JP',sans-serif}
 .dmg-list{display:grid;gap:8px}
-.dmg{display:grid;grid-template-columns:30px 72px 1fr;gap:10px;align-items:center}
+.dmg{display:grid;grid-template-columns:30px 72px minmax(0,1fr);gap:10px;align-items:center}
 .dmg .no{width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;font-weight:700;display:grid;place-items:center;font-family:'Noto Sans JP',sans-serif}
 .dmg .ph{position:relative;width:72px;height:54px;border-radius:8px;overflow:hidden;border:2px dashed #b8c2cf;background:#f7f9fb;display:grid;place-items:center;font-size:22px}
 .dmg .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -194,7 +195,7 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .timer .v{font-size:50px;font-weight:700;color:var(--green);line-height:1.05}
 .timer .l{font-size:13px;color:var(--sub)}
 .svc{display:grid;gap:8px}
-.svc .s{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:10px 14px;min-height:66px;text-align:left;width:100%;background:#fff}
+.svc .s{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;border:2px solid var(--line);border-radius:14px;padding:10px 14px;min-height:66px;text-align:left;width:100%;background:#fff}
 .svc .s .n{font-weight:700;font-size:17px;line-height:1.2}
 .svc .s .n small{display:block;font-size:12px;color:var(--sub);font-weight:600}
 .svc .s .t{font-size:18px;font-weight:700;color:var(--sub)}
@@ -204,12 +205,12 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 
 /* 締め */
 .big-amt{display:flex;align-items:center;gap:8px}
-.big-amt input{flex:1;min-height:64px;font-size:34px;font-weight:700;text-align:right;border:2px solid var(--line);border-radius:14px;padding:0 14px;background:#fff;font-family:'Noto Sans JP',sans-serif}
+.big-amt input{flex:1;width:1px;min-width:0;min-height:64px;font-size:34px;font-weight:700;text-align:right;border:2px solid var(--line);border-radius:14px;padding:0 14px;background:#fff;font-family:'Noto Sans JP',sans-serif}
 .big-amt span{font-size:30px;font-weight:700}
 .done-screen{text-align:center;padding:26px 14px;display:grid;gap:10px;justify-items:center}
 .done-screen .ic{width:84px;height:84px;border-radius:50%;background:var(--green);color:#fff;font-size:46px;display:grid;place-items:center}
 .done-screen .h{font-size:22px;font-weight:700}
-.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:15px;text-align:left;width:100%}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;font-size:15px;text-align:left;width:100%}
 .kv b{text-align:right}
 
 /* 下の操作バー（作業中） */
@@ -229,14 +230,14 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .tab .dot{position:absolute;top:9px;right:calc(50% - 22px);min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;display:grid;place-items:center;font-family:'Noto Sans JP',sans-serif;padding:0 5px}
 
 /* ── 営業 ── */
-.shop{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:12px 0;border-bottom:1px solid #e7ebf1}
+.shop{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:12px 0;border-bottom:1px solid #e7ebf1}
 .shop:last-child{border-bottom:0}
 .shop .n{font-size:16px;font-weight:700}
 .shop .d{font-size:13px;color:var(--sub)}
 .shop .a{display:flex;gap:6px}
 .shop .a button{min-width:48px;min-height:48px;border:2px solid var(--line);border-radius:12px;display:grid;place-items:center;font-size:20px;background:#fff}
 .shop .a button.main{border-color:var(--blue);background:var(--blue-bg);font-size:14px;font-weight:700;padding:0 12px;color:var(--blue)}
-.react{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.react{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .react .opt{min-height:70px}
 .react .opt .code{font-family:'Noto Sans JP',sans-serif;font-size:22px;font-weight:700;width:30px}
 .voice{display:flex;align-items:center;gap:10px}
@@ -263,7 +264,7 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .lrow .t{font-size:16px;font-weight:700}
 .lrow .t small{display:block;font-size:12px;color:var(--sub);font-weight:500}
 .lrow .ar{margin-left:auto;color:var(--faint);font-size:22px}
-.lang{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px}
+.lang{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:14px}
 .lang button{min-height:56px;border:2px solid var(--line);border-radius:12px;font-weight:700;font-size:16px;background:#fff}
 .lang button.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue)}
 
