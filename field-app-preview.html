@@ -921,7 +921,7 @@ function renderExpense() {
   html += '<div class="card"><div class="band">🧾 ' + t('tab_expense') + '<span class="r">' + t('who') + ': ' + esc(USER.name) + '</span></div><div class="body">' +
     '<div class="receipt ' + (receiptImg ? 'has' : '') + '">' + (receiptImg ? '<img src="' + receiptImg + '" alt="">' : '<span class="ic">🧾</span><span>' + t('exp_receipt') + '</span>') + '<input type="file" accept="image/*" capture="environment" id="rcpt"></div>' +
     '<div class="big-amt"><input type="number" inputmode="decimal" id="expAmt" placeholder="0"><span class="latin">' + CUR[expCur].sym + '</span></div>' +
-    '<div class="row3">' + ['USD', 'KHR', 'JPY'].map(function (c) { return '<button type="button" class="opt center ' + (expCur === c ? 'on' : '') + '" data-cur="' + c + '" style="min-height:48px"><span class="latin">' + CUR[c].sym + ' ' + c + '</span></button>'; }).join('') + '</div>' +
+    '<div class="row2">' + (isJapan ? ['JPY', 'USD'] : ['USD', 'KHR']).map(function (c) { return '<button type="button" class="opt center ' + (expCur === c ? 'on' : '') + '" data-cur="' + c + '" style="min-height:48px"><span class="latin">' + CUR[c].sym + ' ' + c + '</span></button>'; }).join('') + '</div>' +
     (isJapan
       ? '<div class="row2">' + top.map(function (c) { return '<button type="button" class="opt center ' + (expCat === c ? 'on' : '') + '" data-cat="' + c + '" style="min-height:64px"><span class="ic">' + CAT_ICON[c] + '</span>' + t(c) + '</button>'; }).join('') + '</div>' +
         (expMore ? '<div class="row2">' + rest.map(function (c) { return '<button type="button" class="opt center ' + (expCat === c ? 'on' : '') + '" data-cat="' + c + '" style="min-height:56px"><span class="ic">' + CAT_ICON[c] + '</span>' + t(c) + '</button>'; }).join('') + '</div>'
@@ -930,7 +930,6 @@ function renderExpense() {
         '<div class="items">' + ITEMS.map(function (it) { return '<button type="button" class="item ' + (expItem === it.k ? 'on' : '') + '" data-item="' + it.k + '"><span class="ic">' + it.ic + '</span><span class="nm">' + t(it.k) + '</span></button>'; }).join('') + '</div>' +
         '<div class="item-ex">' + itemOf(expItem).ic + ' ' + t(expItem + '_ex') + '</div>' +
         (expItem === 'it_other' ? '<input class="memo-in" id="expMemo" value="' + esc(expMemo) + '" placeholder="✏️ ' + esc(t('memo_required')) + '"><div class="voice"><button type="button" id="expVoice">🎤</button><div class="v"><b>' + t('voice_note') + '</b>' + t('memo_required') + '</div></div>' : '')) +
-    '<div class="row2"><button type="button" class="opt ' + (expWho === 'me' ? 'on' : '') + '" data-who="me"><span class="ic">🙋</span>' + t('exp_paid_by_me') + '</button><button type="button" class="opt ' + (expWho === 'co' ? 'on' : '') + '" data-who="co"><span class="ic">🏢</span>' + t('exp_paid_company') + '</button></div>' +
     '<button type="button" class="btn" id="expSave">💾 ' + t('btn_save') + '</button></div></div>';
 
   // ── 最近の登録（今月合計つき・誰が・通貨） ──
@@ -946,7 +945,6 @@ function renderExpense() {
   $('rcpt').onchange = function () { if (!this.files[0]) return; readShrunk(this.files[0], function (u) { receiptImg = u; renderExpense(); }); };
   document.querySelectorAll('[data-cat]').forEach(function (b) { b.onclick = function () { expCat = b.getAttribute('data-cat'); renderExpense(); }; });
   document.querySelectorAll('[data-cur]').forEach(function (b) { b.onclick = function () { expCur = b.getAttribute('data-cur'); renderExpense(); }; });
-  document.querySelectorAll('[data-who]').forEach(function (b) { b.onclick = function () { expWho = b.getAttribute('data-who'); renderExpense(); }; });
   document.querySelectorAll('[data-advhow]').forEach(function (b) { b.onclick = function () { advHow = b.getAttribute('data-advhow'); advAmt = ($('advAmt') || {}).value || ''; renderExpense(); }; });
   document.querySelectorAll('[data-advok]').forEach(function (b) { b.onclick = function () { S.advances.filter(function (x) { return !x.ok; })[+b.getAttribute('data-advok')].ok = true; send(); toast('✅ ' + t('confirmed'), 'ok'); renderExpense(); }; });
   var em = $('expMore'); if (em) em.onclick = function () { expMore = true; renderExpense(); };
