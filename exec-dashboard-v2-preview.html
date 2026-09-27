@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Samurai経営">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="logo.png">
+<!-- Samurai Motors 経営ダッシュボード v2（試作・サンプルデータのみ・通信なし）
+     正本: suzuki-empire-day1 / output/SamuraiMotors_Dashboard/index.html（claude.ai 版）から生成 -->
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Samurai 経営ダッシュボード v2（試作）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Shippori+Mincho+B1:wght@700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#f4f4f1; --surface:#ffffff; --sunk:#ebeae4; --sunk2:#f7f6f2;
+  --ink:#17150f; --muted:#5f5a4d; --faint:#8b8574; --line:#d8d4c6;
+  --gold:#8a6d2b; --gold-soft:#efe6cf;
+  --s-sales:#9a7a2e; --s-profit:#1f6fa8;
+  --good:#2f7a4a; --good-soft:#e1f1e6;
+  --warn:#9a5b00; --warn-soft:#fbeed6;
+  --bad:#b23a2a; --bad-soft:#f8e1dc;
+  --focus:#1f6fa8;
+  --serif:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --sans:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Noto Sans JP",system-ui,sans-serif;
+  --latin:"Cinzel","Times New Roman",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0e0d0a; --surface:#18160f; --sunk:#221f16; --sunk2:#1c1a12;
+    --ink:#efe9da; --muted:#a9a18c; --faint:#7d7664; --line:#36311f;
+    --gold:#d4b46a; --gold-soft:#2c2614;
+    --s-sales:#b09040; --s-profit:#4f97d8;
+    --good:#6cc28a; --good-soft:#15291c;
+    --warn:#e0a54a; --warn-soft:#2e2310;
+    --bad:#ec8573; --bad-soft:#351c17;
+    --focus:#78abd0;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e0d0a; --surface:#18160f; --sunk:#221f16; --sunk2:#1c1a12;
+  --ink:#efe9da; --muted:#a9a18c; --faint:#7d7664; --line:#36311f;
+  --gold:#d4b46a; --gold-soft:#2c2614;
+  --s-sales:#b09040; --s-profit:#4f97d8;
+  --good:#6cc28a; --good-soft:#15291c;
+  --warn:#e0a54a; --warn-soft:#2e2310;
+  --bad:#ec8573; --bad-soft:#351c17;
+  --focus:#78abd0;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1160px;margin:0 auto;padding-inline:16px;padding-block:18px 56px}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0}
+.num,td.num,th.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* ヘッダー */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 20px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.brand{display:grid;gap:2px}
+.eyebrow{font-family:var(--latin);letter-spacing:.24em;font-size:11.5px;color:var(--gold)}
+h1{font-family:var(--serif);font-size:clamp(22px,3.4vw,30px);font-weight:800;letter-spacing:.02em}
+.monthbar{display:flex;align-items:center;gap:6px}
+.monthbar .lbl{font-size:12px;color:var(--muted);margin-right:4px}
+.mbtn{border:1px solid var(--line);background:var(--surface);border-radius:6px;min-width:36px;height:36px;cursor:pointer}
+.mbtn:hover{background:var(--sunk)}
+.mval{min-width:112px;text-align:center;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+
+/* タブ */
+.tabs-scroll{overflow-x:auto;margin-top:12px;border-bottom:1px solid var(--line)}
+.tabs{display:flex;gap:2px;min-width:max-content}
+.tab{appearance:none;border:0;background:none;padding:10px 14px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
+.tab:hover{color:var(--ink)}
+
+.banner{margin-top:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;border-radius:6px;background:var(--warn-soft);color:var(--warn);font-size:13px;font-weight:500}
+.banner b{font-weight:700}
+.status{margin-top:14px;padding:10px 14px;border-radius:6px;background:var(--sunk);color:var(--muted);font-size:13px}
+
+section.view{display:grid;gap:18px;margin-top:18px}
+.h2row{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px}
+h2{font-size:18px;font-weight:700}
+.sub{color:var(--muted);font-size:12.5px}
+
+/* KPI */
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:grid;gap:4px;align-content:start}
+.kpi .k{font-size:12px;color:var(--muted);font-weight:500}
+.kpi .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .d{font-size:12px;color:var(--muted)}
+.kpi.hero{border-color:var(--gold)}
+.kpi .v.neg{color:var(--bad)}
+.kpi .v.pos{color:var(--good)}
+
+.meter{height:8px;border-radius:999px;background:var(--sunk);overflow:hidden;margin-top:4px}
+.meter > i{display:block;height:100%;background:var(--gold);border-radius:999px}
+
+/* パネル */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;gap:12px;align-content:start}
+.grid2{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:920px){.grid2{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}}
+
+/* 損益の段 */
+.pl{display:grid;gap:0;font-size:13.5px}
+.pl .row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.pl .row:last-child{border-bottom:0}
+.pl .row.total{border-top:1px solid var(--ink);border-bottom:0;margin-top:4px;padding-top:9px;font-weight:700;font-size:15px}
+.pl .minus{color:var(--muted)}
+
+/* チャート */
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+.chartbox{position:relative}
+.chartbox svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;padding:7px 9px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-100%);font-variant-numeric:tabular-nums;line-height:1.5}
+details.tbl summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
+
+/* テーブル */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11.5px;color:var(--muted);font-weight:700;background:var(--sunk);white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+tfoot td{font-weight:700;background:var(--sunk2);border-top:1px solid var(--line);border-bottom:0}
+td .small{display:block;font-size:11.5px;color:var(--muted)}
+.empty{padding:18px 12px;color:var(--muted);text-align:center;font-size:13px}
+
+/* ピル */
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.p-good{color:var(--good);background:var(--good-soft)}
+.p-warn{color:var(--warn);background:var(--warn-soft)}
+.p-bad{color:var(--bad);background:var(--bad-soft)}
+.p-gold{color:var(--gold);background:var(--gold-soft)}
+.p-mute{color:var(--muted);background:var(--sunk)}
+
+/* フォーム */
+form.inline{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:end}
+.field{display:grid;gap:4px}
+.field label{font-size:12px;color:var(--muted);font-weight:500}
+.field input,.field select{width:100%;height:38px;border:1px solid var(--line);border-radius:6px;background:var(--sunk2);padding:0 10px}
+.field input:focus,.field select:focus{border-color:var(--focus)}
+.field.wide{grid-column:1/-1}
+.btn{height:38px;padding:0 16px;border-radius:6px;border:1px solid var(--gold);background:var(--gold);color:#fff;font-weight:700;cursor:pointer;white-space:nowrap}
+:root[data-theme="dark"] .btn{color:#17150f}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#17150f}}
+.btn:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{height:30px;padding:0 10px;font-size:12.5px}
+.btn.danger{background:transparent;color:var(--bad);border-color:var(--bad)}
+.btn.danger.armed{background:var(--bad);color:#fff}
+.preview{grid-column:1/-1;font-size:13px;background:var(--sunk2);border:1px dashed var(--line);border-radius:6px;padding:9px 12px;display:flex;flex-wrap:wrap;gap:4px 16px}
+.preview b{font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:9px 16px;border-radius:999px;font-size:13px;z-index:10}
+.ro .needs-write{display:none!important}
+
+.rules{display:grid;gap:6px;font-size:13px}
+.rules li{margin-left:1.1em}
+footer{margin-top:34px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">SAMURAI MOTORS · MANAGEMENT · 試作</span>
+      <h1>経営ダッシュボード</h1>
+    </div>
+    <div class="monthbar" aria-label="表示する月">
+      <span class="lbl">表示月</span>
+      <button class="mbtn" id="mPrev" aria-label="前の月">‹</button>
+      <span class="mval" id="mVal">—</span>
+      <button class="mbtn" id="mNext" aria-label="次の月">›</button>
+    </div>
+  </header>
+
+  <div class="tabs-scroll">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="home" aria-selected="true">今月の経営</button>
+      <button class="tab" role="tab" data-tab="jobs" aria-selected="false">施工記録</button>
+      <button class="tab" role="tab" data-tab="payout" aria-selected="false">紹介料の精算</button>
+      <button class="tab" role="tab" data-tab="partners" aria-selected="false">紹介パートナー</button>
+      <button class="tab" role="tab" data-tab="menu" aria-selected="false">メニューと価格</button>
+      <button class="tab" role="tab" data-tab="settings" aria-selected="false">設定</button>
+    </div>
+  </div>
+
+  <div class="status" id="status">データを読み込んでいます…</div>
+  <div class="banner" id="sampleBanner" hidden>
+    <span><b>サンプルの施工記録が入っています。</b>見た目を確かめるための仮のデータです。本番の記録を入れ始めたら削除してください。</span>
+    <button class="btn danger sm needs-write" id="clearSamples">サンプルを削除</button>
+  </div>
+
+  <!-- 今月の経営 -->
+  <section class="view" id="v-home">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="h2row"><h2>月ごとの売上と利益</h2><span class="sub">直近6か月・USD</span></div>
+        <div class="legend"><span><i class="sw" style="background:var(--s-sales)"></i>売上</span><span><i class="sw" style="background:var(--s-profit)"></i>月の利益（給料を引いた後）</span></div>
+        <div class="chartbox" id="chart"></div>
+        <details class="tbl"><summary>表で見る</summary><div class="tbl-wrap" style="margin-top:8px"><table id="trendTbl"></table></div></details>
+      </div>
+      <div class="panel">
+        <div class="h2row"><h2>今月の損益</h2><span class="sub" id="plMonth"></span></div>
+        <div class="pl" id="pl"></div>
+        <p class="note" id="beNote"></p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="h2row"><h2>紹介パートナー別の成績</h2><span class="sub">表示月</span></div>
+      <div class="tbl-wrap"><table id="partnerPerf"></table></div>
+    </div>
+  </section>
+
+  <!-- 施工記録 -->
+  <section class="view" id="v-jobs" hidden>
+    <div class="panel needs-write">
+      <div class="h2row"><h2>施工を記録する</h2><span class="sub">紹介料はこの時点の率で保存されます（あとで率を変えても過去分は変わりません）</span></div>
+      <form class="inline" id="jobForm" autocomplete="off">
+        <div class="field"><label for="jDate">施工日</label><input type="date" id="jDate" required></div>
+        <div class="field"><label for="jMenu">メニュー</label><select id="jMenu" required></select></div>
+        <div class="field"><label for="jPartner">紹介元</label><select id="jPartner"></select></div>
+        <div class="field"><label for="jPrice">お客様の支払額（$）</label><input type="number" id="jPrice" min="0" step="0.5" required></div>
+        <div class="field"><label for="jCustomer">お客様・車種（任意）</label><input type="text" id="jCustomer" placeholder="例：12F / Prius"></div>
+        <div class="preview" id="jPreview"></div>
+        <div class="field"><button class="btn" type="submit" id="jSubmit">記録する</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <div class="h2row"><h2>表示月の施工一覧</h2><span class="sub" id="jobsCount"></span></div>
+      <div class="tbl-wrap"><table id="jobsTbl"></table></div>
+    </div>
+  </section>
+
+  <!-- 紹介料の精算 -->
+  <section class="view" id="v-payout" hidden>
+    <div class="kpis" id="payKpis"></div>
+    <div class="panel">
+      <div class="h2row"><h2>支払先ごとの紹介料</h2><span class="sub">毎月締め。支払ったら「支払済にする」を押す</span></div>
+      <div class="tbl-wrap"><table id="payTbl"></table></div>
+      <p class="note">金額は施工ごとに記録した率で計算しています。紹介者への上乗せ（例：レジデンスを紹介してくれた方への5%）は、紹介元の施工から自動で集計します。</p>
+    </div>
+    <div class="panel">
+      <div class="h2row"><h2>内訳（施工ごと）</h2></div>
+      <div class="tbl-wrap"><table id="payDetail"></table></div>
+    </div>
+  </section>
+
+  <!-- 紹介パートナー -->
+  <section class="view" id="v-partners" hidden>
+    <div class="panel">
+      <div class="h2row"><h2>紹介パートナー</h2><span class="sub">レジデンス・車屋さん・個人など。率はパートナーごとに変えられます</span></div>
+      <div class="tbl-wrap"><table id="partnersTbl"></table></div>
+    </div>
+    <div class="panel needs-write">
+      <div class="h2row"><h2 id="pFormTitle">パートナーを追加</h2></div>
+      <form class="inline" id="partnerForm" autocomplete="off">
+        <input type="hidden" id="pId">
+        <div class="field"><label for="pName">名前</label><input type="text" id="pName" required placeholder="例：レジデンス名"></div>
+        <div class="field"><label for="pKind">種類</label><select id="pKind"><option>レジデンス</option><option>車屋さん</option><option>個人紹介者</option><option>その他</option></select></div>
+        <div class="field"><label for="pRate">紹介料率（%）</label><input type="number" id="pRate" min="0" max="100" step="0.5" value="30"></div>
+        <div class="field"><label for="pPayer">紹介料の支払元</label><select id="pPayer"><option>本部</option><option>現地（カンボジア）</option></select></div>
+        <div class="field"><label for="pIntro">このパートナーを紹介した人</label><select id="pIntro"></select></div>
+        <div class="field"><label for="pIntroRate">紹介者への上乗せ率（%）</label><input type="number" id="pIntroRate" min="0" max="100" step="0.5" value="0"></div>
+        <div class="field"><label for="pIntroPayer">上乗せの支払元</label><select id="pIntroPayer"><option>本部</option><option>現地（カンボジア）</option></select></div>
+        <div class="field"><label for="pActive">状態</label><select id="pActive"><option value="1">取引中</option><option value="0">停止中</option></select></div>
+        <div class="field wide"><label for="pMemo">メモ（契約条件など）</label><input type="text" id="pMemo" placeholder="例：2026-09 契約。紹介料20%、紹介者へ5%を毎月締めで本部から"></div>
+        <div class="field"><button class="btn" type="submit" id="pSubmit">追加する</button></div>
+        <div class="field"><button class="btn ghost" type="button" id="pCancel" hidden>編集をやめる</button></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- メニューと価格 -->
+  <section class="view" id="v-menu" hidden>
+    <div class="panel">
+      <div class="h2row"><h2>メニューと価格</h2><span class="sub">紹介料率ごとに、SAMURAIに残る金額を比べられます</span></div>
+      <div class="tbl-wrap"><table id="menuTbl"></table></div>
+      <p class="note">1台の粗利＝支払額 − 紹介料 − 材料費 − 出張費。人件費は月給でまとめて「今月の経営」で引いています。価格の出典は価格計算シート v3。</p>
+    </div>
+    <div class="panel needs-write">
+      <div class="h2row"><h2 id="mFormTitle">メニューを追加</h2></div>
+      <form class="inline" id="menuForm" autocomplete="off">
+        <input type="hidden" id="mId">
+        <div class="field"><label for="mCat">サービス</label><select id="mCat"><option>ヘッドライト</option><option>ボディ磨き</option><option>WASH</option><option>GLASS</option><option>その他</option></select></div>
+        <div class="field"><label for="mName">プラン名</label><input type="text" id="mName" required></div>
+        <div class="field"><label for="mPrice">定価（$）</label><input type="number" id="mPrice" min="0" step="0.5" required></div>
+        <div class="field"><label for="mMat">材料費（$/台）</label><input type="number" id="mMat" min="0" step="0.01" value="0"></div>
+        <div class="field"><label for="mMin">作業時間（分）</label><input type="number" id="mMin" min="0" step="5" value="60"></div>
+        <div class="field"><button class="btn" type="submit" id="mSubmit">追加する</button></div>
+        <div class="field"><button class="btn ghost" type="button" id="mCancel" hidden>編集をやめる</button></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- 設定 -->
+  <section class="view" id="v-settings" hidden>
+    <div class="panel">
+      <div class="h2row"><h2>設定</h2><span class="sub">ここを変えると全ての画面に反映されます</span></div>
+      <form class="inline" id="cfgForm" autocomplete="off">
+        <div class="field"><label for="cSalary">施工スタッフの月給（$）</label><input type="number" id="cSalary" min="0" step="10"></div>
+        <div class="field"><label for="cTarget">月の目標施工台数</label><input type="number" id="cTarget" min="0" step="1"></div>
+        <div class="field"><label for="cTravel">出張・移動費（$/件）</label><input type="number" id="cTravel" min="0" step="0.5"></div>
+        <div class="field"><label for="cRate">紹介料の標準率（%）</label><input type="number" id="cRate" min="0" max="100" step="0.5"></div>
+        <div class="field"><label for="cFixed">その他の月固定費（$）</label><input type="number" id="cFixed" min="0" step="10"></div>
+        <div class="field needs-write"><button class="btn" type="submit" id="cSubmit">保存する</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <h2>紹介料のしくみ（このアプリの計算ルール）</h2>
+      <ul class="rules">
+        <li>紹介料は「お客様の支払額 × そのパートナーの紹介料率」。レジデンスAなら20%、標準の車屋さんは30%。</li>
+        <li>パートナーを紹介した人がいる場合、その人へ「支払額 × 上乗せ率」（例：5%）を別に支払います。毎月締めで、支払元（本部など）ごとに集計します。</li>
+        <li>率は施工を記録した時点のものを保存します。契約条件を途中で変えても、過去の精算額は変わりません。</li>
+        <li>直販（紹介なし）の施工は紹介料ゼロです。</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>データの保存について（試作版）</h2>
+      <p class="note">この試作は通信しません。データはこの端末のブラウザの中だけに保存され、ほかの人や別の端末とは共有されません。最初に入っている取引先と施工記録はすべて仮名のサンプルです。実際の取引先名や契約条件は、この画面で入力してください（この試作ページ自体は一般公開のため、ページには載せていません）。別の端末へ移すときは「データをコピー」で出た文字を、移し先で貼り付けて「データを読み込む」を押します。</p>
+      <div class="field"><label for="ioText">データ（コピー・貼り付け用）</label><textarea id="ioText" rows="4" style="width:100%;border:1px solid var(--line);border-radius:6px;background:var(--sunk2);padding:8px 10px;font:12px/1.4 ui-monospace,Menlo,monospace;color:var(--ink)"></textarea></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button class="btn ghost" type="button" id="expBtn">データをコピー</button>
+        <button class="btn danger" type="button" id="impBtn">データを読み込む</button>
+        <button class="btn danger" type="button" id="resetBtn">初期状態に戻す</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Samurai Motors 経営ダッシュボード v2（試作・サンプルデータのみ・通信なし）2026-09-27</span>
+    <span id="who"></span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  // ---------- 状態 ----------
+  const state = {
+    tab: "home",
+    month: ymNow(),
+    cfg: { salary: 500, targetJobs: 52, travel: 2, defaultRate: 0.3, fixed: 0 },
+    menu: [], partners: [], jobs: [], settle: {},
+    loaded: false, canWrite: true, db: null
+  };
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const usd = (n, d = 0) => (n < 0 ? "−$" : "$") + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits: d, maximumFractionDigits: d});
+  const usd2 = (n) => usd(n, 2);
+  const pct = (r) => (Math.round(r * 1000) / 10) + "%";
+  function ymNow(){ const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function ymShift(ym, k){ const [y, m] = ym.split("-").map(Number); const d = new Date(y, m - 1 + k, 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
+  function ymLabel(ym){ const [y, m] = ym.split("-"); return y + "年" + Number(m) + "月"; }
+  function todayISO(){ const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function toast(msg){ const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2200); }
+  const partnerById = (id) => state.partners.find(p => p.id === id);
+  const menuById = (id) => state.menu.find(m => m.id === id);
+
+  // ---------- 計算 ----------
+  // 1件の施工の内訳（保存済みの率を使う）
+  function jobCalc(j){
+    const price = +j.price || 0;
+    const comm = price * (+j.rate || 0);
+    const intro = price * (+j.introducerRate || 0);
+    const mat = +j.material || 0;
+    const travel = j.travel != null ? +j.travel : state.cfg.travel;
+    return { price, comm, intro, mat, travel, net: price - comm - intro, contrib: price - comm - intro - mat - travel };
+  }
+  function monthStats(ym){
+    const js = state.jobs.filter(j => j.month === ym);
+    const s = { count: js.length, sales: 0, comm: 0, intro: 0, mat: 0, travel: 0, contrib: 0 };
+    js.forEach(j => { const c = jobCalc(j); s.sales += c.price; s.comm += c.comm; s.intro += c.intro; s.mat += c.mat; s.travel += c.travel; s.contrib += c.contrib; });
+    s.salary = +state.cfg.salary || 0; s.fixed = +state.cfg.fixed || 0;
+    s.profit = s.contrib - s.salary - s.fixed;
+    s.jobs = js;
+    return s;
+  }
+  // 支払先ごとの紹介料（紹介料＋紹介者への上乗せ）
+  function payouts(ym){
+    const map = new Map();
+    const add = (key, name, payer, kind, amt, from) => {
+      if (!key || amt <= 0) return;
+      const k = key + "__" + payer;
+      if (!map.has(k)) map.set(k, { key: k, payeeId: key, name, payer, amount: 0, parts: new Map(), jobs: 0 });
+      const o = map.get(k); o.amount += amt; o.jobs += 1;
+      o.parts.set(kind + (from ? "（" + from + "経由）" : ""), (o.parts.get(kind + (from ? "（" + from + "経由）" : "")) || 0) + amt);
+    };
+    state.jobs.filter(j => j.month === ym).forEach(j => {
+      const c = jobCalc(j);
+      if (j.partnerId) add(j.partnerId, j.partnerName, j.payer || "本部", "紹介料 " + pct(+j.rate || 0), c.comm);
+      if (j.introducerId) add(j.introducerId, j.introducerName, j.introducerPayer || "本部", "紹介者上乗せ " + pct(+j.introducerRate || 0), c.intro, j.partnerName);
+    });
+    return [...map.values()].sort((a, b) => b.amount - a.amount);
+  }
+
+  // ---------- 描画：共通 ----------
+  function renderAll(){
+    $("mVal").textContent = ymLabel(state.month);
+    $("sampleBanner").hidden = !state.jobs.some(j => j.sample);
+    document.getElementById("app").classList.toggle("ro", !state.canWrite);
+    renderHome(); renderJobs(); renderPayout(); renderPartners(); renderMenu(); renderSettings();
+  }
+  function kpi(k, v, d, cls = "", extra = ""){ return `<div class="kpi ${cls}"><span class="k">${k}</span><span class="v ${extra}">${v}</span><span class="d">${d}</span></div>`; }
+
+  // ---------- 今月の経営 ----------
+  function renderHome(){
+    const s = monthStats(state.month);
+    const target = +state.cfg.targetJobs || 0;
+    const prog = target ? Math.min(1, s.count / target) : 0;
+    const avgContrib = s.count ? s.contrib / s.count : avgMenuContrib();
+    const need = s.profit >= 0 ? 0 : Math.ceil(-s.profit / Math.max(avgContrib, 0.01));
+    $("kpis").innerHTML =
+      kpi("月の利益（給料を引いた後）", usd(s.profit), s.profit >= 0 ? "黒字" : "給料を賄うまで あと約" + need + "台", "hero", s.profit >= 0 ? "pos" : "neg") +
+      kpi("売上", usd(s.sales), s.count + "台 ／ 1台平均 " + (s.count ? usd(s.sales / s.count) : "—")) +
+      kpi("紹介料の支払い", usd(s.comm + s.intro), "うち紹介者への上乗せ " + usd(s.intro)) +
+      `<div class="kpi"><span class="k">目標台数の進み</span><span class="v">${s.count}<span style="font-size:14px;color:var(--muted);font-weight:500"> / ${target}台</span></span><div class="meter" role="img" aria-label="目標の${Math.round(prog * 100)}%"><i style="width:${prog * 100}%"></i></div><span class="d">${Math.round(prog * 100)}% 達成</span></div>`;
+    $("plMonth").textContent = ymLabel(state.month);
+    const row = (l, v, cls = "") => `<div class="row ${cls}"><span>${l}</span><span class="num">${v}</span></div>`;
+    $("pl").innerHTML =
+      row("売上", usd2(s.sales)) +
+      row("− 紹介料（パートナーへ）", usd2(-s.comm), "minus") +
+      row("− 紹介者への上乗せ", usd2(-s.intro), "minus") +
+      row("− 材料費", usd2(-s.mat), "minus") +
+      row("− 出張・移動費", usd2(-s.travel), "minus") +
+      row("＝ 貢献利益（給料を払う原資）", usd2(s.contrib)) +
+      row("− 給料", usd2(-s.salary), "minus") +
+      (s.fixed ? row("− その他の固定費", usd2(-s.fixed), "minus") : "") +
+      row("月の利益", usd2(s.profit), "total");
+    $("beNote").textContent = "損益分岐の目安：1台あたりの貢献利益 " + usd2(avgContrib) + " → 月" + Math.ceil((s.salary + s.fixed) / Math.max(avgContrib, 0.01)) + "台で給料と固定費を賄えます。";
+    renderChart();
+    renderPartnerPerf(s);
+  }
+  function avgMenuContrib(){
+    if (!state.menu.length) return 10;
+    const v = state.menu.map(m => (+m.price || 0) * (1 - state.cfg.defaultRate) - (+m.material || 0) - state.cfg.travel);
+    return v.reduce((a, b) => a + b, 0) / v.length;
+  }
+  function renderChart(){
+    const months = []; for (let i = 5; i >= 0; i--) months.push(ymShift(state.month, -i));
+    const data = months.map(m => { const s = monthStats(m); return { m, sales: s.sales, profit: s.profit, count: s.count }; });
+    const W = 640, H = 260, L = 52, R = 10, T = 14, B = 34;
+    const maxV = Math.max(100, ...data.map(d => d.sales), ...data.map(d => d.profit));
+    const minV = Math.min(0, ...data.map(d => d.profit));
+    const step = niceStep((maxV - minV) / 4);
+    const top = Math.ceil(maxV / step) * step, bot = Math.floor(minV / step) * step;
+    const y = v => T + (top - v) / (top - bot) * (H - T - B);
+    const gw = (W - L - R) / data.length, bw = Math.min(26, gw * 0.3);
+    let g = "";
+    for (let v = bot; v <= top + 1e-9; v += step){
+      g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="${v === 0 ? 1.2 : 1}" ${v === 0 ? "" : 'stroke-dasharray="2 4"'}/>`;
+      g += `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${usd(v)}</text>`;
+    }
+    const bar = (x, v, color, key, i) => {
+      const y0 = y(0), y1 = y(v), h = Math.abs(y1 - y0), yy = Math.min(y0, y1), r = Math.min(4, h / 2);
+      const path = v >= 0
+        ? `M${x},${y0} V${yy + r} Q${x},${yy} ${x + r},${yy} H${x + bw - r} Q${x + bw},${yy} ${x + bw},${yy + r} V${y0} Z`
+        : `M${x},${y0} V${yy + h - r} Q${x},${yy + h} ${x + r},${yy + h} H${x + bw - r} Q${x + bw},${yy + h} ${x + bw},${yy + h - r} V${y0} Z`;
+      return h < 0.5 ? "" : `<path d="${path}" fill="${color}"/>`;
+    };
+    data.forEach((d, i) => {
+      const cx = L + gw * i + gw / 2;
+      const cur = d.m === state.month;
+      g += bar(cx - bw - 1, d.sales, "var(--s-sales)");
+      g += bar(cx + 1, d.profit, "var(--s-profit)");
+      g += `<text x="${cx}" y="${H - 12}" text-anchor="middle" font-size="11.5" font-weight="${cur ? 700 : 400}" fill="${cur ? "var(--ink)" : "var(--muted)"}">${Number(d.m.slice(5))}月</text>`;
+      g += `<rect x="${L + gw * i}" y="${T}" width="${gw}" height="${H - T - B}" fill="transparent" data-i="${i}" class="hit"/>`;
+    });
+    $("chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="直近6か月の売上と月の利益">${g}</svg><div class="tip" hidden></div>`;
+    const tip = $("chart").querySelector(".tip");
+    $("chart").querySelectorAll(".hit").forEach(r => {
+      const show = () => {
+        const d = data[+r.dataset.i]; const box = $("chart").getBoundingClientRect(); const rb = r.getBoundingClientRect();
+        tip.innerHTML = `<b>${ymLabel(d.m)}</b>（${d.count}台）<br>売上 ${usd(d.sales)}<br>月の利益 ${usd(d.profit)}`;
+        tip.style.left = (rb.left - box.left + rb.width / 2) + "px"; tip.style.top = (rb.top - box.top + 8) + "px"; tip.hidden = false;
+        r.setAttribute("fill", "var(--sunk)"); r.setAttribute("fill-opacity", ".45");
+      };
+      const hide = () => { tip.hidden = true; r.setAttribute("fill", "transparent"); };
+      r.addEventListener("mouseenter", show); r.addEventListener("mouseleave", hide);
+      r.addEventListener("click", () => { state.month = data[+r.dataset.i].m; renderAll(); });
+    });
+    $("trendTbl").innerHTML = `<thead><tr><th>月</th><th class="num">台数</th><th class="num">売上</th><th class="num">月の利益</th></tr></thead><tbody>` +
+      data.map(d => `<tr><td>${ymLabel(d.m)}</td><td class="num">${d.count}</td><td class="num">${usd(d.sales)}</td><td class="num">${usd(d.profit)}</td></tr>`).join("") + "</tbody>";
+  }
+  function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1)))); const n = raw / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p; }
+  function renderPartnerPerf(s){
+    const map = new Map();
+    s.jobs.forEach(j => {
+      const k = j.partnerId || "_direct"; const name = j.partnerId ? j.partnerName : "直販（紹介なし）";
+      if (!map.has(k)) map.set(k, { name, count: 0, sales: 0, paid: 0, net: 0, rate: j.partnerId ? j.rate : 0 });
+      const o = map.get(k), c = jobCalc(j); o.count++; o.sales += c.price; o.paid += c.comm + c.intro; o.net += c.contrib;
+    });
+    const rows = [...map.values()].sort((a, b) => b.sales - a.sales);
+    $("partnerPerf").innerHTML = `<thead><tr><th>紹介元</th><th class="num">台数</th><th class="num">売上</th><th class="num">紹介料（上乗せ含む）</th><th class="num">SAMURAIの貢献利益</th><th class="num">売上に占める割合</th></tr></thead><tbody>` +
+      (rows.length ? rows.map(r => `<tr><td>${esc(r.name)}</td><td class="num">${r.count}</td><td class="num">${usd(r.sales)}</td><td class="num">${usd2(r.paid)}</td><td class="num">${usd2(r.net)}</td><td class="num">${s.sales ? Math.round(r.sales / s.sales * 100) + "%" : "—"}</td></tr>`).join("")
+        : `<tr><td colspan="6" class="empty">この月の施工記録はまだありません。「施工記録」タブから入力できます。</td></tr>`) + "</tbody>";
+  }
+
+  // ---------- 施工記録 ----------
+  function fillSelect(sel, opts, keep = true){
+    const v = sel.value; sel.innerHTML = opts; if (keep && [...sel.options].some(o => o.value === v)) sel.value = v;
+  }
+  function renderJobs(){
+    const cats = [...new Set(state.menu.map(m => m.category))];
+    fillSelect($("jMenu"), cats.map(c => `<optgroup label="${esc(c)}">` + state.menu.filter(m => m.category === c).sort((a, b) => (a.order || 0) - (b.order || 0)).map(m => `<option value="${m.id}">${esc(m.name)}（${usd(+m.price)}）</option>`).join("") + "</optgroup>").join(""));
+    fillSelect($("jPartner"), `<option value="">直販（紹介なし）</option>` + state.partners.filter(p => p.active !== false && (+p.rate > 0)).map(p => `<option value="${p.id}">${esc(p.name)}（${pct(+p.rate)}${p.introducerId && +p.introducerRate ? "＋紹介者" + pct(+p.introducerRate) : ""}）</option>`).join(""));
+    if (!$("jDate").value) $("jDate").value = todayISO();
+    if (!$("jPrice").value && $("jMenu").value) $("jPrice").value = +menuById($("jMenu").value)?.price || "";
+    updatePreview();
+    const js = state.jobs.filter(j => j.month === state.month).sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.createdAt || 0) - (a.createdAt || 0));
+    $("jobsCount").textContent = js.length + "件";
+    let tot = { price: 0, comm: 0, contrib: 0 };
+    const body = js.map(j => {
+      const c = jobCalc(j); tot.price += c.price; tot.comm += c.comm + c.intro; tot.contrib += c.contrib;
+      return `<tr><td class="num" style="text-align:left">${esc((j.date || "").slice(5).replace("-", "/"))}</td>
+        <td>${esc(j.menuName)}${j.sample ? ' <span class="pill p-warn">サンプル</span>' : ""}<span class="small">${esc(j.customer || "")}</span></td>
+        <td>${j.partnerId ? esc(j.partnerName) + `<span class="small">${pct(+j.rate)}${j.introducerId ? " ＋ " + esc(j.introducerName) + " " + pct(+j.introducerRate) : ""}</span>` : '<span class="pill p-mute">直販</span>'}</td>
+        <td class="num">${usd2(c.price)}</td><td class="num">${usd2(c.comm + c.intro)}</td><td class="num">${usd2(c.contrib)}</td>
+        <td class="num needs-write"><button class="btn danger sm" data-del-job="${j.id}">削除</button></td></tr>`;
+    }).join("");
+    $("jobsTbl").innerHTML = `<thead><tr><th>日付</th><th>メニュー</th><th>紹介元</th><th class="num">支払額</th><th class="num">紹介料</th><th class="num">貢献利益</th><th class="needs-write"></th></tr></thead><tbody>` +
+      (body || `<tr><td colspan="7" class="empty">${ymLabel(state.month)}の施工記録はまだありません。</td></tr>`) + `</tbody>` +
+      (js.length ? `<tfoot><tr><td colspan="3">合計 ${js.length}件</td><td class="num">${usd2(tot.price)}</td><td class="num">${usd2(tot.comm)}</td><td class="num">${usd2(tot.contrib)}</td><td class="needs-write"></td></tr></tfoot>` : "");
+  }
+  function updatePreview(){
+    const price = +$("jPrice").value || 0; const p = partnerById($("jPartner").value); const m = menuById($("jMenu").value);
+    const comm = p ? price * (+p.rate || 0) : 0; const intro = p && p.introducerId ? price * (+p.introducerRate || 0) : 0;
+    const contrib = price - comm - intro - (+m?.material || 0) - state.cfg.travel;
+    const introName = p && p.introducerId ? (partnerById(p.introducerId)?.name || "紹介者") : "";
+    $("jPreview").innerHTML = `<span>紹介料：<b>${usd2(comm)}</b>${p ? "（" + esc(p.name) + " " + pct(+p.rate) + "・" + esc(p.payer || "本部") + "払い）" : ""}</span>` +
+      (intro ? `<span>紹介者上乗せ：<b>${usd2(intro)}</b>（${esc(introName)} ${pct(+p.introducerRate)}・${esc(p.introducerPayer || "本部")}払い）</span>` : "") +
+      `<span>SAMURAIの貢献利益：<b>${usd2(contrib)}</b></span>`;
+  }
+
+  // ---------- 紹介料の精算 ----------
+  function renderPayout(){
+    const list = payouts(state.month);
+    const total = list.reduce((a, b) => a + b.amount, 0);
+    const paid = list.filter(o => state.settle[state.month + "__" + o.key]?.paid).reduce((a, b) => a + b.amount, 0);
+    const byPayer = {}; list.forEach(o => byPayer[o.payer] = (byPayer[o.payer] || 0) + o.amount);
+    $("payKpis").innerHTML = kpi("今月の紹介料 合計", usd2(total), list.length + "件の支払先") +
+      kpi("未払い", usd2(total - paid), total - paid > 0.005 ? "締め後に支払う" : "すべて支払済", "", total - paid > 0.005 ? "neg" : "pos") +
+      Object.entries(byPayer).map(([k, v]) => kpi(k + "から支払う分", usd2(v), "")).join("");
+    $("payTbl").innerHTML = `<thead><tr><th>支払先</th><th>内訳</th><th>支払元</th><th class="num">金額</th><th>状態</th><th class="needs-write"></th></tr></thead><tbody>` +
+      (list.length ? list.map(o => {
+        const st = state.settle[state.month + "__" + o.key];
+        return `<tr><td><b>${esc(o.name)}</b><span class="small">${o.jobs}件分</span></td>
+          <td>${[...o.parts.entries()].map(([k, v]) => `<span class="small" style="color:var(--ink)">${esc(k)}：${usd2(v)}</span>`).join("")}</td>
+          <td>${esc(o.payer)}</td><td class="num"><b>${usd2(o.amount)}</b></td>
+          <td>${st?.paid ? `<span class="pill p-good">✓ 支払済</span><span class="small">${esc(st.paidAt || "")}</span>` : '<span class="pill p-warn">● 未払い</span>'}</td>
+          <td class="needs-write"><button class="btn ${st?.paid ? "ghost" : ""} sm" data-settle="${esc(o.key)}" data-amount="${o.amount.toFixed(2)}" data-name="${esc(o.name)}">${st?.paid ? "未払いに戻す" : "支払済にする"}</button></td></tr>`;
+      }).join("") : `<tr><td colspan="6" class="empty">${ymLabel(state.month)}に支払う紹介料はありません。</td></tr>`) + "</tbody>";
+    const js = state.jobs.filter(j => j.month === state.month && (j.partnerId || j.introducerId)).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    $("payDetail").innerHTML = `<thead><tr><th>日付</th><th>メニュー</th><th>紹介元</th><th class="num">支払額</th><th class="num">紹介料</th><th>紹介者</th><th class="num">上乗せ</th></tr></thead><tbody>` +
+      (js.length ? js.map(j => { const c = jobCalc(j); return `<tr><td>${esc((j.date || "").slice(5).replace("-", "/"))}</td><td>${esc(j.menuName)}</td><td>${esc(j.partnerName)} ${pct(+j.rate)}</td><td class="num">${usd2(c.price)}</td><td class="num">${usd2(c.comm)}</td><td>${j.introducerId ? esc(j.introducerName) + " " + pct(+j.introducerRate) : "—"}</td><td class="num">${c.intro ? usd2(c.intro) : "—"}</td></tr>`; }).join("")
+        : `<tr><td colspan="7" class="empty">紹介経由の施工はありません。</td></tr>`) + "</tbody>";
+  }
+
+  // ---------- 紹介パートナー ----------
+  function renderPartners(){
+    const allTime = new Map();
+    state.jobs.forEach(j => { if (j.partnerId){ const o = allTime.get(j.partnerId) || { n: 0, s: 0 }; o.n++; o.s += +j.price || 0; allTime.set(j.partnerId, o); } });
+    const rows = [...state.partners].sort((a, b) => (b.active !== false) - (a.active !== false) || (+b.rate) - (+a.rate));
+    $("partnersTbl").innerHTML = `<thead><tr><th>名前</th><th>種類</th><th class="num">紹介料率</th><th>紹介した人（上乗せ）</th><th>支払元</th><th class="num">累計</th><th>状態</th><th class="needs-write"></th></tr></thead><tbody>` +
+      (rows.length ? rows.map(p => {
+        const intro = p.introducerId ? partnerById(p.introducerId) : null; const at = allTime.get(p.id);
+        return `<tr><td><b>${esc(p.name)}</b>${p.memo ? `<span class="small">${esc(p.memo)}</span>` : ""}</td><td>${esc(p.kind || "")}</td>
+          <td class="num">${+p.rate ? pct(+p.rate) : '<span class="pill p-mute">紹介者のみ</span>'}</td>
+          <td>${intro ? esc(intro.name) + " <b>" + pct(+p.introducerRate || 0) + "</b>" : "—"}</td>
+          <td>${+p.rate ? esc(p.payer || "本部") : ""}${intro ? `<span class="small">上乗せ：${esc(p.introducerPayer || "本部")}</span>` : ""}</td>
+          <td class="num">${at ? at.n + "件・" + usd(at.s) : "—"}</td>
+          <td>${p.active === false ? '<span class="pill p-mute">停止中</span>' : '<span class="pill p-good">取引中</span>'}</td>
+          <td class="needs-write" style="white-space:nowrap"><button class="btn ghost sm" data-edit-partner="${p.id}">編集</button></td></tr>`;
+      }).join("") : `<tr><td colspan="8" class="empty">パートナーはまだ登録されていません。</td></tr>`) + "</tbody>";
+    const cur = $("pId").value;
+    fillSelect($("pIntro"), `<option value="">なし</option>` + state.partners.filter(p => p.id !== cur).map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join(""));
+  }
+
+  // ---------- メニュー ----------
+  function renderMenu(){
+    const rates = [0, 0.2, state.cfg.defaultRate].filter((v, i, a) => a.indexOf(v) === i);
+    const rows = [...state.menu].sort((a, b) => (a.order || 0) - (b.order || 0));
+    const g = (m, r) => (+m.price) * (1 - r) - (+m.material || 0) - state.cfg.travel;
+    $("menuTbl").innerHTML = `<thead><tr><th>サービス</th><th>プラン</th><th class="num">定価</th><th class="num">材料費</th><th class="num">作業</th>` +
+      rates.map(r => `<th class="num">${r === 0 ? "直販" : "紹介料" + pct(r)}の粗利</th>`).join("") + `<th class="needs-write"></th></tr></thead><tbody>` +
+      (rows.length ? rows.map(m => `<tr><td>${esc(m.category)}</td><td><b>${esc(m.name)}</b></td><td class="num">${usd(+m.price)}</td><td class="num">${usd2(+m.material || 0)}</td><td class="num">${+m.minutes || 0}分</td>` +
+        rates.map(r => { const v = g(m, r); return `<td class="num" style="color:${v < 0 ? "var(--bad)" : "inherit"}">${usd2(v)}</td>`; }).join("") +
+        `<td class="needs-write"><button class="btn ghost sm" data-edit-menu="${m.id}">編集</button></td></tr>`).join("")
+        : `<tr><td colspan="9" class="empty">メニューがまだありません。</td></tr>`) + "</tbody>";
+  }
+
+  // ---------- 設定 ----------
+  function renderSettings(){
+    const c = state.cfg;
+    const set = (id, v) => { if (document.activeElement !== $(id)) $(id).value = v; };
+    set("cSalary", c.salary); set("cTarget", c.targetJobs); set("cTravel", c.travel); set("cRate", Math.round(c.defaultRate * 1000) / 10); set("cFixed", c.fixed || 0);
+  }
+
+  // ---------- 操作 ----------
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+    state.tab = t.dataset.tab;
+    document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t ? "true" : "false"));
+    document.querySelectorAll("section.view").forEach(v => v.hidden = v.id !== "v-" + state.tab);
+    try { localStorage.setItem("smd.tab", state.tab); } catch (e) {}
+  }));
+  $("mPrev").onclick = () => { state.month = ymShift(state.month, -1); renderAll(); };
+  $("mNext").onclick = () => { state.month = ymShift(state.month, 1); renderAll(); };
+  $("jMenu").addEventListener("change", () => { $("jPrice").value = +menuById($("jMenu").value)?.price || ""; updatePreview(); });
+  $("jPartner").addEventListener("change", updatePreview);
+  $("jPrice").addEventListener("input", updatePreview);
+
+  // 2回押して確定する削除ボタン
+  function armed(btn, label, fn){
+    if (btn.classList.contains("armed")){ fn(); return; }
+    btn.classList.add("armed"); const old = btn.textContent; btn.textContent = label;
+    setTimeout(() => { if (btn.isConnected){ btn.classList.remove("armed"); btn.textContent = old; } }, 3500);
+  }
+  async function write(fn, okMsg){
+    if (!state.db){ toast("保存先に接続できていません"); return false; }
+    try { await fn(state.db); if (okMsg) toast(okMsg); return true; }
+    catch (e){
+      if (e && e.code === "invalid_argument"){ state.canWrite = false; renderAll(); toast("この画面では編集できません（閲覧のみ）"); }
+      else toast("保存できませんでした（" + (e && e.code || "エラー") + "）。もう一度お試しください");
+      return false;
+    }
+  }
+
+  $("jobForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const m = menuById($("jMenu").value); if (!m){ toast("メニューを選んでください"); return; }
+    const p = partnerById($("jPartner").value); const intro = p && p.introducerId ? partnerById(p.introducerId) : null;
+    const date = $("jDate").value || todayISO();
+    const job = {
+      date, month: date.slice(0, 7), menuId: m.id, menuName: m.category + " " + m.name, material: +m.material || 0,
+      price: +$("jPrice").value || 0, travel: +state.cfg.travel || 0, customer: $("jCustomer").value.trim(),
+      partnerId: p ? p.id : "", partnerName: p ? p.name : "", rate: p ? +p.rate || 0 : 0, payer: p ? (p.payer || "本部") : "",
+      introducerId: intro ? intro.id : "", introducerName: intro ? intro.name : "", introducerRate: intro ? +p.introducerRate || 0 : 0,
+      introducerPayer: intro ? (p.introducerPayer || "本部") : "", createdAt: Date.now()
+    };
+    $("jSubmit").disabled = true;
+    const ok = await write(db => db.collection("jobs").doc().set(job), "記録しました");
+    $("jSubmit").disabled = false;
+    if (ok){ $("jCustomer").value = ""; if (job.month !== state.month){ state.month = job.month; renderAll(); } }
+  });
+
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest("button"); if (!b) return;
+    if (b.dataset.delJob) armed(b, "本当に削除", () => write(db => db.doc("jobs/" + b.dataset.delJob).delete(), "削除しました"));
+    if (b.dataset.settle){
+      const id = state.month + "__" + b.dataset.settle; const cur = state.settle[id];
+      const body = cur?.paid ? { month: state.month, key: b.dataset.settle, name: b.dataset.name, amount: +b.dataset.amount, paid: false, paidAt: "" }
+        : { month: state.month, key: b.dataset.settle, name: b.dataset.name, amount: +b.dataset.amount, paid: true, paidAt: todayISO() };
+      write(db => db.doc("settlements/" + id.replace(/[^A-Za-z0-9_\-.~:@+]/g, "_")).set(body), cur?.paid ? "未払いに戻しました" : "支払済にしました");
+    }
+    if (b.dataset.editPartner) editPartner(b.dataset.editPartner);
+    if (b.dataset.editMenu) editMenu(b.dataset.editMenu);
+  });
+
+  $("clearSamples").addEventListener("click", (ev) => armed(ev.currentTarget, "本当に削除（" + state.jobs.filter(j => j.sample).length + "件）", async () => {
+    for (const j of state.jobs.filter(j => j.sample)) await write(db => db.doc("jobs/" + j.id).delete());
+    toast("サンプルを削除しました");
+  }));
+
+  // パートナー
+  function resetPartnerForm(){
+    $("pId").value = ""; $("partnerForm").reset(); $("pRate").value = Math.round(state.cfg.defaultRate * 1000) / 10; $("pIntroRate").value = 0;
+    $("pFormTitle").textContent = "パートナーを追加"; $("pSubmit").textContent = "追加する"; $("pCancel").hidden = true; renderPartners();
+  }
+  function editPartner(id){
+    const p = partnerById(id); if (!p) return;
+    $("pId").value = id; renderPartners();
+    $("pName").value = p.name || ""; $("pKind").value = p.kind || "その他"; $("pRate").value = Math.round((+p.rate || 0) * 1000) / 10;
+    $("pPayer").value = p.payer || "本部"; $("pIntro").value = p.introducerId || ""; $("pIntroRate").value = Math.round((+p.introducerRate || 0) * 1000) / 10;
+    $("pIntroPayer").value = p.introducerPayer || "本部"; $("pActive").value = p.active === false ? "0" : "1"; $("pMemo").value = p.memo || "";
+    $("pFormTitle").textContent = p.name + " を編集"; $("pSubmit").textContent = "保存する"; $("pCancel").hidden = false;
+    $("partnerForm").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  $("pCancel").onclick = resetPartnerForm;
+  $("partnerForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const id = $("pId").value;
+    const body = {
+      name: $("pName").value.trim(), kind: $("pKind").value, rate: (+$("pRate").value || 0) / 100, payer: $("pPayer").value,
+      introducerId: $("pIntro").value, introducerRate: $("pIntro").value ? (+$("pIntroRate").value || 0) / 100 : 0,
+      introducerPayer: $("pIntroPayer").value, active: $("pActive").value === "1", memo: $("pMemo").value.trim()
+    };
+    if (!body.name) return;
+    const ok = await write(db => id ? db.doc("partners/" + id).set(body) : db.collection("partners").doc().set(body), id ? "保存しました" : "追加しました");
+    if (ok) resetPartnerForm();
+  });
+
+  // メニュー
+  function resetMenuForm(){ $("mId").value = ""; $("menuForm").reset(); $("mFormTitle").textContent = "メニューを追加"; $("mSubmit").textContent = "追加する"; $("mCancel").hidden = true; }
+  function editMenu(id){
+    const m = menuById(id); if (!m) return;
+    $("mId").value = id; $("mCat").value = m.category; $("mName").value = m.name; $("mPrice").value = m.price; $("mMat").value = m.material || 0; $("mMin").value = m.minutes || 0;
+    $("mFormTitle").textContent = m.category + " " + m.name + " を編集"; $("mSubmit").textContent = "保存する"; $("mCancel").hidden = false;
+    $("menuForm").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  $("mCancel").onclick = resetMenuForm;
+  $("menuForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const id = $("mId").value; const old = id ? menuById(id) : null;
+    const body = { category: $("mCat").value, name: $("mName").value.trim(), price: +$("mPrice").value || 0, material: +$("mMat").value || 0, minutes: +$("mMin").value || 0, order: old ? old.order || 0 : (state.menu.length + 1) * 10 };
+    const ok = await write(db => id ? db.doc("menu/" + id).set(body) : db.collection("menu").doc().set(body), id ? "保存しました" : "追加しました");
+    if (ok) resetMenuForm();
+  });
+
+  // 設定
+  $("cfgForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const body = { salary: +$("cSalary").value || 0, targetJobs: +$("cTarget").value || 0, travel: +$("cTravel").value || 0, defaultRate: (+$("cRate").value || 0) / 100, fixed: +$("cFixed").value || 0 };
+    write(db => db.doc("config/main").set(body), "設定を保存しました");
+  });
+
+
+  // ---------- この端末に保存する簡易データベース（試作・通信なし） ----------
+  const SEED = {"config": {"main": {"salary": 500, "targetJobs": 52, "travel": 2, "defaultRate": 0.3, "fixed": 0}}, "menu": {"hl-light": {"category": "ヘッドライト", "name": "軽度（コンパウンド）", "price": 15, "material": 0.87, "minutes": 40, "order": 10}, "hl-mid": {"category": "ヘッドライト", "name": "中度（ペーパー＋スチーマー）", "price": 30, "material": 5.6, "minutes": 60, "order": 20}, "hl-heavy": {"category": "ヘッドライト", "name": "重度（重研磨＋スチーマー）", "price": 35, "material": 6.57, "minutes": 60, "order": 30}, "body-60": {"category": "ボディ磨き", "name": "60分磨き", "price": 18, "material": 1.73, "minutes": 60, "order": 40}, "body-90": {"category": "ボディ磨き", "name": "90分磨き", "price": 23, "material": 2.03, "minutes": 90, "order": 50}, "body-60w": {"category": "ボディ磨き", "name": "60分磨き＋WASH", "price": 23, "material": 2.03, "minutes": 90, "order": 60}, "wash-sedan": {"category": "WASH", "name": "セダン", "price": 12, "material": 0.77, "minutes": 30, "order": 70}, "wash-suv": {"category": "WASH", "name": "SUV", "price": 15, "material": 0.93, "minutes": 45, "order": 80}, "glass-3": {"category": "GLASS", "name": "3面＋ミラー", "price": 15, "material": 0.65, "minutes": 30, "order": 90}, "glass-all": {"category": "GLASS", "name": "全面", "price": 30, "material": 0.97, "minutes": 60, "order": 100}}, "partners": {"res-a": {"name": "レジデンスA（サンプル）", "kind": "レジデンス", "rate": 0.2, "payer": "本部", "introducerId": "intro-b", "introducerRate": 0.05, "introducerPayer": "本部", "active": true, "memo": "サンプル。紹介料20%＋紹介者へ5%を毎月締めで本部から"}, "intro-b": {"name": "紹介者B（サンプル）", "kind": "個人紹介者", "rate": 0, "payer": "本部", "introducerId": "", "introducerRate": 0, "introducerPayer": "本部", "active": true, "memo": "サンプル。レジデンスA経由の施工の5%を受け取る"}, "dealer-c": {"name": "車屋さんC（サンプル）", "kind": "車屋さん", "rate": 0.3, "payer": "本部", "introducerId": "", "introducerRate": 0, "introducerPayer": "本部", "active": true, "memo": "サンプル。標準の紹介料30%"}}, "jobs": {"sample-00": {"date": "2026-07-08", "month": "2026-07", "menuId": "hl-heavy", "menuName": "ヘッドライト 重度（重研磨＋スチーマー）", "material": 6.57, "price": 35, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000000, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-01": {"date": "2026-07-15", "month": "2026-07", "menuId": "wash-sedan", "menuName": "WASH セダン", "material": 0.77, "price": 12, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000001, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-02": {"date": "2026-07-22", "month": "2026-07", "menuId": "hl-mid", "menuName": "ヘッドライト 中度（ペーパー＋スチーマー）", "material": 5.6, "price": 30, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000002, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-03": {"date": "2026-07-29", "month": "2026-07", "menuId": "glass-3", "menuName": "GLASS 3面＋ミラー", "material": 0.65, "price": 15, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000003, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-04": {"date": "2026-08-05", "month": "2026-08", "menuId": "hl-heavy", "menuName": "ヘッドライト 重度（重研磨＋スチーマー）", "material": 6.57, "price": 35, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000004, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-05": {"date": "2026-08-09", "month": "2026-08", "menuId": "hl-mid", "menuName": "ヘッドライト 中度（ペーパー＋スチーマー）", "material": 5.6, "price": 30, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000005, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-06": {"date": "2026-08-14", "month": "2026-08", "menuId": "wash-suv", "menuName": "WASH SUV", "material": 0.93, "price": 15, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000006, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-07": {"date": "2026-08-20", "month": "2026-08", "menuId": "body-60", "menuName": "ボディ磨き 60分磨き", "material": 1.73, "price": 18, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000007, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-08": {"date": "2026-08-26", "month": "2026-08", "menuId": "hl-heavy", "menuName": "ヘッドライト 重度（重研磨＋スチーマー）", "material": 6.57, "price": 35, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000008, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-09": {"date": "2026-08-30", "month": "2026-08", "menuId": "glass-all", "menuName": "GLASS 全面", "material": 0.97, "price": 30, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000009, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-10": {"date": "2026-09-03", "month": "2026-09", "menuId": "hl-heavy", "menuName": "ヘッドライト 重度（重研磨＋スチーマー）", "material": 6.57, "price": 35, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000010, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-11": {"date": "2026-09-07", "month": "2026-09", "menuId": "hl-mid", "menuName": "ヘッドライト 中度（ペーパー＋スチーマー）", "material": 5.6, "price": 30, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000011, "partnerId": "res-a", "partnerName": "レジデンスA（サンプル）", "rate": 0.2, "payer": "本部", "introducerId": "intro-b", "introducerName": "紹介者B（サンプル）", "introducerRate": 0.05, "introducerPayer": "本部"}, "sample-12": {"date": "2026-09-11", "month": "2026-09", "menuId": "wash-sedan", "menuName": "WASH セダン", "material": 0.77, "price": 12, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000012, "partnerId": "res-a", "partnerName": "レジデンスA（サンプル）", "rate": 0.2, "payer": "本部", "introducerId": "intro-b", "introducerName": "紹介者B（サンプル）", "introducerRate": 0.05, "introducerPayer": "本部"}, "sample-13": {"date": "2026-09-15", "month": "2026-09", "menuId": "hl-heavy", "menuName": "ヘッドライト 重度（重研磨＋スチーマー）", "material": 6.57, "price": 35, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000013, "partnerId": "res-a", "partnerName": "レジデンスA（サンプル）", "rate": 0.2, "payer": "本部", "introducerId": "intro-b", "introducerName": "紹介者B（サンプル）", "introducerRate": 0.05, "introducerPayer": "本部"}, "sample-14": {"date": "2026-09-18", "month": "2026-09", "menuId": "glass-3", "menuName": "GLASS 3面＋ミラー", "material": 0.65, "price": 15, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000014, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-15": {"date": "2026-09-21", "month": "2026-09", "menuId": "hl-mid", "menuName": "ヘッドライト 中度（ペーパー＋スチーマー）", "material": 5.6, "price": 30, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000015, "partnerId": "", "partnerName": "", "rate": 0, "payer": "", "introducerId": "", "introducerName": "", "introducerRate": 0, "introducerPayer": ""}, "sample-16": {"date": "2026-09-24", "month": "2026-09", "menuId": "body-60", "menuName": "ボディ磨き 60分磨き", "material": 1.73, "price": 18, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000016, "partnerId": "res-a", "partnerName": "レジデンスA（サンプル）", "rate": 0.2, "payer": "本部", "introducerId": "intro-b", "introducerName": "紹介者B（サンプル）", "introducerRate": 0.05, "introducerPayer": "本部"}, "sample-17": {"date": "2026-09-26", "month": "2026-09", "menuId": "hl-heavy", "menuName": "ヘッドライト 重度（重研磨＋スチーマー）", "material": 6.57, "price": 35, "travel": 2, "customer": "サンプル", "sample": true, "createdAt": 1790400000017, "partnerId": "res-a", "partnerName": "レジデンスA（サンプル）", "rate": 0.2, "payer": "本部", "introducerId": "intro-b", "introducerName": "紹介者B（サンプル）", "introducerRate": 0.05, "introducerPayer": "本部"}}, "settlements": {}};
+  function makeLocalDb(){
+    const KEY = "smd.exec.v2.preview";
+    let data, persist = true;
+    try { data = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { persist = false; }
+    if (!data) data = JSON.parse(JSON.stringify(SEED));
+    const subs = [];
+    const save = () => { if (!persist) return; try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { persist = false; } };
+    const docSnap = (col, id) => ({ id, exists: !!(data[col] && data[col][id]), data: () => data[col] && data[col][id] });
+    const colSnap = (col) => ({ docs: Object.keys(data[col] || {}).map(id => docSnap(col, id)) });
+    const notify = () => { save(); subs.forEach(s => s()); };
+    const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const docRef = (col, id) => ({
+      set: async (body) => { (data[col] = data[col] || {})[id] = JSON.parse(JSON.stringify(body)); notify(); },
+      delete: async () => { if (data[col]) delete data[col][id]; notify(); },
+      onSnapshot: (fn) => { const s = () => fn(docSnap(col, id)); subs.push(s); setTimeout(s, 0); return () => {}; }
+    });
+    return {
+      persist: () => persist,
+      reset: () => { data = JSON.parse(JSON.stringify(SEED)); notify(); },
+      exportJson: () => JSON.stringify(data),
+      importJson: (txt) => { const d = JSON.parse(txt); if (!d || typeof d !== "object" || !d.menu) throw new Error("bad"); data = d; notify(); },
+      doc: (path) => { const [c, id] = path.split("/"); return docRef(c, id); },
+      collection: (col) => ({
+        doc: (id) => docRef(col, id || newId()),
+        onSnapshot: (fn) => { const s = () => fn(colSnap(col)); subs.push(s); setTimeout(s, 0); return () => {}; }
+      })
+    };
+  }
+
+  // ---------- 起動 ----------
+  try { const t = localStorage.getItem("smd.tab"); if (t) document.querySelector(`.tab[data-tab="${t}"]`)?.click(); } catch (e) {}
+  renderAll();
+
+  (() => {
+    const db = makeLocalDb();
+    state.db = db;
+    $("who").textContent = db.persist() ? "この端末のブラウザに保存しています" : "保存できないモードです（プライベートブラウズ等）。閉じると消えます";
+    let got = 0; const ready = () => { if (++got >= 5){ $("status").hidden = true; state.loaded = true; } renderAll(); };
+    db.doc("config/main").onSnapshot(s => { if (s.exists) state.cfg = Object.assign({ salary: 500, targetJobs: 52, travel: 2, defaultRate: 0.3, fixed: 0 }, s.data()); ready(); });
+    db.collection("menu").onSnapshot(q => { state.menu = q.docs.map(d => Object.assign({ id: d.id }, d.data())); ready(); });
+    db.collection("partners").onSnapshot(q => { state.partners = q.docs.map(d => Object.assign({ id: d.id }, d.data())); ready(); });
+    db.collection("jobs").onSnapshot(q => { state.jobs = q.docs.map(d => Object.assign({ id: d.id }, d.data())); ready(); });
+    db.collection("settlements").onSnapshot(q => { const o = {}; q.docs.forEach(d => { const v = d.data(); o[v.month + "__" + v.key] = v; }); state.settle = o; ready(); });
+    $("expBtn").addEventListener("click", async () => {
+      const txt = db.exportJson(); $("ioText").value = txt;
+      try { await navigator.clipboard.writeText(txt); toast("データをコピーしました"); } catch (e) { $("ioText").select(); toast("下の枠の文字をすべて選んでコピーしてください"); }
+    });
+    $("impBtn").addEventListener("click", (ev) => armed(ev.currentTarget, "今のデータを上書きする", () => {
+      try { db.importJson($("ioText").value.trim()); toast("データを読み込みました"); } catch (e) { toast("読み込めませんでした。コピーした文字を丸ごと貼り付けてください"); }
+    }));
+    $("resetBtn").addEventListener("click", (ev) => armed(ev.currentTarget, "本当に初期状態に戻す", () => { db.reset(); toast("初期状態に戻しました"); }));
+  })();
+})();
+</script>
+
+</body>
+</html>
