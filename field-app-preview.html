@@ -222,12 +222,12 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .bar .two{display:grid;grid-template-columns:auto 1fr;gap:8px}
 
 /* ── 下タブ ── */
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(3,1fr)}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(4,1fr)}
 .tab{height:var(--tab-h);display:grid;place-items:center;align-content:center;gap:2px;color:#6b7686;position:relative;font-size:12px;font-weight:700;line-height:1.15}
 .tab svg{width:26px;height:26px}
 .tab[aria-selected="true"]{color:var(--blue)}
 .tab[aria-selected="true"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--blue)}
-.tab .dot{position:absolute;top:9px;right:calc(50% - 30px);min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;display:grid;place-items:center;font-family:'Noto Sans JP',sans-serif;padding:0 5px}
+.tab .dot{position:absolute;top:9px;right:calc(50% - 24px);min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;display:grid;place-items:center;font-family:'Noto Sans JP',sans-serif;padding:0 5px}
 
 /* ── 営業 ── */
 .shop{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:12px 0;border-bottom:1px solid #e7ebf1}
@@ -260,6 +260,17 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 .item.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
 .item-ex{background:var(--band);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text);line-height:1.5}
 .memo-in{width:100%;min-height:52px;border:2px solid var(--amber);border-radius:12px;padding:10px 12px;font-size:17px;background:#fff}
+.stk{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #e7ebf1}
+.stk:last-child{border-bottom:0}
+.stk img{width:72px;height:72px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff}
+.stk.low img{border:2px solid var(--red)}
+.stk-n{font-size:15px;font-weight:700;line-height:1.3}
+.stk-m{font-size:12px;color:var(--sub);margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.stk-s{display:flex;align-items:center;gap:4px;font-weight:700;font-size:13px}
+.stk-s span{min-width:34px}
+.stk-s select{min-width:64px;min-height:52px;font-size:20px;font-weight:700;border:2px solid var(--line);border-radius:12px;padding:0 8px;background:#fff;font-family:'Noto Sans JP',sans-serif}
+.stk.low .stk-s select{border-color:var(--red);color:var(--red)}
+pre.tg{white-space:pre-wrap;font-family:'Noto Sans JP',sans-serif;font-size:13px;background:#eef3fb;border-radius:10px;padding:10px 12px;line-height:1.6}
 .exp-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e7ebf1;font-size:15px}
 .exp-row:last-child{border-bottom:0}
 .exp-row b{font-size:17px}
@@ -304,6 +315,9 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
   <button type="button" class="tab" role="tab" data-tab="expense" aria-selected="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span data-t="tab_expense"></span>
   </button>
+  <button type="button" class="tab" role="tab" data-tab="stock" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-5 9 5v10l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v10"/></svg><span data-t="tab_stock"></span><span class="dot" id="stockDot" hidden>!</span>
+  </button>
   <button type="button" class="tab" role="tab" data-tab="more" aria-selected="false">
     <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg><span data-t="tab_more"></span><span class="dot" id="moreDot">2</span>
   </button>
@@ -333,10 +347,10 @@ var T_JA = {
   shop_visit:'訪問を記録', shop_new:'新しい店を追加', react_a:'デモ決定', react_b:'興味あり', react_c:'保留', react_d:'断り', demo_date:'デモ予定日', today:'今日', tomorrow:'明日', pick_date:'日付を選ぶ', owner:'オーナー', visits_today:'今日の訪問', near_you:'近くの店（未訪問）',
   exp_receipt:'レシートを撮る', exp_fuel:'ガソリン', exp_supplies:'洗車の資材', exp_parking:'駐車・通行料', exp_other:'その他', exp_paid_by_me:'自分で立て替えた', exp_paid_company:'会社が直接払った', exp_recent:'最近の登録',
   report_title:'日報', report_summary:'1日のまとめ', report_send:'日報を送る', report_tomorrow:'明日の予定', report_sent:'日報を送りました',
-  tasks:'タスク', history:'過去の作業', more_menu:'メニュー', it_fuel:'ガソリン', it_fuel_ex:'例: バイクのガソリン', it_chem:'洗車の薬', it_chem_ex:'例: スプレー・ワックス・シャンプー（車に使って、なくなるもの）', it_tools:'道具', it_tools_ex:'例: クロス・バケツ・手袋（何回も使うもの）', it_bike:'バイクの修理', it_bike_ex:'例: パンク修理・オイル交換', it_parking:'駐車代', it_parking_ex:'例: 駐車場・通行料', it_flyer:'チラシ印刷', it_flyer_ex:'例: チラシ・ポスター・名刺', it_phone:'電話代', it_phone_ex:'例: 電話のチャージ・インターネット', it_util:'店の電気・水道', it_util_ex:'例: 電気代・水道代', it_other:'そのほか', it_other_ex:'例: 上にないもの（何を買ったか書いてください）', what_bought:'何を買った？', memo_required:'何を買ったか書いてください', unclassified:'未分類（日本側で分類）', cat_labor:'人件費', cat_rent:'地代家賃', cat_util:'水道光熱費', cat_comm:'通信費', cat_wash:'洗車資材費', cat_vehicle:'車両費', cat_travel:'旅費交通費', cat_ads:'広告宣伝費', cat_supplies:'消耗品・修繕費', cat_it:'システム・IT費', cat_social:'交際・福利厚生費', cat_rnd:'試作・開発費', cat_other:'その他', cat_interior:'内装工事', cat_furniture:'家具家電・機材', cat_vehbuy:'車両購入', cat_deposit:'敷金・保証金', balance:'ロン君 前払い残高', advance_title:'前払い', advance_received:'前払いを受け取った', advance_send:'前払いを送る（ロン君へ）', who:'記録した人', date:'日付', this_month:'今月', spent:'使った金額', currency:'通貨', more_cats:'ほかの分類', advance_pending:'受取確認待ち', confirmed:'確認済み', paid_by:'負担先', campaign_sale:'キャンペーン売上を記録', new_job:'予約なしの作業を始める', jobs_done:'完了', jobs_wait:'待機中', total:'合計', gps_ok:'位置情報 OK', gps_ng:'位置情報が取れません（打刻はできます）', free_demo:'無料デモ', minutes:'分'
+  tasks:'タスク', history:'過去の作業', more_menu:'メニュー', tab_stock:'在庫', stock_title:'在庫を数える', stock_hint:'写真を見て、今ある数を選んでください', stock_friday:'毎週金曜日に数えます', stock_low:'少ない', stock_ok:'OK', stock_notyet:'まだ数えていない', stock_last:'前回', stock_send:'棚卸しを送る', stock_sent:'送りました。少ない物は日本側に知らせました', stock_counted:'数えた', unit_sheet:'枚', unit_bottle:'本', unit_roll:'巻', unit_set:'台', inv_cloth_gray:'マイクロファイバークロス（グレー）', inv_cloth_purple:'マイクロファイバークロス（パープル）', inv_cloth_blue:'マイクロファイバークロス（ブルー）', inv_cloth_pink:'マイクロファイバークロス（ピンク）', inv_waterless:'無水洗車剤（Waterless）', inv_sprayer:'蓄圧式スプレー 4L', inv_glaco_mirror:'ガラコ ミラーコート', inv_glaco_gekisoku:'激速ガラコ', inv_glaco_super:'超ガラコ', inv_ceriglass:'CeriGlass（ガラス研磨剤）', inv_tape_blue:'マスキングテープ（青）', inv_tire_wax:'タイヤワックス', it_fuel:'ガソリン', it_fuel_ex:'例: バイクのガソリン', it_chem:'洗車の薬', it_chem_ex:'例: スプレー・ワックス・シャンプー（車に使って、なくなるもの）', it_tools:'道具', it_tools_ex:'例: クロス・バケツ・手袋（何回も使うもの）', it_bike:'バイクの修理', it_bike_ex:'例: パンク修理・オイル交換', it_parking:'駐車代', it_parking_ex:'例: 駐車場・通行料', it_flyer:'チラシ印刷', it_flyer_ex:'例: チラシ・ポスター・名刺', it_phone:'電話代', it_phone_ex:'例: 電話のチャージ・インターネット', it_util:'店の電気・水道', it_util_ex:'例: 電気代・水道代', it_other:'そのほか', it_other_ex:'例: 上にないもの（何を買ったか書いてください）', what_bought:'何を買った？', memo_required:'何を買ったか書いてください', unclassified:'未分類（日本側で分類）', cat_labor:'人件費', cat_rent:'地代家賃', cat_util:'水道光熱費', cat_comm:'通信費', cat_wash:'洗車資材費', cat_vehicle:'車両費', cat_travel:'旅費交通費', cat_ads:'広告宣伝費', cat_supplies:'消耗品・修繕費', cat_it:'システム・IT費', cat_social:'交際・福利厚生費', cat_rnd:'試作・開発費', cat_other:'その他', cat_interior:'内装工事', cat_furniture:'家具家電・機材', cat_vehbuy:'車両購入', cat_deposit:'敷金・保証金', balance:'ロン君 前払い残高', advance_title:'前払い', advance_received:'前払いを受け取った', advance_send:'前払いを送る（ロン君へ）', who:'記録した人', date:'日付', this_month:'今月', spent:'使った金額', currency:'通貨', more_cats:'ほかの分類', advance_pending:'受取確認待ち', confirmed:'確認済み', paid_by:'負担先', campaign_sale:'キャンペーン売上を記録', new_job:'予約なしの作業を始める', jobs_done:'完了', jobs_wait:'待機中', total:'合計', gps_ok:'位置情報 OK', gps_ng:'位置情報が取れません（打刻はできます）', free_demo:'無料デモ', minutes:'分'
 };
 /*KM-START*/
-var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_shops": "ហាងដៃគូ", "tab_expense": "ចំណាយ", "tab_more": "ផ្សេងៗ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "next_title": "ការកក់បន្ទាប់", "leave_by": "ចេញដំណើរម៉ោង", "btn_map": "ផែនទី", "btn_call": "ហៅទូរស័ព្ទ", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_interior": "ខាងក្នុង", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "cust_phone": "លេខទូរស័ព្ទ", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "voice_note": "ថតសម្លេង", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "cust_got_photos": "អតិថិជនបានទទួលរូបថតហើយ", "link_qr": "ភ្ជាប់ Telegram អតិថិជន (QR)", "shop_visit": "កត់ត្រាការចុះជួប", "shop_new": "បង្កើតហាងថ្មី", "react_a": "កំណត់ការសាកល្បង", "react_b": "ចាប់អារម្មណ៍", "react_c": "រង់ចាំសម្រេច", "react_d": "បដិសេធ", "demo_date": "ថ្ងៃគ្រោងសាកល្បង", "today": "ថ្ងៃនេះ", "tomorrow": "ថ្ងៃស្អែក", "pick_date": "ជ្រើសរើសថ្ងៃ", "owner": "ម្ចាស់ហាង", "visits_today": "ការចុះជួបថ្ងៃនេះ", "near_you": "ហាងនៅជិត (មិនទាន់ចុះជួប)", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_fuel": "សាំង", "exp_supplies": "សម្ភារៈលាង", "exp_parking": "ចតឡាន / ថ្លៃផ្លូវ", "exp_other": "ផ្សេងៗ", "exp_paid_by_me": "ខ្ញុំចេញលុយមុន", "exp_paid_company": "ក្រុមហ៊ុនបង់ផ្ទាល់", "exp_recent": "បានកត់ត្រាថ្មីៗ", "report_title": "របាយការណ៍", "report_summary": "សង្ខេបប្រចាំថ្ងៃ", "report_send": "ផ្ញើរបាយការណ៍", "report_tomorrow": "គម្រោងថ្ងៃស្អែក", "report_sent": "បានផ្ញើរបាយការណ៍ហើយ", "tasks": "កិច្ចការ", "history": "ការងារកន្លងមក", "campaign_sale": "កត់ត្រាការលក់", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "jobs_wait": "រង់ចាំ", "total": "សរុប", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "cat_labor": "ថ្ងៃឈ្នួលអ្នកជួយ", "cat_rent_util": "ថ្លៃឈ្នួល / ថ្លៃទឹកភ្លើង", "cat_vehicle_wash": "សាំង / ជួសជុលម៉ូតូ / ថ្នាំលាង", "cat_supplies": "សម្ភារៈប្រើប្រាស់", "cat_furniture": "គ្រឿងសង្ហារឹម / គ្រឿងអគ្គិសនី", "cat_rnd": "សម្ភារៈសាកល្បង", "cat_ads": "ថ្លៃផ្សព្វផ្សាយ", "cat_travel": "ថ្លៃធ្វើដំណើរ", "cat_it": "ទូរស័ព្ទ / អ៊ីនធឺណិត / IT", "cat_other": "ផ្សេងៗ", "balance": "សមតុល្យប្រាក់មុន", "advance_title": "ប្រាក់មុន", "advance_received": "បានទទួលប្រាក់មុន", "who": "អ្នកកត់ត្រា", "date": "កាលបរិច្ឆេទ", "this_month": "ខែនេះ", "spent": "ចំណាយសរុប", "currency": "រូបិយប័ណ្ណ", "more_menu": "ម៉ឺនុយ", "more_cats": "ប្រភេទផ្សេងទៀត", "advance_pending": "រង់ចាំការបញ្ជាក់", "confirmed": "បានបញ្ជាក់", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "what_bought": "ទិញអ្វី?", "memo_required": "សូមសរសេរថាទិញអ្វី"};
+var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_shops": "ហាងដៃគូ", "tab_expense": "ចំណាយ", "tab_more": "ផ្សេងៗ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "next_title": "ការកក់បន្ទាប់", "leave_by": "ចេញដំណើរម៉ោង", "btn_map": "ផែនទី", "btn_call": "ហៅទូរស័ព្ទ", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_interior": "ខាងក្នុង", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "cust_phone": "លេខទូរស័ព្ទ", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "voice_note": "ថតសម្លេង", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "cust_got_photos": "អតិថិជនបានទទួលរូបថតហើយ", "link_qr": "ភ្ជាប់ Telegram អតិថិជន (QR)", "shop_visit": "កត់ត្រាការចុះជួប", "shop_new": "បង្កើតហាងថ្មី", "react_a": "កំណត់ការសាកល្បង", "react_b": "ចាប់អារម្មណ៍", "react_c": "រង់ចាំសម្រេច", "react_d": "បដិសេធ", "demo_date": "ថ្ងៃគ្រោងសាកល្បង", "today": "ថ្ងៃនេះ", "tomorrow": "ថ្ងៃស្អែក", "pick_date": "ជ្រើសរើសថ្ងៃ", "owner": "ម្ចាស់ហាង", "visits_today": "ការចុះជួបថ្ងៃនេះ", "near_you": "ហាងនៅជិត (មិនទាន់ចុះជួប)", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_fuel": "សាំង", "exp_supplies": "សម្ភារៈលាង", "exp_parking": "ចតឡាន / ថ្លៃផ្លូវ", "exp_other": "ផ្សេងៗ", "exp_paid_by_me": "ខ្ញុំចេញលុយមុន", "exp_paid_company": "ក្រុមហ៊ុនបង់ផ្ទាល់", "exp_recent": "បានកត់ត្រាថ្មីៗ", "report_title": "របាយការណ៍", "report_summary": "សង្ខេបប្រចាំថ្ងៃ", "report_send": "ផ្ញើរបាយការណ៍", "report_tomorrow": "គម្រោងថ្ងៃស្អែក", "report_sent": "បានផ្ញើរបាយការណ៍ហើយ", "tasks": "កិច្ចការ", "history": "ការងារកន្លងមក", "campaign_sale": "កត់ត្រាការលក់", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "jobs_wait": "រង់ចាំ", "total": "សរុប", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "cat_labor": "ថ្ងៃឈ្នួលអ្នកជួយ", "cat_rent_util": "ថ្លៃឈ្នួល / ថ្លៃទឹកភ្លើង", "cat_vehicle_wash": "សាំង / ជួសជុលម៉ូតូ / ថ្នាំលាង", "cat_supplies": "សម្ភារៈប្រើប្រាស់", "cat_furniture": "គ្រឿងសង្ហារឹម / គ្រឿងអគ្គិសនី", "cat_rnd": "សម្ភារៈសាកល្បង", "cat_ads": "ថ្លៃផ្សព្វផ្សាយ", "cat_travel": "ថ្លៃធ្វើដំណើរ", "cat_it": "ទូរស័ព្ទ / អ៊ីនធឺណិត / IT", "cat_other": "ផ្សេងៗ", "balance": "សមតុល្យប្រាក់មុន", "advance_title": "ប្រាក់មុន", "advance_received": "បានទទួលប្រាក់មុន", "who": "អ្នកកត់ត្រា", "date": "កាលបរិច្ឆេទ", "this_month": "ខែនេះ", "spent": "ចំណាយសរុប", "currency": "រូបិយប័ណ្ណ", "more_menu": "ម៉ឺនុយ", "more_cats": "ប្រភេទផ្សេងទៀត", "advance_pending": "រង់ចាំការបញ្ជាក់", "confirmed": "បានបញ្ជាក់", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "what_bought": "ទិញអ្វី?", "memo_required": "សូមសរសេរថាទិញអ្វី", "tab_stock": "ស្តុក", "stock_title": "រាប់ស្តុក", "stock_hint": "មើលរូប ហើយជ្រើសរើសចំនួនដែលមានឥឡូវ", "stock_friday": "រាប់រៀងរាល់ថ្ងៃសុក្រ", "stock_low": "ជិតអស់", "stock_ok": "គ្រប់គ្រាន់", "stock_notyet": "មិនទាន់រាប់", "stock_last": "លើកមុន", "stock_send": "ផ្ញើការរាប់ស្តុក", "stock_sent": "បានផ្ញើ។ ទំនិញជិតអស់ បានជូនដំណឹងទៅខាងជប៉ុនហើយ", "stock_counted": "បានរាប់", "unit_sheet": "សន្លឹក", "unit_bottle": "ដប", "unit_roll": "ខ្សែ", "unit_set": "គ្រឿង", "inv_cloth_gray": "កន្សែងពណ៌ប្រផេះ", "inv_cloth_purple": "កន្សែងពណ៌ស្វាយ", "inv_cloth_blue": "កន្សែងពណ៌ខៀវ", "inv_cloth_pink": "កន្សែងពណ៌ផ្កាឈូក", "inv_waterless": "ថ្នាំលាង Waterless", "inv_sprayer": "ធុងបាញ់ 4L", "inv_glaco_mirror": "Glaco កញ្ចក់ឆ្លុះទ្វារ", "inv_glaco_gekisoku": "Glaco កញ្ចក់ (លឿន)", "inv_glaco_super": "Glaco កញ្ចក់ (ជាប់យូរ)", "inv_ceriglass": "CeriGlass ខាត់កញ្ចក់", "inv_tape_blue": "Scotch Blue ខ្សែកាវពណ៌ខៀវ", "inv_tire_wax": "ថ្នាំលាបកង់រថយន្ត"};
 /*KM-END*/
 var LANG = 'km';
 // 利用者（本番は個人専用リンク／Telegram で判定。試作は帯のボタンで切替）
@@ -367,6 +381,23 @@ var ITEMS = [
   { k: 'it_other',   ic: '📦', cat: '' }
 ];
 function itemOf(k) { return ITEMS.filter(function (i) { return i.k === k; })[0]; }
+var AMZ = 'https://m.media-amazon.com/images/I/';
+var STOCK = [
+  { id: 'INV-001', k: 'inv_cloth_gray',     img: AMZ + '61b8RWsPcaL._AC_UL320_.jpg', unit: 'unit_sheet',  low: 5, last: 12 },
+  { id: 'INV-002', k: 'inv_cloth_purple',   img: AMZ + '916ubNMfaOL._AC_UL320_.jpg', unit: 'unit_sheet',  low: 5, last: 9 },
+  { id: 'INV-003', k: 'inv_cloth_blue',     img: AMZ + '81NwyoNXLpL._AC_UL320_.jpg', unit: 'unit_sheet',  low: 5, last: 6 },
+  { id: 'INV-004', k: 'inv_cloth_pink',     img: AMZ + '71btNnVYq-L._AC_UL320_.jpg', unit: 'unit_sheet',  low: 5, last: 4 },
+  { id: 'INV-005', k: 'inv_waterless',      img: AMZ + '616C0j0aF+L._AC_UL320_.jpg', unit: 'unit_bottle', low: 1, last: 2 },
+  { id: 'INV-006', k: 'inv_sprayer',        img: AMZ + '61ZTPUQF7zL._AC_UL320_.jpg', unit: 'unit_set',    low: 0, last: 1 },
+  { id: 'INV-007', k: 'inv_glaco_mirror',   img: AMZ + '81kPTLAAOtL._AC_UL320_.jpg', unit: 'unit_bottle', low: 1, last: 2 },
+  { id: 'INV-008', k: 'inv_glaco_gekisoku', img: AMZ + '71jWsBMhFiL._AC_UL320_.jpg', unit: 'unit_bottle', low: 1, last: 1 },
+  { id: 'INV-009', k: 'inv_glaco_super',    img: AMZ + '61tlftRbiXL._AC_UL320_.jpg', unit: 'unit_bottle', low: 1, last: 2 },
+  { id: 'INV-010', k: 'inv_ceriglass',      img: AMZ + '61dNac-Hi4L._AC_UL320_.jpg', unit: 'unit_bottle', low: 1, last: 1 },
+  { id: 'INV-011', k: 'inv_tape_blue',      img: AMZ + '511xvLascFL._AC_UL320_.jpg', unit: 'unit_roll',   low: 2, last: 3 },
+  { id: 'INV-012', k: 'inv_tire_wax',       img: AMZ + '61wp345Uq5L._AC_UL320_.jpg', unit: 'unit_bottle', low: 1, last: 2 }
+];
+var stockCount = {};   // 今回の棚卸し（id → 個数）
+var stockSentMsg = ''; // 管理グループへの通知文（試作プレビュー）
 var CAT_TOP = { field: ['cat_vehicle', 'cat_wash', 'cat_travel', 'cat_other'], japan: ['cat_ads', 'cat_it', 'cat_travel', 'cat_supplies'] };
 function t(k) { var d = LANG === 'km' ? T_KM : T_JA; return (d[k] != null ? d[k] : (T_JA[k] || k)); }
 
@@ -941,6 +972,50 @@ function renderExpense() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  在庫タブ（毎週金曜に棚卸し → 少ない物は管理グループへ通知）
+// ═══════════════════════════════════════════════════════════════
+function renderStock() {
+  var counted = Object.keys(stockCount).length;
+  var html = '<div class="card"><div class="band">📦 ' + t('stock_title') + '<span class="r num">' + counted + '/' + STOCK.length + '</span></div>' +
+    '<div class="body" style="gap:6px"><div class="note">📷 ' + t('stock_hint') + '</div><div class="note">🗓 ' + t('stock_friday') + '</div></div></div>';
+  html += '<div class="card"><div class="body" style="padding:4px 12px;gap:0">' + STOCK.map(function (it) {
+    var v = stockCount[it.id];
+    var cur = v != null ? v : null;
+    var low = cur != null && cur <= it.low;
+    var chip = cur == null ? '<span class="chip">' + t('stock_notyet') + '</span>'
+      : (low ? '<span class="chip" style="background:var(--red-bg);color:var(--red)">🔴 ' + t('stock_low') + '</span>' : '<span class="chip ok">🟢 ' + t('stock_ok') + '</span>');
+    var opts = '<option value="">—</option>';
+    for (var n = 0; n <= 30; n++) opts += '<option value="' + n + '"' + (cur === n ? ' selected' : '') + '>' + n + '</option>';
+    return '<div class="stk' + (low ? ' low' : '') + '">' +
+      '<img src="' + it.img + '" alt="" loading="lazy">' +
+      '<div class="stk-b"><div class="stk-n">' + esc(t(it.k)) + '</div>' +
+      '<div class="stk-m">' + t('stock_last') + ' <b class="num">' + it.last + '</b> ' + t(it.unit) + ' · ' + chip + '</div></div>' +
+      '<label class="stk-s"><select data-stk="' + it.id + '" aria-label="' + esc(t(it.k)) + '">' + opts + '</select><span>' + t(it.unit) + '</span></label>' +
+      '</div>';
+  }).join('') + '</div></div>';
+  if (stockSentMsg) html += '<div class="card"><div class="band">✈️ 管理グループへの通知（試作プレビュー）</div><div class="body"><pre class="tg">' + esc(stockSentMsg) + '</pre></div></div>';
+  html += '<button type="button" class="btn ' + (counted === STOCK.length ? 'green' : '') + '" id="stockSend"' + (counted ? '' : ' disabled') + '>📤 ' + t('stock_send') + ' <small class="num">' + counted + '/' + STOCK.length + '</small></button>';
+  $('main').innerHTML = html;
+  document.querySelectorAll('[data-stk]').forEach(function (sel) {
+    sel.onchange = function () {
+      var id = sel.getAttribute('data-stk');
+      if (sel.value === '') delete stockCount[id]; else stockCount[id] = +sel.value;
+      renderStock();
+    };
+  });
+  $('stockSend').onclick = function () {
+    var d = ppNow(), when = (d.getMonth() + 1) + '/' + d.getDate();
+    var lows = STOCK.filter(function (it) { return stockCount[it.id] != null && stockCount[it.id] <= it.low; });
+    stockSentMsg = lows.length
+      ? '📦 在庫が少ない品目（' + when + ' 棚卸し・' + USER.name + '）\n' + lows.map(function (it) { return '・' + T_JA[it.k] + '：' + stockCount[it.id] + T_JA[it.unit] + '（ライン ' + it.low + '）'; }).join('\n') + '\n\n在庫管理GSS で確認 → 補充の手配を'
+      : '📦 棚卸し完了（' + when + '・' + USER.name + '）少ない品目はありません';
+    STOCK.forEach(function (it) { if (stockCount[it.id] != null) it.last = stockCount[it.id]; });
+    send(); toast('✅ ' + t('stock_sent'), 'ok');
+    stockCount = {}; renderStock(); window.scrollTo(0, document.body.scrollHeight);
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  その他タブ
 // ═══════════════════════════════════════════════════════════════
 function renderMore() {
@@ -961,6 +1036,7 @@ function renderMore() {
 function render() {
   document.querySelectorAll('[data-t]').forEach(function (el) { el.textContent = t(el.getAttribute('data-t')); });
   document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === S.tab)); });
+  var sd = $('stockDot'); if (sd) sd.hidden = !(ppNow().getDay() === 5 && !Object.keys(stockCount).length);  // 金曜（棚卸し日）だけ印
   var inFlow = S.view === 'job' || S.view === 'visit';
   var inShops = S.view === 'shops';
   $('tabs').hidden = inFlow || inShops; $('bar').hidden = !inFlow; $('main').className = inFlow ? 'flow' : '';
@@ -971,6 +1047,7 @@ function render() {
   else if (S.view === 'shops') renderShops();
   else if (S.tab === 'today') renderToday();
   else if (S.tab === 'expense') renderExpense();
+  else if (S.tab === 'stock') renderStock();
   else renderMore();
 }
 document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { S.tab = b.getAttribute('data-tab'); S.view = 'home'; render(); window.scrollTo(0, 0); }; });
