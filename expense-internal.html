@@ -211,8 +211,9 @@ body {
     <div class="hint">任意</div>
   </div>
 
-  <!-- 立替区分トグル -->
-  <div class="field">
+  <!-- 立替区分トグル — 2026-09-27 非表示: 現場の支出はすべて飯泉さんの前払い金から（サーバー側でも「前払い金」に固定）。
+       Daisuke「立替が基本・引き算思考」。要素は JS 参照のため残す -->
+  <div class="field" style="display:none">
     <label>💳 支払い区分 / ការទូទាត់</label>
     <div class="toggle-group">
       <button type="button" class="toggle-btn active" id="btnPayCompany" data-type="会社直払い">
@@ -273,7 +274,7 @@ var currentStaff = null;
 var currentPhotoBase64 = '';
 var currentPhotoMime   = '';
 var currentPhotoName   = '';
-var currentPaymentType = '会社直払い'; // '会社直払い' | '立替'
+var currentPaymentType = '前払い金'; // 2026-09-27〜 現場は常に前払い金（選択なし）
 var REIMBURSE_DUE_DEFAULT_DAYS = 3;
 
 if (window.Telegram && Telegram.WebApp) {
@@ -522,7 +523,7 @@ document.getElementById('btnSubmit').addEventListener('click', function() {
         document.getElementById('inputMemo').value = '';
         document.getElementById('inputCategory').value = '';
         clearPhoto();
-        setPaymentType('会社直払い'); // 既定に戻す
+        setPaymentType('前払い金'); // 既定に戻す（前払い金）
       } else {
         var errMsg = '⚠️ ' + (d.error || 'エラー');
         if (d.error === 'STAFF_NOT_FOUND') {
