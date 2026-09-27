@@ -280,7 +280,7 @@ main.flow{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
 <div class="mock">
   <b>試作（サンプルデータ・送信なし）</b>
   <button type="button" id="mFill">写真を仮で埋める</button>
-  <span style="display:flex;gap:4px;margin-left:auto"><button type="button" data-user="ron" class="on">Ron</button><button type="button" data-user="iizumi">飯泉</button><button type="button" data-user="suzuki">鈴木</button></span>
+  <span style="display:flex;gap:4px;margin-left:auto"><button type="button" data-user="ron" class="on">Ron</button><button type="button" data-user="iizumi">飯泉</button><button type="button" data-user="suzuki">鈴木</button><button type="button" data-user="gokita">五木田</button><button type="button" data-user="yaguchi">矢口</button></span>
   <button type="button" id="mOffline">電波なし</button>
   <button type="button" id="mEvening">夕方にする</button>
   <button type="button" id="mReset">最初から</button>
@@ -336,7 +336,9 @@ var LANG = 'km';
 var USERS = {
   ron:    { id: 'ron',    name: 'Ron',  lang: 'km', cur: 'USD', role: 'field' },
   iizumi: { id: 'iizumi', name: '飯泉', lang: 'ja', cur: 'JPY', role: 'japan' },
-  suzuki: { id: 'suzuki', name: '鈴木', lang: 'ja', cur: 'JPY', role: 'japan' }
+  suzuki: { id: 'suzuki', name: '鈴木', lang: 'ja', cur: 'JPY', role: 'japan' },
+  gokita: { id: 'gokita', name: '五木田', lang: 'ja', cur: 'JPY', role: 'japan' },
+  yaguchi:{ id: 'yaguchi',name: '矢口', lang: 'ja', cur: 'JPY', role: 'japan' }
 };
 var USER = USERS.ron;
 var CUR = { USD: { sym: '$', suffix: true }, KHR: { sym: '៛', suffix: true }, JPY: { sym: '¥', suffix: false } };
@@ -389,6 +391,7 @@ function freshState() {
       { d: '26/9', who: 'ron',    c: 'cat_vehicle_wash', a: 5,    cur: 'USD', by: 'me' },
       { d: '25/9', who: 'ron',    c: 'cat_supplies',     a: 8.5,  cur: 'USD', by: 'me' },
       { d: '24/9', who: 'iizumi', c: 'cat_ads',          a: 4800, cur: 'JPY', by: 'me' },
+      { d: '23/9', who: 'gokita', c: 'cat_travel',       a: 6500, cur: 'JPY', by: 'me' },
       { d: '22/9', who: 'suzuki', c: 'cat_it',           a: 2200, cur: 'JPY', by: 'co' }
     ],
     // 前払い管理: 送金（飯泉さん→ロン君）。残高 = 累計前払い − 累計立替（USD）
