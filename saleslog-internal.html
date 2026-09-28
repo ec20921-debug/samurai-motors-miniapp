@@ -307,6 +307,7 @@ body {
 .choice-btn.sel-green { border-color: var(--green); background: rgba(46,125,50,0.18); }
 .choice-btn.sel-red   { border-color: var(--red);   background: rgba(198,40,40,0.18); }
 .amount-preview { font-size:15px; font-weight:700; color:var(--gold); padding:6px 0 0; }
+#cIntro { font-size:13px; font-weight:600; color:var(--text-dim); }
 .unpaid-bar {
   background: rgba(198,40,40,0.10);
   border: 1.5px solid var(--red);
@@ -575,6 +576,7 @@ input[type="date"] { color-scheme: dark; }
       <label>អត្រា (%) / 率</label>
       <input type="number" id="cRate" min="0" max="100" step="1" value="30" inputmode="numeric">
       <div class="amount-preview" id="cAmount">= $0.00</div>
+      <div class="amount-preview hidden" id="cIntro"></div>
     </div>
     <div class="field">
       <label>❓ អ្នកណាទទួលលុយពីភ្ញៀវ? / だれがお客からお金を受け取った？</label>
@@ -654,7 +656,9 @@ var STR = {
   needAmount:  'សូមបញ្ចូលតម្លៃ / 金額を入力してください',
   unpaid:      'ចំនួនជំពាក់ / 未払い残',
   dirToShop:   'យើងបង់ឱ្យហាង / 店へ支払う分',
-  dirFromShop: 'ហាងបង់មកយើង / 店から受け取る分'
+  dirFromShop: 'ហាងបង់មកយើង / 店から受け取る分',
+  introLabel:  'អ្នកណែនាំ / 紹介者',
+  introNote:   'ក្រុមហ៊ុនបង់ថ្ងៃទី១០ ខែបន្ទាប់ / 本部から翌月10日払い'
 };
 var STATUS_LABELS = {
   '営業中': 'កំពុងចរចា / 営業中',
@@ -670,6 +674,7 @@ var SHOP_TYPES = [
   { v: 'パーツ',     km: 'គ្រឿងបន្លាស់',                     jp: 'パーツ' },
   { v: 'タイヤ',     km: 'កង់រថយន្ត',                        jp: 'タイヤ' },
   { v: '板金・塗装', km: 'ជួសជុលខ្លួនរថយន្ត និងបាញ់ថ្នាំ', jp: '板金・塗装' },
+  { v: 'レジデンス', km: 'ខុនដូ/អាផាតមិន',                  jp: 'レジデンス' },
   { v: 'その他',     km: 'ផ្សេងៗ',                           jp: 'その他' }
 ];
 
@@ -948,6 +953,7 @@ function openShop(shopId) {
 var commissionCache = [];
 var cmMode = 'new';
 var cmEditingId = null;
+var cmEditingEntry = null;
 var cmCollector = '店'; // 集金者。既定=店集金（2026-07-26 Daisuke 裁可・店の請求に込みが基本）
 var cmPayStatus = '未払い';
 var cmPayMethod = '';
@@ -1010,20 +1016,43 @@ function renderCommissions(d) {
   });
 }
 
+// 店マスターの紹介料条件（API で空欄補完済み。取れない時だけ 30%・店集金を予備値に）
+function shopDefaultRate() {
+  var r = currentShop ? Number(currentShop.commissionRate) : NaN;
+  return (isFinite(r) && r >= 0 && r <= 100) ? r : 30;
+}
+function shopDefaultCollector() {
+  return (currentShop && currentShop.defaultCollector === '当社') ? '当社' : '店';
+}
+
+// 紹介者報酬の行。新規=店マスターの条件（施工日が期限内のみ）/ 編集=記帳時に写し取った値
+function cmIntroTerms() {
+  if (cmMode === 'edit') {
+    var e = cmEditingEntry;
+    return (e && e.introducerName && e.introducerRate > 0) ? { name: e.introducerName, rate: e.introducerRate } : null;
+  }
+  var s = currentShop;
+  if (!s || !s.introducerName || !(s.introducerRate > 0)) return null;
+  var d = document.getElementById('cDate').value;
+  if (s.introducerUntil && d && d > s.introducerUntil) return null;
+  return { name: s.introducerName, rate: s.introducerRate };
+}
+
 function openCommissionForm(mode, entry) {
   cmMode = mode;
   cmEditingId = entry ? entry.commissionId : null;
+  cmEditingEntry = entry || null;
   document.getElementById('cmTitle').textContent = mode === 'edit' ? STR.cmEditTitle : STR.cmNewTitle;
   document.getElementById('cmShopLine').textContent = '🏪 ' + (currentShop ? currentShop.shopName : '');
   document.getElementById('cDate').value    = entry ? entry.serviceDate : ppTodayStr();
   document.getElementById('cDesc').value    = entry ? entry.serviceDesc : '';
   document.getElementById('cRevenue').value = entry ? entry.revenue : '';
-  document.getElementById('cRate').value    = entry ? entry.rate : 30;
+  document.getElementById('cRate').value    = entry ? entry.rate : shopDefaultRate();
   document.getElementById('cMemo').value    = entry ? entry.memo : '';
   document.getElementById('cPayDate').value = (entry && entry.payDate) ? entry.payDate : ppTodayStr();
   setCmPayStatus(entry ? entry.payStatus : '未払い');
   setCmPayMethod(entry ? entry.payMethod : '');
-  setCmCollector(entry ? (entry.collector || '店') : '店'); // updateCmAmount も内部で呼ばれる
+  setCmCollector(entry ? (entry.collector || '店') : shopDefaultCollector()); // updateCmAmount も内部で呼ばれる
   showView('commission');
 }
 
@@ -1040,6 +1069,17 @@ function updateCmAmount() {
     our = (rc - cc) / 100;
   }
   document.getElementById('cAmount').textContent = '= $' + commission.toFixed(2);
+  // 紹介者報酬（本部→紹介者。店との精算額には影響しない）
+  var introEl = document.getElementById('cIntro');
+  var intro = cmIntroTerms();
+  if (intro) {
+    var ic = isFinite(revenue) ? Math.round(Math.round(revenue * 100) * intro.rate / 100) / 100 : 0;
+    introEl.textContent = '🤝 ' + STR.introLabel + ': ' + intro.name + ' ' + intro.rate + '% = $' + ic.toFixed(2) +
+                          '（' + STR.introNote + '）';
+    introEl.className = 'amount-preview';
+  } else {
+    introEl.className = 'amount-preview hidden';
+  }
   // 集金者の選択に応じて「実際に動くお金」を表示
   var settle = document.getElementById('cSettle');
   if (cmCollector === '当社') {
@@ -1086,9 +1126,9 @@ function saveCommission() {
   if (!isFinite(revenue) || revenue <= 0) { toast(STR.needAmount, 'err'); return; }
   if (!currentShop) { toast('⚠️ ' + STR.netError, 'err'); return; }
 
-  // rate はバックエンドの補正（範囲外→30）と同じ値を送る（プレビューと保存値のズレ防止）
+  // rate はバックエンドの補正（範囲外→店の率）と同じ値を送る（プレビューと保存値のズレ防止）
   var rate = Number(document.getElementById('cRate').value);
-  if (!isFinite(rate) || rate < 0 || rate > 100) rate = 30;
+  if (!isFinite(rate) || rate < 0 || rate > 100) rate = cmMode === 'edit' && cmEditingEntry ? cmEditingEntry.rate : shopDefaultRate();
 
   var payload = {
     action:      cmMode === 'edit' ? 'commission_update' : 'commission_create',
@@ -1141,6 +1181,7 @@ function saveCommission() {
   }
   document.getElementById('cRevenue').addEventListener('input', updateCmAmount);
   document.getElementById('cRate').addEventListener('input', updateCmAmount);
+  document.getElementById('cDate').addEventListener('change', updateCmAmount);
   document.getElementById('btnAddCommission').addEventListener('click', function() {
     if (currentShop) openCommissionForm('new', null);
   });
