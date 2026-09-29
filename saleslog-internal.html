@@ -730,7 +730,22 @@ function api(payload) {
   }).then(function(r) { return r.text(); })
     .then(function(txt) {
       try { return JSON.parse(txt); }
-      catch (e) { return { ok: false, error: '非JSON応答（先頭300文字）: ' + txt.substring(0, 300) }; }
+      catch (e) { return { ok: false, transient: true, error: '非JSON応答（先頭300文字）: ' + txt.substring(0, 300) }; }
+    });
+}
+
+// 読み取り専用の呼び出しだけ、一時的な失敗（非JSON応答・通信エラー）を最大3回まで自動で再試行する
+// （1.5s→3s）。STAFF_NOT_FOUND など業務上のエラーは再試行しない。書き込み系は二重登録を防ぐため使わない
+// ※ 2026-09-29: 店一覧で GAS が Google のエラーページを返す一時失敗が発生（ChangeLog 同日）
+function apiRead(payload, attempt) {
+  attempt = attempt || 1;
+  return api(payload)
+    .catch(function() { return { ok: false, transient: true, error: STR.netError }; })
+    .then(function(d) {
+      if (d && d.ok) return d;
+      if (!d || !d.transient || attempt >= 3) return d;
+      return new Promise(function(res) { setTimeout(res, attempt * 1500); })
+        .then(function() { return apiRead(payload, attempt + 1); });
     });
 }
 
@@ -777,7 +792,7 @@ function loadWho() {
 function loadShops() {
   var empty = document.getElementById('listEmpty');
   if (empty) empty.textContent = STR.loading;
-  return api({ action: 'saleslog_shops' })
+  return apiRead({ action: 'saleslog_shops' })
     .then(function(d) {
       if (!d.ok) {
         renderListError('⚠️ ' + (d.error || STR.netError));
@@ -936,7 +951,7 @@ function openShop(shopId) {
   document.getElementById('visitList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
   document.getElementById('commissionList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
   document.getElementById('unpaidBar').className = 'unpaid-bar hidden';
-  api({ action: 'saleslog_shop_detail', shopId: shopId })
+  apiRead({ action: 'saleslog_shop_detail', shopId: shopId })
     .then(function(d) {
       if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return; }
       currentShop = d.shop;
