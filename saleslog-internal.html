@@ -742,6 +742,9 @@ function apiRead(payload, attempt) {
   return api(payload)
     .catch(function() { return { ok: false, transient: true, error: STR.netError }; })
     .then(function(d) {
+      // 遅延時に POST が GET に化けて ping 応答（ok:true・service あり・中身なし）が返ることがある
+      // → 成功扱いにすると一覧が空で表示されるので、一時失敗として読み直す
+      if (d && d.ok && d.service) d = { ok: false, transient: true, error: STR.netError };
       if (d && d.ok) return d;
       if (!d || !d.transient || attempt >= 3) return d;
       return new Promise(function(res) { setTimeout(res, attempt * 1500); })
