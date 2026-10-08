@@ -388,8 +388,21 @@ body {
   border: 1px dashed var(--border); border-radius: var(--radius);
   letter-spacing: 0.3px;
 }
+/* 出張料 0 のとき「出張料が浮く」系の文言を隠す(2026-10-08) */
+.no-delivery-fee .fee-saving { display: none; }
 /* 見積り(BODY)カード内 */
 .menu-card.inquiry { cursor: default; }
+.quote-list { margin-top: 14px; border-top: 1px solid var(--border-soft); padding-top: 10px; }
+.quote-title { font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; text-align: center; margin-bottom: 4px; }
+.quote-title .km { letter-spacing: 0; text-transform: none; }
+.quote-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border-soft); }
+.quote-main { min-width: 0; }
+.quote-name { font-family: var(--serif); font-size: 12px; font-weight: 600; color: var(--gold); letter-spacing: 1px; }
+.quote-desc { font-size: 11px; color: var(--text); line-height: 1.5; margin-top: 2px; }
+.quote-desc .km { display: block; font-size: 10px; color: var(--text-dim); line-height: 1.7; }
+.quote-price { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--gold); white-space: nowrap; flex-shrink: 0; }
+.quote-note { font-size: 10px; color: var(--text-dim); text-align: center; margin-top: 8px; line-height: 1.6; }
+.quote-note .km { display: block; }
 .menu-card .inquiry-body { font-size: 12px; color: var(--text); line-height: 1.7; margin-top: 12px; }
 .menu-card .inquiry-body .km { display: block; font-size: 11px; color: var(--text-dim); margin-top: 6px; }
 .menu-card .menu-quote {
@@ -1573,7 +1586,7 @@ body {
 
     <!-- 店舗モード: 事務所カード -->
     <div id="locationInStore" class="location-mode" style="display:none;">
-      <div class="view-desc">Bring your car to our office — no delivery fee<br><span class="km">នាំរថយន្តមកការិយាល័យ — មិនមានថ្លៃដឹកជញ្ជូន</span></div>
+      <div class="view-desc">Bring your car to our office<span class="fee-saving"> — no delivery fee</span><br><span class="km">នាំរថយន្តមកការិយាល័យ<span class="fee-saving"> — មិនមានថ្លៃដឹកជញ្ជូន</span></span></div>
 
       <div class="store-card">
         <div class="store-card-icon">🏪</div>
@@ -1584,8 +1597,8 @@ body {
         <div id="storeMapEl" style="width:100%; height:220px; border-radius:var(--radius); border:1px solid var(--border); margin:14px 0; background:#1a1410;"></div>
 
         <div class="store-card-note">
-          ✅ No delivery fee saved<br>
-          <span class="km">មិនមានថ្លៃដឹកជញ្ជូន</span><br>
+          <span class="fee-saving">✅ No delivery fee saved<br>
+          <span class="km">មិនមានថ្លៃដឹកជញ្ជូន</span><br></span>
           <span style="opacity:0.75; font-size:11px;">📍 Map link will be sent via Telegram after booking</span><br>
           <span style="opacity:0.75; font-size:11px;" class="km">តំណផែនទីនឹងផ្ញើតាម Telegram បន្ទាប់ពីការកក់</span>
         </div>
@@ -1782,6 +1795,8 @@ function loadInit() {
       state.options = res.options || [];                       // Menu v2: GLASS add-on
       state.campaign = res.campaign || null;                   // Menu v2: キャンペーン情報
       state.dispatchFee = res.dispatchFee || { sedan: 2, suv: 2 };
+      // 2026-10-08: 出張料 0（当面徴収しない）のときは「出張料が浮く」系の文言を隠す
+      document.body.classList.toggle('no-delivery-fee', !(state.dispatchFee.sedan > 0 || state.dispatchFee.suv > 0));
       // 単一プラン(WASH のみ)の場合は自動選択(操作削減)
       // Menu v4 (2026-09-22 Daisuke 指示): WASH を自動選択しない(必須ではない・顧客が選ぶ)
       // 新規顧客の場合、自動登録
@@ -1944,6 +1959,39 @@ var MENU_CATEGORIES = [
   { key: 'BODY',      letter: 'B', nameEn: 'SAMURAI BODY',      nameKm: 'ខាត់ខ្លួនរថយន្ត + ស្រោបទឹកមិនជាប់', inquiry: true }
 ];
 
+// BODY(見積り)枠に添える目安価格一覧(2026-10-08 チラシ v1.1 準拠。予約対象外・写真で見積り)
+// クメール語は Panha 校閲済み(2026-10-08)
+var QUOTE_MENU = {
+  titleEn: 'Quote menu (guide prices)',
+  titleKm: 'តម្លៃប៉ាន់ប្រមាណ',
+  items: [
+    { nameEn: 'SAMURAI POLISH',       descEn: '1-step: gloss & light scratches',     descKm: '1-STEP: សម្រាប់ភាពភ្លឺរលោង និងស្នាមកោសតូចៗ', price: '35$ ~ 75$' },
+    { nameEn: 'SAMURAI DEEP POLISH',  descEn: '2-step: deep scratches & heavy haze', descKm: '2-STEP: សម្រាប់ស្នាមកោសជ្រៅ និងភាពស្រអាប់ខ្លាំង', price: '50$ ~ 95$' },
+    { nameEn: 'SAMURAI BODY REFRESH', descEn: 'Body polish + protective coating',    descKm: 'ខាត់ខ្លួនរថយន្ត + ស្រោបការពារ',              price: '90$ ~ 290$' },
+    { nameEn: 'SAMURAI REPAIR',       descEn: 'Glass scratch reduction',             descKm: 'កាត់បន្ថយភាពលេចធ្លោនៃស្នាមកោសលើកញ្ចក់',     price: '25$ ~ 215$' }
+  ],
+  noteEn: 'Price depends on car size and condition.',
+  noteKm: 'តម្លៃប្រែប្រួលទៅតាមទំហំ និងស្ថានភាពរថយន្ត។'
+};
+
+function quoteListHtml() {
+  var q = QUOTE_MENU;
+  var rows = q.items.map(function(it) {
+    return '<div class="quote-row">'
+      + '<div class="quote-main">'
+      +   '<div class="quote-name">' + escapeHtml(it.nameEn) + '</div>'
+      +   '<div class="quote-desc">' + escapeHtml(it.descEn) + '<span class="km">' + escapeHtml(it.descKm) + '</span></div>'
+      + '</div>'
+      + '<div class="quote-price">' + escapeHtml(it.price) + '</div>'
+      + '</div>';
+  }).join('');
+  return '<div class="quote-list">'
+    + '<div class="quote-title">' + escapeHtml(q.titleEn) + '<span class="km"> · ' + escapeHtml(q.titleKm) + '</span></div>'
+    + rows
+    + '<div class="quote-note">' + escapeHtml(q.noteEn) + '<span class="km">' + escapeHtml(q.noteKm) + '</span></div>'
+    + '</div>';
+}
+
 // カテゴリごとの品目(WASH は plans、それ以外は options の kind で振り分け)
 function menuItemsFor(catKey) {
   if (catKey === 'WASH') {
@@ -2024,6 +2072,7 @@ function renderMenu() {
         +   '<span class="km">គិតតម្លៃដោយប៉ាន់ប្រមាណ — ការស្រោបខ្លួនរថយន្ត ត្រូវប៉ាន់ប្រមាណតម្លៃតាមរថយន្តនីមួយៗ។ '
         +   'សូមផ្ញើរូបថតរថយន្តរបស់អ្នកមកក្នុងជជែកនេះ ហើយយើងខ្ញុំនឹងឆ្លើយតបជាមួយតម្លៃមកវិញ។</span>'
         + '</div>'
+        + quoteListHtml()
         + '<button type="button" class="btn-inquiry" onclick="openBodyInquiry()">Contact us for a quote<span class="km">ទាក់ទងសុំតម្លៃ</span></button>';
       list.appendChild(card);
       return;
@@ -2329,8 +2378,9 @@ function renderSummary() {
   }
   // 出張: Delivery fee 表示 / 店舗: In-store ラベル + 0
   if (isInStore) {
-    html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">🏪 In-store / នៅហាង</div><div class="value" style="color:var(--gold-bright)">0$ (saved ' + fmtUsd2(baseFee) + ')</div></div>';
-  } else {
+    if (baseFee > 0) html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">🏪 In-store / នៅហាង</div><div class="value" style="color:var(--gold-bright)">0$ (saved ' + fmtUsd2(baseFee) + ')</div></div>';
+  } else if (fee > 0) {
+    // 2026-10-08: 出張料 0（当面徴収しない）のときは行ごと出さない
     html += summaryRow('🚚 Delivery fee / ថ្លៃដឹកជញ្ជូន', fmtUsd2(fee));
   }
   html += '<div class="summary-row total"><div class="label">Total / សរុប</div><div class="value">' + fmtUsd2(total) + '</div></div>';
