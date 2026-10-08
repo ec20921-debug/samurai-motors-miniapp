@@ -227,7 +227,7 @@ main.flow{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261008-202701';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261008-202811';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 
@@ -885,7 +885,11 @@ function boot() {
 // 画面の端末保存（Service Worker）と新しい版の案内
 if ('serviceWorker' in navigator) {
   var reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function () { if (reloading) return; reloading = true; location.reload(); });
+  var hadController = !!navigator.serviceWorker.controller;   // 初回の有効化では再読み込みしない
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (reloading || !hadController) { hadController = true; return; }
+    reloading = true; location.reload();
+  });
   navigator.serviceWorker.register('sw.js', { scope: './', updateViaCache: 'none' }).then(function (reg) {
     function watch(w) {
       if (!w) return;

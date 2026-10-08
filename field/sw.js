@@ -7,7 +7,7 @@
  *   - GAS（script.google.com / script.googleusercontent.com）への通信は一切触らない（保存しない）
  *   - BUILD は同期時に stamp_build.py が書き換える。版が変わると新しい保存場所に入れ直す
  */
-var BUILD = 'field-20261008-202701';
+var BUILD = 'field-20261008-202811';
 var CACHE = 'sm-field-' + BUILD;
 var SHELL = ['./', './index.html', './outbox.js', './manifest.webmanifest', './icon-192.png', './icon-512.png',
              './apple-touch-icon.png', '../tg-auth.js', '../logo.png'];
