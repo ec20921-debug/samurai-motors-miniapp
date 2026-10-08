@@ -6,10 +6,16 @@
 <title>Samurai Motors - Booking</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="tg-auth.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- 2026-10-08: 事前接続（/exec は script.googleusercontent.com へ 302 するので両方） -->
+<link rel="preconnect" href="https://script.google.com/" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com/" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com/">
+<link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+<!-- 2026-10-08: フォント CSS で描画と起動処理を止めない（届くまでは代替フォント・display=swap） -->
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet"></noscript>
 <!-- Leaflet は Step 3 (場所選択) 進入時に動的ロード(初期ロード短縮) -->
 <link rel="preconnect" href="https://unpkg.com/" crossorigin>
-<link rel="preconnect" href="https://script.google.com/" crossorigin>
 <style>
 :root {
   /* 深黒ベース + シャンパンゴールドの高級感パレット (2026-05-06 premium upgrade) */
@@ -1785,6 +1791,19 @@ document.addEventListener('DOMContentLoaded', function() {
     return;
   }
 
+  // 2026-10-08: 前回のメニューが端末にあれば即表示し、裏で必ず最新を取り直す
+  var cached = readInitCache_();
+  if (cached) {
+    try {
+      applyMenuData_(cached);
+      state.shownFromCache = true;
+      showView('view-plan');
+    } catch (e) {
+      // 壊れたキャッシュは捨てて従来の読み込みに戻す
+      state.shownFromCache = false;
+      try { localStorage.removeItem(INIT_CACHE_KEY); } catch (e2) {}
+    }
+  }
   loadInit();
 });
 
@@ -1792,34 +1811,115 @@ document.addEventListener('DOMContentLoaded', function() {
 //  API
 // ═══════════════════════════════════════════
 
+// ── 2026-10-08: 起動の高速化（stale-while-revalidate）──
+// 端末に前回のメニュー（料金・所要・キャンペーン・出張料）を保存し、次回は即表示。
+// 表示用にしか使わない: 確認画面・送信は必ずこの起動で取得した最新データで行う（ensureFreshInit_）。
+// 顧客情報（名前・電話）は保存しない。
+var INIT_CACHE_KEY = 'sm_booking_init';
+var INIT_CACHE_MAX_MS = 7 * 24 * 60 * 60 * 1000;
+var initPromise = null;        // 最新の booking_init（成功で resolve）
+var registerPromise = null;    // 新規顧客の自動登録（画面は待たせない）
+
+function menuFingerprint_(d) {
+  try {
+    return JSON.stringify([d.plans || [], d.options || [], d.campaign || null, d.dispatchFee || null]);
+  } catch (e) { return ''; }
+}
+
+function readInitCache_() {
+  try {
+    var raw = localStorage.getItem(INIT_CACHE_KEY);
+    if (!raw) return null;
+    var c = JSON.parse(raw);
+    if (!c || c.v !== 1 || c.chatId !== state.chatId || c.gas !== GAS_URL) return null;
+    if (!c.savedAt || (Date.now() - c.savedAt) > INIT_CACHE_MAX_MS) return null;
+    return c.data || null;
+  } catch (e) { return null; }
+}
+
+function writeInitCache_(data) {
+  try {
+    localStorage.setItem(INIT_CACHE_KEY, JSON.stringify({
+      v: 1, savedAt: Date.now(), chatId: state.chatId, gas: GAS_URL, data: data
+    }));
+  } catch (e) { /* 保存できなくても動作は従来どおり */ }
+}
+
+function applyMenuData_(d) {
+  state.plans = d.plans || [];
+  state.options = d.options || [];                         // Menu v2: GLASS add-on
+  state.campaign = d.campaign || null;                     // Menu v2: キャンペーン情報
+  state.dispatchFee = d.dispatchFee || { sedan: 2, suv: 2 };
+  state.menuFp = menuFingerprint_(d);
+  // 2026-10-08: 出張料 0（当面徴収しない）のときは「出張料が浮く」系の文言を隠す
+  document.body.classList.toggle('no-delivery-fee', !(state.dispatchFee.sedan > 0 || state.dispatchFee.suv > 0));
+}
+
+// 最新データで選択を整合させる（消えた品目の選択を外し、空き枠キャッシュを捨てる）
+function reconcileAfterRefresh_() {
+  var codes = (state.options || []).map(function(o) { return o.code; });
+  state.selectedOptions = state.selectedOptions.filter(function(c) { return codes.indexOf(c) >= 0; });
+  if (state.selectedPlan && !(state.plans || []).some(function(p) { return p.letter === state.selectedPlan; })) {
+    state.selectedPlan = null;
+  }
+  slotCache = {};
+  state.selectedSlot = '';
+  if (state.currentView === 'view-plan') {
+    applyCampaignBanner_();
+    renderMenu();
+    updateActionButton();
+  } else if (state.currentView !== 'view-loading' && state.currentView !== 'view-success') {
+    state.currentView = 'view-loading';   // showView に旧画面を履歴として積ませない
+    showView('view-plan');
+    state.history = [];
+    document.getElementById('backBtn').classList.add('hidden');
+    showToast('Menu updated — please check your selection', true);
+  }
+}
+
 function loadInit() {
   var url = GAS_URL + '?action=booking_init&chatId=' + encodeURIComponent(state.chatId)
           + '&name=' + encodeURIComponent(state.customerName)
           + '&username=' + encodeURIComponent(state.username);
-  fetch(url)
+  initPromise = fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(res) {
       if (res.status !== 'ok') throw new Error(res.message || 'Init failed');
+      var data = { plans: res.plans || [], options: res.options || [], campaign: res.campaign || null, dispatchFee: res.dispatchFee || null };
+      var prevFp = state.menuFp;
       state.customer = res.customer;
-      state.plans = res.plans || [];
-      state.options = res.options || [];                       // Menu v2: GLASS add-on
-      state.campaign = res.campaign || null;                   // Menu v2: キャンペーン情報
-      state.dispatchFee = res.dispatchFee || { sedan: 2, suv: 2 };
-      // 2026-10-08: 出張料 0（当面徴収しない）のときは「出張料が浮く」系の文言を隠す
-      document.body.classList.toggle('no-delivery-fee', !(state.dispatchFee.sedan > 0 || state.dispatchFee.suv > 0));
+      applyMenuData_(data);
+      writeInitCache_(data);
+      state.initFresh = true;
       // 単一プラン(WASH のみ)の場合は自動選択(操作削減)
       // Menu v4 (2026-09-22 Daisuke 指示): WASH を自動選択しない(必須ではない・顧客が選ぶ)
-      // 新規顧客の場合、自動登録
+      // 新規顧客の場合、自動登録（2026-10-08: 画面は待たせず裏で1回だけ）
       if (!state.customer && state.customerName) {
-        return autoRegister().then(function() { showView('view-plan'); });
+        registerPromise = autoRegister().then(function() { registerPromise = null; });
+      } else if (!state.customer) {
+        state.customerName = 'Guest';
+      } else {
+        state.customerName = state.customer.name;
       }
-      if (!state.customer) state.customerName = 'Guest';
-      else state.customerName = state.customer.name;
-      showView('view-plan');
-    })
-    .catch(function(err) {
-      showToast('Loading error: ' + err.message, true);
+      if (!state.shownFromCache) {
+        showView('view-plan');
+      } else if (prevFp !== state.menuFp) {
+        reconcileAfterRefresh_();
+      }
+      return true;
     });
+  initPromise.catch(function(err) {
+    state.initFresh = false;
+    showToast('Loading error: ' + err.message, true);
+  });
+  return initPromise;
+}
+
+// 確認・送信の前に「この起動で取った最新データ」を必ず揃える（失敗なら1回だけ取り直す）
+function ensureFreshInit_() {
+  if (state.initFresh) return Promise.resolve(true);
+  var p = initPromise || loadInit();
+  return p.catch(function() { return loadInit(); });
 }
 
 function autoRegister() {
@@ -1829,7 +1929,7 @@ function autoRegister() {
     username: state.username
   }).then(function(res) {
     if (res.status === 'ok') state.customer = res.customer;
-  }).catch(function() {});
+  }).catch(function() {});   // 失敗しても送信は従来どおり chatId で続行（サーバー側で救済）
 }
 
 function postJson(action, data) {
@@ -1862,17 +1962,7 @@ function showView(viewId) {
 
   // 各viewの初期化
   if (viewId === 'view-plan') {
-    // キャンペーンバナー表示
-    if (state.campaign && state.campaign.active && state.campaign.percent > 0) {
-      var banner = document.getElementById('campaignBanner');
-      var label  = document.getElementById('campaignLabel');
-      var labKm  = document.getElementById('campaignLabelKm');
-      var disc   = document.getElementById('campaignDiscount');
-      if (banner) banner.style.display = 'flex';
-      if (label) label.textContent = '★ ' + (state.campaign.nameEn || 'Campaign');
-      if (labKm) labKm.textContent = state.campaign.nameKm || '';
-      if (disc)  disc.textContent  = '-' + state.campaign.percent + '% OFF';
-    }
+    applyCampaignBanner_();
     renderMenu();
   }
   if (viewId === 'view-datetime') renderDates();
@@ -1885,6 +1975,23 @@ function showView(viewId) {
   updateActionButton();
 
   window.scrollTo(0, 0);
+}
+
+// キャンペーンバナー表示（2026-10-08: 関数化。無効になったら隠す）
+function applyCampaignBanner_() {
+  var banner = document.getElementById('campaignBanner');
+  if (!banner) return;
+  if (state.campaign && state.campaign.active && state.campaign.percent > 0) {
+    var label  = document.getElementById('campaignLabel');
+    var labKm  = document.getElementById('campaignLabelKm');
+    var disc   = document.getElementById('campaignDiscount');
+    banner.style.display = 'flex';
+    if (label) label.textContent = '★ ' + (state.campaign.nameEn || 'Campaign');
+    if (labKm) labKm.textContent = state.campaign.nameKm || '';
+    if (disc)  disc.textContent  = '-' + state.campaign.percent + '% OFF';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function goBack() {
@@ -2267,6 +2374,12 @@ function renderDates() {
         return function() { selectDate(ds); };
       })(dateStr);
     }
+    // 2026-10-08: 先読み済みで空きゼロの日は「Full」を出す（英語のみ・Closed/Holiday と同じ扱い）
+    var cachedDay = isClosed ? null : slotsFromCache_(dateStr);
+    if (cachedDay && cachedDay.slots.length === 0) {
+      cell.classList.add('full');
+      cell.insertAdjacentHTML('beforeend', '<div class="d-closed">Full</div>');
+    }
     container.appendChild(cell);
   }
 
@@ -2286,7 +2399,72 @@ function selectDate(dateStr) {
   updateActionButton();
 }
 
-function loadTimeSlots() {
+// ── 2026-10-08: 空き枠の先読みキャッシュ（メモリのみ・表示専用）──
+// 予約確定時はサーバーがロック内で必ず再確認する（WASH なし予約も含む）ので、二重予約の判断はサーバーが持つ。
+var SLOT_FRESH_MS = 60 * 1000;
+var slotCache = {};            // key → {at, durationMin, byDate:{date: slots[]}}
+var slotInflight = {};         // key → Promise（先読み中）
+var slotLoadSeq = 0;
+
+function slotKey_() {
+  return (state.selectedPlan || '') + '|' + state.selectedOptions.slice().sort().join(',') + '|' + state.selectedSize;
+}
+
+function slotsFromCache_(dateStr) {
+  var e = slotCache[slotKey_()];
+  if (!e || !e.byDate.hasOwnProperty(dateStr)) return null;
+  return { slots: e.byDate[dateStr], durationMin: e.durationMin, fresh: (Date.now() - e.at) < SLOT_FRESH_MS };
+}
+
+function putSlotsInCache_(dateStr, slots, durationMin) {
+  var key = slotKey_();
+  var e = slotCache[key] || (slotCache[key] = { at: Date.now(), durationMin: durationMin, byDate: {} });
+  e.byDate[dateStr] = slots || [];
+  if (durationMin) e.durationMin = durationMin;
+}
+
+// プノンペン時間の今日から12日分（renderDates と同じ範囲）
+function openDatesFrom_() {
+  var now = new Date();
+  var today = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60000);
+  today.setHours(0, 0, 0, 0);
+  return formatDate(today);
+}
+
+function prefetchSlots_() {
+  if (!state.selectedSize || (!state.selectedPlan && state.selectedOptions.length === 0)) return null;
+  var key = slotKey_();
+  var e = slotCache[key];
+  if (e && e.full && (Date.now() - e.at) < SLOT_FRESH_MS) return Promise.resolve(e);
+  if (slotInflight[key]) return slotInflight[key];
+  var url = GAS_URL + '?action=booking_slots_range'
+    + '&from=' + encodeURIComponent(openDatesFrom_())
+    + '&days=12'
+    + '&plan=' + encodeURIComponent(state.selectedPlan || '')
+    + '&vehicleType=' + encodeURIComponent(state.selectedSize)
+    + '&options=' + encodeURIComponent(state.selectedOptions.join(','));
+  var p = fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.status !== 'ok' || !res.days) throw new Error(res.message || 'range failed');
+      var entry = { at: Date.now(), durationMin: res.durationMin, byDate: {}, full: true };
+      res.days.forEach(function(d) { entry.byDate[d.date] = d.slots || []; });
+      slotCache[key] = entry;
+      delete slotInflight[key];
+      return entry;
+    }, function(err) {
+      delete slotInflight[key];
+      throw err;
+    });
+  slotInflight[key] = p;
+  // 日付画面を開いていれば「Full」表示と選択中の日の枠を反映
+  p.then(function() {
+    if (state.currentView === 'view-datetime' && slotKey_() === key) renderDates();
+  }).catch(function() { /* 失敗時は従来の1日ずつ取得にフォールバック */ });
+  return p;
+}
+
+function showSlotLoader_() {
   var container = document.getElementById('slotContainer');
   // Premium themed loader: SAMURAI MOTORS の文字が波打つ + ゴールドの刀閃きライン
   container.innerHTML =
@@ -2299,31 +2477,82 @@ function loadTimeSlots() {
     + '<div class="slot-loader-katana"></div>'
     + '<div class="slot-loader-sub">Finding the perfect time<span class="km">កំពុងស្វែងរកម៉ោងល្អបំផុត</span></div>'
     + '</div>';
+}
 
+function loadTimeSlots() {
+  var seq = ++slotLoadSeq;
+  var date = state.selectedDate;
+  var key = slotKey_();
+  function stillCurrent() { return seq === slotLoadSeq && state.selectedDate === date && slotKey_() === key && state.currentView === 'view-datetime'; }
+  function show(slots, durationMin) {
+    if (!stillCurrent()) return;
+    state.selectedDuration = durationMin;
+    renderSlots(slots, durationMin);
+  }
+
+  // 1) 先読み済み → 即表示（60秒を過ぎていたら裏でその日だけ取り直す）
+  var hit = slotsFromCache_(date);
+  if (hit) {
+    show(hit.slots, hit.durationMin);
+    if (!hit.fresh) fetchDaySlots_(date, key, seq, true);
+    return;
+  }
+
+  showSlotLoader_();
+  // 2) 先読み中 → それを待つ（同じ日を二重に取りに行かない）。失敗したら 3) へ
+  var pending = slotInflight[key];
+  if (pending) {
+    pending.then(function() {
+      var h = slotsFromCache_(date);
+      if (h) show(h.slots, h.durationMin);
+      else fetchDaySlots_(date, key, seq, false);
+    }).catch(function() { fetchDaySlots_(date, key, seq, false); });
+    return;
+  }
+  // 3) 従来どおり1日分を取得
+  fetchDaySlots_(date, key, seq, false);
+}
+
+// 1日分の取得（従来の booking_slots）。quiet=true は表示済みの裏更新（失敗しても表示を変えない）
+function fetchDaySlots_(date, key, seq, quiet) {
   // Menu v4: plan が null(WASH なし)でも空文字で送る。options はカンマ区切り(GLASS_3,HEADLIGHT 等)
   var url = GAS_URL + '?action=booking_slots'
-    + '&date=' + encodeURIComponent(state.selectedDate)
+    + '&date=' + encodeURIComponent(date)
     + '&plan=' + encodeURIComponent(state.selectedPlan || '')
     + '&vehicleType=' + encodeURIComponent(state.selectedSize)
     + '&options=' + encodeURIComponent(state.selectedOptions.join(','));
-
   fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(res) {
       if (res.status !== 'ok') throw new Error(res.message || 'Failed to load');
-      state.selectedDuration = res.durationMin;
-      renderSlots(res.slots, res.durationMin, res.debug);
+      if (slotKey_() === key) {
+        putSlotsInCache_(date, res.slots, res.durationMin);
+        var e = slotCache[key];
+        if (e && !e.full) e.at = Date.now();
+      }
+      if (seq === slotLoadSeq && state.selectedDate === date && slotKey_() === key && state.currentView === 'view-datetime') {
+        state.selectedDuration = res.durationMin;
+        renderSlots(res.slots, res.durationMin);
+      }
     })
     .catch(function(err) {
-      container.innerHTML = '<div class="slot-empty">Error: ' + escapeHtml(err.message) + '</div>';
+      if (quiet) return;
+      if (seq !== slotLoadSeq || state.selectedDate !== date) return;
+      document.getElementById('slotContainer').innerHTML =
+        '<div class="slot-empty">Error: ' + escapeHtml(err.message) + '</div>';
     });
 }
 
-function renderSlots(slots, durationMin, debug) {
+function renderSlots(slots, durationMin) {
   var container = document.getElementById('slotContainer');
+  // 2026-10-08: 選んでいた時刻が最新の枠に無ければ選択を外す
+  if (state.selectedSlot && (!slots || slots.indexOf(state.selectedSlot) < 0)) {
+    state.selectedSlot = '';
+    updateActionButton();
+  }
   if (!slots || slots.length === 0) {
-    var debugInfo = debug ? '<br><small style="color:#999">[' + debug + ']</small>' : '';
-    container.innerHTML = '<div class="slot-empty">No availability on this date<br>គ្មានទំនេរទេ<br><br>Please select another date' + debugInfo + '</div>';
+    // 2026-10-08: サーバーの診断文字列(debug)は顧客に表示しない
+    container.innerHTML = '<div class="slot-empty">No availability on this date<br>គ្មានទំនេរទេ<br><br>Please select another date</div>';
     return;
   }
 
@@ -2427,6 +2656,9 @@ function handleNext() {
         showToast('Please select at least one service', true);
         return;
       }
+      // 2026-10-08: メニュー・車種が変わったら前の時刻は無効（所要時間が変わるため）
+      if (state.lastSlotKey !== slotKey_()) { state.selectedSlot = ''; state.lastSlotKey = slotKey_(); }
+      try { prefetchSlots_(); } catch (e) { /* 先読み失敗でも従来の1日取得で続行 */ }   // 2026-10-08: 12日分を1回で先読み
       showView('view-datetime');
       break;
 
@@ -2439,6 +2671,12 @@ function handleNext() {
       break;
 
     case 'view-location':
+      // 2026-10-08: 日時が空のまま確認へ進ませない（メニュー変更・枠更新で外れた場合）
+      if (!state.selectedDate || !state.selectedSlot) {
+        showToast('Please select date and time', true);
+        showView('view-datetime');
+        return;
+      }
       // 店舗作業の場合は地図ピン留め不要、出張作業の場合はピン留め必須
       if (state.serviceType === '店舗') {
         state.selectedLocation = STORE_INFO.locationLabel + ' ' + STORE_INFO.mapsUrl;
@@ -2450,7 +2688,17 @@ function handleNext() {
         var mapsUrl = 'https://www.google.com/maps?q=' + savedCoords.lat + ',' + savedCoords.lng;
         state.selectedLocation = '📍 ' + mapsUrl;
       }
-      showView('view-confirm');
+      // 2026-10-08: 確認画面の金額は必ずこの起動で取った最新データで出す
+      if (state.initFresh) { showView('view-confirm'); break; }
+      var nb = document.getElementById('actionBtn');
+      nb.disabled = true;
+      ensureFreshInit_().then(function() {
+        nb.disabled = false;
+        if (state.currentView === 'view-location') showView('view-confirm');
+      }).catch(function() {
+        nb.disabled = false;
+        showToast('Connection error — please try again', true);
+      });
       break;
 
     case 'view-confirm':
@@ -2469,6 +2717,23 @@ function submitBooking() {
   // 二重送信防止
   if (bookingSubmitted) {
     showToast('Booking already submitted', false);
+    return;
+  }
+
+  // 2026-10-08: 最新データ・新規登録を待ってから送る（キャッシュ表示のまま送らない）
+  if (!state.initFresh || registerPromise) {
+    bookingSubmitted = true;
+    setBtnLoading(true);
+    Promise.all([ensureFreshInit_(), registerPromise || Promise.resolve()]).then(function() {
+      // 取り直した init で新たに登録が始まった場合は、再呼び出し時のガードでもう一度待つ
+      bookingSubmitted = false;
+      setBtnLoading(false);
+      if (state.currentView === 'view-confirm') submitBooking();
+    }).catch(function() {
+      bookingSubmitted = false;
+      setBtnLoading(false);
+      showToast('Connection error — please try again', true);
+    });
     return;
   }
 
@@ -2504,8 +2769,9 @@ function submitBooking() {
       showToast(res.message || 'Booking failed', true);
       if (res.slots) {
         state.selectedSlot = '';
+        // 2026-10-08: サーバーが返した最新の枠でキャッシュを上書き（再取得の往復を省く）
+        putSlotsInCache_(state.selectedDate, res.slots, state.selectedDuration);
         showView('view-datetime');
-        renderSlots(res.slots);
       }
       return;
     }
