@@ -754,13 +754,24 @@ body {
           </div>
         </div>
       </div>
+      <!-- 2026-10-08: HEADLIGHT は スタンダード / SAMURAI MAGIC(NEW) の2択(排他)。価格は「メニュー」シート連動 -->
       <div class="menu-block">
-        <div class="plan-option">
-          <input type="checkbox" name="optionCode" id="optHeadlight" value="HEADLIGHT" onchange="updateServiceSummary()">
-          <label class="plan-card wide" for="optHeadlight">
-            <span class="plan-name-jp">SAMURAI HEADLIGHT<span class="km-sub">ខាត់ចង្កៀងមុខ</span></span>
-            <span class="plan-price" id="priceHEADLIGHT">—</span>
-          </label>
+        <div class="plan-name-jp" style="margin-bottom:6px;">SAMURAI HEADLIGHT<span class="km-sub">ខាត់ចង្កៀងមុខ</span></div>
+        <div class="plan-grid">
+          <div class="plan-option">
+            <input type="checkbox" name="optionCode" id="optHeadlight" value="HEADLIGHT" onchange="exclusiveHeadlight(this)">
+            <label class="plan-card" for="optHeadlight">
+              <span class="plan-name-jp small">Standard<span class="km-sub" style="display:block;margin-left:0;">ខាត់ដោយសារធាតុខាត់</span><span class="jp" style="font-size:10px;">（コンパウンド磨き）</span></span>
+              <span class="plan-price big" id="priceHEADLIGHT">—</span>
+            </label>
+          </div>
+          <div class="plan-option">
+            <input type="checkbox" name="optionCode" id="optHeadlightMagic" value="HEADLIGHT_MAGIC" onchange="exclusiveHeadlight(this)">
+            <label class="plan-card" for="optHeadlightMagic">
+              <span class="plan-name-jp small">SAMURAI MAGIC 🆕<span class="km-sub" style="display:block;margin-left:0;">ក្រដាសខាត់ + ចំហាយ</span><span class="jp" style="font-size:10px;">（ペーパー研磨＋スチーマー）</span></span>
+              <span class="plan-price big" id="priceHEADLIGHT_MAGIC">—</span>
+            </label>
+          </div>
         </div>
       </div>
       <div class="menu-block">
@@ -966,6 +977,17 @@ function exclusiveGlass(el) {
   updateServiceSummary();
 }
 
+// HEADLIGHT は Standard / SAMURAI MAGIC のどちらか1つ(チェックボックスだが排他)
+function exclusiveHeadlight(el) {
+  if (el.checked) {
+    ['optHeadlight', 'optHeadlightMagic'].forEach(function(id) {
+      var h = document.getElementById(id);
+      if (h && h !== el) h.checked = false;
+    });
+  }
+  updateServiceSummary();
+}
+
 // 選択中のオプションコード配列(送信用): GLASS → HEADLIGHT → BODY の順
 function selectedOptionCodes() {
   var out = [];
@@ -977,7 +999,7 @@ function selectedOptionCodes() {
 
 // 価格ラベル(車種連動)と参考合計(サービス計のみ・出張費含まず)を更新
 function updateServiceSummary() {
-  var ids = { 'W': 'priceWASH', 'GLASS_3': 'priceGLASS_3', 'GLASS_ALL': 'priceGLASS_ALL', 'HEADLIGHT': 'priceHEADLIGHT' };
+  var ids = { 'W': 'priceWASH', 'GLASS_3': 'priceGLASS_3', 'GLASS_ALL': 'priceGLASS_ALL', 'HEADLIGHT': 'priceHEADLIGHT', 'HEADLIGHT_MAGIC': 'priceHEADLIGHT_MAGIC' };
   Object.keys(ids).forEach(function(code) {
     var el = document.getElementById(ids[code]);
     if (!el) return;
@@ -987,6 +1009,8 @@ function updateServiceSummary() {
   var feeEl = document.getElementById('feeHint');
   if (feeEl && MENU_PRICES && MENU_PRICES.dispatchFee) {
     var fee = currentVehicleIsSuv() ? MENU_PRICES.dispatchFee.suv : MENU_PRICES.dispatchFee.sedan;
+    // 2026-10-08: 出張料 0（当面徴収しない）のときは案内ごと隠す
+    feeEl.style.display = (Number(fee) > 0) ? '' : 'none';
     feeEl.textContent = '💰 + ' + fmtUsd(fee) + ' ថ្លៃធ្វើដំណើរ（＋' + fmtUsd(fee) + ' 出張費別途・下の参考合計には含まず）';
   }
 
@@ -999,7 +1023,7 @@ function updateServiceSummary() {
   if (planW && planW.checked) { parts.push('WASH'); total += (menuPriceFor('W') || 0); }
   selectedOptionCodes().forEach(function(code) {
     if (code === 'BODY') { parts.push('BODY(見積)'); hasQuote = true; return; }
-    parts.push(code);
+    parts.push(code.replace(/_/g, ' '));  // HEADLIGHT_MAGIC → HEADLIGHT MAGIC
     total += (menuPriceFor(code) || 0);
   });
   if (!parts.length) {
