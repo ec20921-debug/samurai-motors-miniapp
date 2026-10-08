@@ -273,7 +273,7 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261009-073602';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261009-074512';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・日報・（今後）経費・営業は勤務Bot側の GAS（v7-operations）
@@ -350,6 +350,7 @@ function applyMenu(m) {
 }
 applyMenu(MENU_FALLBACK);
 function menuLabel(code) { return CODE_NAME[code] || code; }
+function menuLabelH(code) { return esc(menuLabel(code)); }
 function menuTk(code) { var m = MENU[code]; return KIND_TK[m ? m.kind : ''] || 'svc_wash'; }
 function priceOf(job) {
   var suv = job.size === 'SUV', sum = 0;
@@ -481,8 +482,9 @@ function loadAttendance() {
         Outbox.kvSet('att:' + today, S.att);
       }
     }).catch(function () {}),
-    postOps('report_today', { chatId: ME.chatId }).then(function (r) {
-      if (r && r.ok && r.report && !S.rep.dirty) {
+    Promise.all([postOps('report_today', { chatId: ME.chatId }), Outbox.all()]).then(function (x) {
+      var r = x[0], pending = x[1].some(function (o) { return o.kind === 'report_submit' && o.status !== 'sent'; });
+      if (r && r.ok && r.report && !S.rep.dirty && !pending) {
         S.rep.sent = true; S.rep.work = r.report.work; S.rep.notes = r.report.notes; S.rep.tomorrow = r.report.tomorrow;
         Outbox.kvSet('rep:' + today, S.rep);
       }
@@ -633,8 +635,8 @@ function doPunch(type) {
     S.gps = gps ? 'ok' : 'ng';
     var data = { client_id: Outbox.uuid(), chatId: ME.chatId, at: at, gps: gps };
     if (ME.via === 'link') data.k = ME.key; else data._tgInitData = TG.initData;
-    return Outbox.enqueue('punch_' + type, data, { url: OPS_URL }).then(function () {
-      if (type === 'in') { S.att.clockIn = tm; S.att.localIn = tm; } else { S.att.clockOut = tm; S.att.localOut = tm; }
+    return Outbox.enqueue('punch_' + type, data, { url: OPS_URL, after: type === 'out' ? (S.att.inCid || '') : '' }).then(function () {
+      if (type === 'in') { S.att.clockIn = tm; S.att.localIn = tm; S.att.inCid = data.client_id; } else { S.att.clockOut = tm; S.att.localOut = tm; }
       Outbox.kvSet('att:' + ppDate(0), S.att);
       toast((type === 'in' ? '🟢 ' : '🔴 ') + t('punch_saved') + ' ' + tm, 'ok');
       render();
@@ -657,7 +659,9 @@ function sendReport() {
   if (!work) { toast(t('report_work'), 'warn'); var w = $('repWork'); if (w) w.focus(); return; }
   var data = { client_id: Outbox.uuid(), chatId: ME.chatId, work: work, notes: r.notes || '', tomorrow: r.tomorrow || '', targetDate: ppDate(0) };
   if (ME.via === 'link') data.k = ME.key; else data._tgInitData = TG.initData;
-  Outbox.enqueue('report_submit', data, { url: OPS_URL }).then(function () {
+  Outbox.supersede('report_submit', function (pl) { return pl.targetDate === data.targetDate && pl.chatId === data.chatId; }).then(function (after) {
+    return Outbox.enqueue('report_submit', data, { url: OPS_URL, after: after });
+  }).then(function () {
     r.sent = true; r.dirty = false; r.work = work; Outbox.kvSet('rep:' + ppDate(0), r);
     toast('📥 ' + t('report_saved'), 'ok'); render();
   });
@@ -702,7 +706,7 @@ function renderExpense() {
     html += '<div class="card"><div class="band">🕘 ' + t('exp_recent') + '</div><div class="body">' + S.expHist.slice(0, 10).map(function (h) {
       var i = expItemOf(h.item);
       return '<div class="exp-row"><span><span class="num">' + esc(h.d) + '</span> · ' + i.ic + ' ' + t(i.k) + (h.memo ? ' · ' + esc(h.memo) : '') + (h.img ? ' 🧾' : '') + '</span><b class="num">' +
-        (S.expSent[h.cid] ? '✅ ' : '⏳ ') + (h.cur === 'KHR' ? Number(h.a).toLocaleString() + '៛' : h.a + '$') + '</b></div>';
+        (h.sent || S.expSent[h.cid] ? '✅ ' : '⏳ ') + (h.cur === 'KHR' ? Number(h.a).toLocaleString() + '៛' : h.a + '$') + '</b></div>';
     }).join('') + '</div></div>';
   }
   $('main').innerHTML = html;
@@ -836,7 +840,7 @@ function bindStrips() {
 //  今日
 // ═══════════════════════════════════════════════════════════════
 function itemChips(i) {
-  var chips = i.menu.map(function (c) { return '<span class="chip menu">' + menuLabel(c) + '</span>'; }).join('');
+  var chips = i.menu.map(function (c) { return '<span class="chip menu">' + menuLabelH(c) + '</span>'; }).join('');
   return chips + ' <span class="chip">' + (i.store ? '🏪 ' + t('place_store') : '🛵 ' + t('place_delivery')) + '</span>';
 }
 function nextItem(list) {
@@ -864,7 +868,7 @@ function reportHtml() {
   var sales = jobs.reduce(function (a, j) { return a + ((j.pay === 'cash' || j.pay === 'aba') ? (Number(j.amountDone != null ? j.amountDone : j.amount) || 0) : 0); }, 0);
   var h = '<div class="card" style="' + (ready ? 'border:2px solid var(--gold)' : '') + '"><div class="band">📝 ' + t('report_title') + (r.sent ? '<span class="r">' + (S.repPending ? '⏳ ' + t('ob_pending').replace('{n}', '1') : '✅ ' + t('report_sent')) + '</span>' : '') + '</div><div class="body">' +
     '<div class="kv"><span>' + t('jobs_done') + '</span><b class="num">' + jobs.length + '</b><span>' + t('total') + '</span><b class="num">' + sales + '$</b>' +
-    '<span>' + t('work_time') + '</span><b class="num">' + (S.att.clockIn || '--:--') + ' – ' + (S.att.clockOut || '--:--') + '</b></div>';
+    '<span>' + t('work_time') + '</span><b class="num">' + esc(S.att.clockIn || '--:--') + ' – ' + esc(S.att.clockOut || '--:--') + '</b></div>';
   h += '<div class="fld"><label>' + t('report_work') + '</label><textarea id="repWork" rows="4" style="width:100%;border:2px solid var(--line);border-radius:12px;padding:8px 10px">' + esc(r.work || autoWorkText()) + '</textarea></div>' +
     '<div class="fld"><label>' + t('report_notes') + '</label><textarea id="repNotes" rows="2" style="width:100%;border:2px solid var(--line);border-radius:12px;padding:8px 10px">' + esc(r.notes) + '</textarea></div>' +
     '<div class="fld"><label>' + t('report_tomorrow') + '</label><textarea id="repTom" rows="2" style="width:100%;border:2px solid var(--line);border-radius:12px;padding:8px 10px">' + esc(r.tomorrow) + '</textarea></div>' +
@@ -957,7 +961,7 @@ function renderNew() {
   html += '<div class="card"><div class="band">🧽 ' + t('pick_menu') + '</div><div class="body"><div class="svc">' +
     Object.keys(MENU).map(function (k) {
       var on = n.menu.indexOf(k) >= 0, m = MENU[k], pr = m[n.size === 'SUV' ? 'suv' : 'sedan'];
-      return '<button type="button" class="s ' + (on ? 'now' : '') + '" data-pick="' + k + '"><span class="n"><span class="latin">' + menuLabel(k) + '</span><small>' + t(menuTk(k)) + '</small></span><span class="t num">' + (on ? '✓ ' : '') + (pr != null ? pr + '$' : '') + '</span></button>';
+      return '<button type="button" class="s ' + (on ? 'now' : '') + '" data-pick="' + k + '"><span class="n"><span class="latin">' + menuLabelH(k) + '</span><small>' + t(menuTk(k)) + '</small></span><span class="t num">' + (on ? '✓ ' : '') + (pr != null ? pr + '$' : '') + '</span></button>';
     }).join('') + '</div></div></div>';
   $('main').innerHTML = html;
   ['Car', 'Plate', 'Name'].forEach(function (f) { var el = $('nj' + f); el.oninput = function () { n[f.toLowerCase()] = el.value; }; });
@@ -1036,14 +1040,14 @@ function renderJob() {
     html += '<div class="card"><div class="band">👉 ' + t('now_doing') + '</div><div class="body"><div class="svc">' +
       Object.keys(c.svc).map(function (k) {
         var s = c.svc[k], cls = c.active === k ? 'now' : (s.done ? 'done' : (s.skip ? 'skip' : ''));
-        return '<button type="button" class="s ' + cls + '" data-svc="' + k + '"><span class="n"><span class="latin">' + menuLabel(k) + '</span><small>' + t(menuTk(k)) + '</small></span><span class="t num" data-tv="' + k + '">' + (c.active === k ? '▶ ' : (s.done ? '✓ ' : '')) + hms(svcSec(s)) + '</span></button>';
+        return '<button type="button" class="s ' + cls + '" data-svc="' + k + '"><span class="n"><span class="latin">' + menuLabelH(k) + '</span><small>' + t(menuTk(k)) + '</small></span><span class="t num" data-tv="' + k + '">' + (c.active === k ? '▶ ' : (s.done ? '✓ ' : '')) + hms(svcSec(s)) + '</span></button>';
       }).join('') + '</div></div></div>';
   }
 
   else if (c.step === 'close') {
     var dur = workSec(c);
     html += '<div class="card"><div class="band">✅ ' + t('svc_done_q') + '</div><div class="body"><div class="svc">' +
-      Object.keys(c.svc).map(function (k) { var s = c.svc[k]; return '<button type="button" class="s ' + (s.skip ? 'skip' : 'done') + '" data-tog="' + k + '"><span class="n"><span class="latin">' + menuLabel(k) + '</span><small>' + t(menuTk(k)) + '</small></span><span class="t num">' + (s.skip ? '—' : '✓ ' + fmtDur(svcSec(s))) + '</span></button>'; }).join('') +
+      Object.keys(c.svc).map(function (k) { var s = c.svc[k]; return '<button type="button" class="s ' + (s.skip ? 'skip' : 'done') + '" data-tog="' + k + '"><span class="n"><span class="latin">' + menuLabelH(k) + '</span><small>' + t(menuTk(k)) + '</small></span><span class="t num">' + (s.skip ? '—' : '✓ ' + fmtDur(svcSec(s))) + '</span></button>'; }).join('') +
       '</div><div class="note">⏱ ' + t('work_time') + ': <b class="num">' + fmtDur(dur) + '</b> · 📷 <b class="num">' + Object.keys(c.photos).length + '</b> · 🩹 <b class="num">' + c.dmg.length + '</b></div></div></div>';
     html += '<div class="card"><div class="band">💰 ' + t('pay_title') + '</div><div class="body">' +
       '<div class="big-amt"><input type="number" inputmode="decimal" id="amt" value="' + (c.pay === 'free' ? 0 : c.amount) + '"' + (c.pay === 'free' ? ' disabled' : '') + '><span>$</span></div>' +
@@ -1059,7 +1063,7 @@ function renderJob() {
   else if (c.step === 'done') {
     html += '<div class="card"><div class="done-screen"><div class="ic">✓</div><div class="h">' + t('btn_finish') + '</div>' +
       '<div class="kv"><span>' + t('work_time') + '</span><b class="num">' + fmtDur(workSec(c)) + '</b>' +
-      Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }).map(function (k) { return '<span class="latin">' + menuLabel(k) + '</span><b class="num">' + fmtDur(svcSec(c.svc[k])) + '</b>'; }).join('') +
+      Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }).map(function (k) { return '<span class="latin">' + menuLabelH(k) + '</span><b class="num">' + fmtDur(svcSec(c.svc[k])) + '</b>'; }).join('') +
       '<span>' + t('lbl_photos') + '</span><b class="num">' + Object.keys(c.photos).length + '</b><span>' + t('pay_title') + '</span><b class="num">' + (c.pay === 'free' ? '0$' : c.amount + '$') + ' · ' + t('pay_' + (c.pay || 'later')) + '</b></div>' +
       '<div class="chip ' + (S.ob.pending ? 'warn' : 'ok') + '">' + (S.ob.pending ? '📥 ' + t('offline_saved') : '✅ ' + t('sent')) + '</div></div></div>';
   }
@@ -1213,6 +1217,9 @@ function boot() {
         S.ob = cnt;
         S.repPending = (list || []).some(function (r) { return r.kind === 'report_submit' && r.status !== 'sent'; });
         S.expSent = {}; (list || []).forEach(function (r) { if (r.kind === 'expense_submit' && r.status === 'sent') S.expSent[r.client_id] = true; });
+        var histChanged = false;
+        S.expHist.forEach(function (h) { if (!h.sent && S.expSent[h.cid]) { h.sent = true; histChanged = true; } });
+        if (histChanged) Outbox.kvSet('exp_hist', S.expHist);
         // 日報を入力中は描き直さない（文字入力が途切れるため）
         var typing = document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
         if (S.view === 'home' && !typing) { if (S.tab === 'expense') renderExpense(); else renderHome(); }

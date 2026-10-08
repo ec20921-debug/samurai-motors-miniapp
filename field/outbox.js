@@ -93,6 +93,7 @@
   function enqueue(kind, payload, opts) {
     var rec = {
       url: (opts && opts.url) || '',
+      after: (opts && opts.after) || '',   // この記録より先に送り終えるべき記録の client_id（例: 退勤 → 出勤）
       client_id: payload.client_id,
       job_client_id: payload.job_client_id || payload.client_id,
       kind: kind,
@@ -101,6 +102,7 @@
       created_at: new Date().toISOString(),
       status: 'local',
       attempts: 0,
+      fails: 0,          // サーバーが応答したうえでの失敗回数（圏外は数えない）
       next_at: 0,
       last_error: '',
       payload: payload
@@ -155,17 +157,34 @@
       var startKnown = {};
       list.forEach(function (r) { if (r.kind === 'job_start') startKnown[r.job_client_id] = true; });
 
+      var byId = {};
+      list.forEach(function (r) { byId[r.client_id] = r; });
+      var startRec = {};
+      list.forEach(function (r) { if (r.kind === 'job_start') startRec[r.job_client_id] = r; });
+      // 先に送るべき記録が「要確認」なら、待っている記録も「要確認」に出す（黙って保留し続けない）
+      function blockedBy(r) {
+        if (r.kind === 'job_end' && startKnown[r.job_client_id] && !sentStart[r.job_client_id]) return startRec[r.job_client_id];
+        if (r.after && byId[r.after] && byId[r.after].status !== 'sent') return byId[r.after];
+        return null;
+      }
+      list.forEach(function (r) {
+        var b = r.status === 'local' && blockedBy(r);
+        if (b && b.status === 'review') { r.status = 'review'; r.last_error = 'waiting: ' + b.kind; put(r); }
+      });
+
       var due = list.filter(function (r) {
         if (r.status !== 'local') return false;
         if (r.next_at && r.next_at > now) return false;
-        // 終了は、同じ仕事の開始が送信済みになってから（開始が箱に無い＝送信済みで掃除された場合は送る）
-        if (r.kind === 'job_end' && startKnown[r.job_client_id] && !sentStart[r.job_client_id]) return false;
+        // 終了は同じ仕事の開始の後、退勤は出勤の後（先の記録が箱に無い＝送信済みで掃除された場合は送る）
+        if (blockedBy(r)) return false;
         return true;
       }).sort(function (a, b) { return a.seq_local - b.seq_local; });
 
       var chain = Promise.resolve();
       due.forEach(function (rec) {
         chain = chain.then(function () {
+          // 同じ回の中で先の記録が失敗していたら、今回は送らない（順番の逆転を防ぐ）
+          if (blockedBy(rec)) return;
           rec.status = 'sending'; rec.attempts++;
           return put(rec).then(function () { notify(); return postOnce(rec); }).then(function (res) {
             // 現場の GAS は status ok/duplicate、勤務Bot側の GAS は ok:true（重複は status duplicate）
@@ -182,13 +201,16 @@
               rec.status = 'review';
               rec.last_error = (res.error || res.message || 'rejected');
             } else {
-              throw new Error((res && (res.error || res.message)) || 'no echo');
+              var se = new Error((res && (res.error || res.message)) || 'no echo'); se.server = true;
+              throw se;
             }
             return put(rec);
           }).catch(function (err) {
             if (rec.status === 'sent' || rec.status === 'review') return put(rec);
             rec.last_error = String((err && err.message) || err || 'error').slice(0, 200);
-            if (rec.attempts >= MAX_TRIES) {
+            // 圏外・タイムアウト（サーバーの応答なし）は回数に数えない＝電波が戻るまで待ち続ける
+            if (err && err.server) rec.fails = (rec.fails || 0) + 1;
+            if ((rec.fails || 0) >= MAX_TRIES) {
               rec.status = 'review';
             } else {
               rec.status = 'local';
@@ -217,11 +239,22 @@
     }).catch(function () {});
   }
 
+  /** まだ送っていない同種の古い記録を消す（送信中のものは残し、その client_id を返す＝新しい記録はその後に送る） */
+  function supersede(kind, match) {
+    return getAll().then(function (list) {
+      var keep = '';
+      return Promise.all(list.filter(function (r) { return r.kind === kind && r.status !== 'sent' && match(r.payload); }).map(function (r) {
+        if (r.status === 'sending') { keep = r.client_id; return null; }
+        return del(r.client_id);
+      })).then(function () { return keep; });
+    });
+  }
+
   /** 「要確認」も含めて今すぐ送り直す（手動） */
   function retryAll() {
     return getAll().then(function (list) {
       return Promise.all(list.filter(function (r) { return r.status === 'review' || r.status === 'local'; }).map(function (r) {
-        r.status = 'local'; r.next_at = 0; if (r.attempts >= MAX_TRIES) r.attempts = MAX_TRIES - 3;
+        r.status = 'local'; r.next_at = 0; r.attempts = 0; if ((r.fails || 0) >= MAX_TRIES) r.fails = MAX_TRIES - 3;
         return put(r);
       }));
     }).then(function () { return flush(); });
@@ -243,7 +276,7 @@
   }
 
   global.Outbox = {
-    start: start, enqueue: enqueue, flush: flush, retryAll: retryAll, all: getAll,
+    start: start, enqueue: enqueue, flush: flush, retryAll: retryAll, all: getAll, supersede: supersede,
     kvGet: kvGet, kvSet: kvSet, kvDel: kvDel, uuid: uuid
   };
 })(window);
