@@ -176,7 +176,7 @@
               rec.sent_at = new Date().toISOString();
               rec.server = { jobId: res.jobId || '', status: res.status, warning: res.warning || '' };
               // 写真を消して軽くする（記録のメタ情報だけ残す）
-              var p = Object.assign({}, rec.payload); delete p.beforePhotos; delete p.afterPhotos; rec.payload = p;
+              var p = Object.assign({}, rec.payload); delete p.beforePhotos; delete p.afterPhotos; delete p.photoBase64; rec.payload = p;
               if (rec.kind === 'job_start') sentStart[rec.job_client_id] = true;
             } else if (res && res.retryable === false) {
               rec.status = 'review';

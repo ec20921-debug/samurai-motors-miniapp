@@ -109,6 +109,34 @@ main.flow{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 .opt.center{justify-content:center;text-align:center;flex-direction:column;gap:4px;padding:12px 8px}
 .opt.center .ic{width:auto}
 
+/* ── 下部タブ（試作と同じ） ── */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(2,1fr)}
+.tabs[hidden]{display:none}
+.tab{height:62px;display:grid;place-items:center;align-content:center;gap:2px;color:#6b7686;position:relative;font-size:12px;font-weight:700;line-height:1.15}
+.tab svg{width:26px;height:26px}
+.tab[aria-selected="true"]{color:var(--blue)}
+.tab[aria-selected="true"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--blue)}
+main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+/* ── 経費（試作と同じ） ── */
+.receipt{position:relative;aspect-ratio:16/9;border-radius:14px;border:2px dashed #b8c2cf;background:#f7f9fb;display:grid;place-items:center;align-content:center;gap:6px;color:var(--sub);font-weight:700;overflow:hidden}
+.receipt img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.receipt input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.receipt .ic{font-size:40px;line-height:1}
+.receipt.has{border-style:solid;border-color:var(--green)}
+.big-amt{display:flex;align-items:center;gap:8px}
+.big-amt input{flex:1;width:1px;min-width:0;min-height:64px;font-size:34px;font-weight:700;text-align:right;border:2px solid var(--line);border-radius:14px;padding:0 14px;background:#fff;font-family:'Noto Sans JP',sans-serif}
+.big-amt span{font-size:30px;font-weight:700}
+.items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.item{border:2px solid var(--line);border-radius:14px;background:#fff;min-height:84px;padding:8px 4px;display:grid;place-items:center;align-content:center;gap:4px;text-align:center;line-height:1.2}
+.item .ic{font-size:30px;line-height:1}
+.item .nm{font-size:14px;font-weight:700}
+.item.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.item-ex{background:var(--band);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text);line-height:1.5}
+.memo-in{width:100%;min-height:52px;border:2px solid var(--amber);border-radius:12px;padding:10px 12px;font-size:17px;background:#fff}
+.exp-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #e7ebf1;font-size:15px}
+.exp-row:last-child{border-bottom:0}
+.exp-row b{font-size:17px;white-space:nowrap}
+
 /* ── 今日: 打刻ストリップ ── */
 .punch{display:flex;align-items:center;gap:12px;padding:12px 14px}
 .punch .clock{font-size:34px;font-weight:700;line-height:1}
@@ -231,13 +259,21 @@ main.flow{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 <header class="head" id="head"></header>
 <main id="main"></main>
 <div class="bar" id="bar" hidden></div>
+<nav class="tabs" id="tabs" role="tablist" hidden>
+  <button type="button" class="tab" role="tab" data-tab="today" aria-selected="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="tabTodayL"></span>
+  </button>
+  <button type="button" class="tab" role="tab" data-tab="expense" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span id="tabExpL"></span>
+  </button>
+</nav>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261008-210301';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261009-073602';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・日報・（今後）経費・営業は勤務Bot側の GAS（v7-operations）
@@ -276,10 +312,11 @@ var T_JA = {
   report_title:'日報', report_send:'日報を送る', report_sent:'日報を送りました', report_tomorrow:'明日の予定',
   report_work:'今日やったこと', report_notes:'気づいたこと・困ったこと', report_saved:'日報をスマホに保存しました。電波があれば送ります',
   need_link:'専用リンクから開いてください。リンクは Daisuke に聞いてください', link_bad:'このリンクは使えません。Daisuke に新しいリンクをもらってください',
-  not_staff:'スタッフとして登録されていません。Daisuke に連絡してください'
+  not_staff:'スタッフとして登録されていません。Daisuke に連絡してください',
+  tab_expense:'経費', exp_receipt:'レシートを撮る', exp_recent:'最近の登録', it_fuel:'ガソリン', it_fuel_ex:'例: バイクのガソリン', it_chem:'洗車の薬', it_chem_ex:'例: スプレー・ワックス・シャンプー（車に使って、なくなるもの）', it_tools:'道具', it_tools_ex:'例: クロス・バケツ・手袋（何回も使うもの）', it_bike:'バイクの修理', it_bike_ex:'例: パンク修理・オイル交換', it_parking:'駐車代', it_parking_ex:'例: 駐車場・通行料', it_flyer:'チラシ印刷', it_flyer_ex:'例: チラシ・ポスター・名刺', it_phone:'電話代', it_phone_ex:'例: 電話のチャージ・インターネット', it_util:'店の電気・水道', it_util_ex:'例: 電気代・水道代', it_other:'そのほか', it_other_ex:'例: 上にないもの（何を買ったか書いてください）', memo_required:'何を買ったか書いてください', exp_amount_req:'金額を入れてください', exp_no_receipt_q:'レシートの写真がありません。このまま保存しますか？', exp_saved:'経費を保存しました。電波があれば送ります'
 };
 /*KM-START*/
-var T_KM = {"tab_today": "ថ្ងៃនេះ", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "report_title": "របាយការណ៍", "report_send": "ផ្ញើរបាយការណ៍", "report_tomorrow": "គម្រោងថ្ងៃស្អែក", "report_sent": "បានផ្ញើរបាយការណ៍ហើយ", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "report_work": "ការងារដែលបានធ្វើថ្ងៃនេះ", "report_notes": "អ្វីដែលសង្កេតឃើញ និងបញ្ហាដែលជួប", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "report_saved": "បានរក្សាទុករបាយការណ៍ក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត"};
+var T_KM = {"tab_today": "ថ្ងៃនេះ", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "report_title": "របាយការណ៍", "report_send": "ផ្ញើរបាយការណ៍", "report_tomorrow": "គម្រោងថ្ងៃស្អែក", "report_sent": "បានផ្ញើរបាយការណ៍ហើយ", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "report_work": "ការងារដែលបានធ្វើថ្ងៃនេះ", "report_notes": "អ្វីដែលសង្កេតឃើញ និងបញ្ហាដែលជួប", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "report_saved": "បានរក្សាទុករបាយការណ៍ក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត"};
 /*KM-END*/
 var LANG = 'km';
 try { LANG = localStorage.getItem('sm_field_lang') || 'km'; } catch (e) {}
@@ -325,6 +362,7 @@ function priceOf(job) {
 //  状態
 // ═══════════════════════════════════════════════════════════════
 var S = { view: 'home', items: [], tomorrow: [], local: [], done: {}, load: 'loading', cur: null, ob: { pending: 0, review: 0, sending: 0 }, waitingSW: null, diag: false,
+          tab: 'today', exp: { item: 'it_fuel', cur: 'USD', memo: '', img: null, amt: '' }, expHist: [], expSent: {},
           att: { clockIn: '', clockOut: '' }, gps: null, rep: { sent: false, work: '', notes: '', tomorrow: '' }, admin: null };
 
 // ═══════════════════════════════════════════════════════════════
@@ -623,6 +661,78 @@ function sendReport() {
     r.sent = true; r.dirty = false; r.work = work; Outbox.kvSet('rep:' + ppDate(0), r);
     toast('📥 ' + t('report_saved'), 'ok'); render();
   });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  経費（試作の9ボタン → 経費マスターの分類。2026-10-08 Step 2）
+//  現場スタッフの支出はサーバー側で「前払い金」に固定される（ExpenseManager.gs）
+// ═══════════════════════════════════════════════════════════════
+var EXP_ITEMS = [
+  { k: 'it_fuel',    ic: '⛽', cat: '車両費',     ja: 'ガソリン' },
+  { k: 'it_chem',    ic: '🧴', cat: '洗車資材費', ja: '洗車の薬' },
+  { k: 'it_tools',   ic: '🧽', cat: '洗車資材費', ja: '洗車の道具' },
+  { k: 'it_bike',    ic: '🛵', cat: '車両費',     ja: 'バイクの修理' },
+  { k: 'it_parking', ic: '🅿️', cat: '旅費交通費', ja: '駐車代・通行料' },
+  { k: 'it_flyer',   ic: '🖨', cat: '広告宣伝費', ja: 'チラシ印刷' },
+  { k: 'it_phone',   ic: '📱', cat: '通信費',     ja: '電話代' },
+  { k: 'it_util',    ic: '💡', cat: '水道光熱費', ja: '店の電気・水道' },
+  { k: 'it_other',   ic: '📦', cat: 'その他',     ja: 'その他' }
+];
+function expItemOf(k) { return EXP_ITEMS.filter(function (i) { return i.k === k; })[0] || EXP_ITEMS[EXP_ITEMS.length - 1]; }
+var CUR_SYM = { USD: '$', KHR: '៛' };
+function renderExpense() {
+  var html = stripsHtml();
+  if (!canPunch()) { $('main').innerHTML = html + punchHtml(); bindStrips(); return; }
+  var e = S.exp, it = expItemOf(e.item);
+  html += '<div class="card"><div class="band">🧾 ' + t('tab_expense') + '</div><div class="body">' +
+    '<div class="receipt ' + (e.img ? 'has' : '') + '">' + (e.img ? '<img src="' + e.img + '" alt="">' : '<span class="ic">🧾</span><span>' + t('exp_receipt') + '</span>') +
+      '<input type="file" accept="image/*" capture="environment" id="rcpt"></div>' +
+    '<div class="big-amt"><input type="number" inputmode="decimal" step="any" min="0" id="expAmt" placeholder="0" value="' + esc(e.amt) + '"><span>' + CUR_SYM[e.cur] + '</span></div>' +
+    '<div class="row2">' + ['USD', 'KHR'].map(function (c) {
+      return '<button type="button" class="opt center ' + (e.cur === c ? 'on' : '') + '" data-cur="' + c + '" style="min-height:48px">' + c + ' ' + CUR_SYM[c] + '</button>';
+    }).join('') + '</div>' +
+    '<div class="items">' + EXP_ITEMS.map(function (i) {
+      return '<button type="button" class="item ' + (e.item === i.k ? 'on' : '') + '" data-item="' + i.k + '"><span class="ic">' + i.ic + '</span><span class="nm">' + t(i.k) + '</span></button>';
+    }).join('') + '</div>' +
+    '<div class="item-ex">' + it.ic + ' ' + t(it.k + '_ex') + '</div>' +
+    (e.item === 'it_other' ? '<input class="memo-in" id="expMemo" value="' + esc(e.memo) + '" placeholder="✏️ ' + esc(t('memo_required')) + '">' : '') +
+    '<button type="button" class="btn" id="expSave">💾 ' + t('btn_save') + '</button></div></div>';
+  // 最近の登録（この端末から保存したもの。✅=送信済み ⏳=未送信）
+  if (S.expHist.length) {
+    html += '<div class="card"><div class="band">🕘 ' + t('exp_recent') + '</div><div class="body">' + S.expHist.slice(0, 10).map(function (h) {
+      var i = expItemOf(h.item);
+      return '<div class="exp-row"><span><span class="num">' + esc(h.d) + '</span> · ' + i.ic + ' ' + t(i.k) + (h.memo ? ' · ' + esc(h.memo) : '') + (h.img ? ' 🧾' : '') + '</span><b class="num">' +
+        (S.expSent[h.cid] ? '✅ ' : '⏳ ') + (h.cur === 'KHR' ? Number(h.a).toLocaleString() + '៛' : h.a + '$') + '</b></div>';
+    }).join('') + '</div></div>';
+  }
+  $('main').innerHTML = html;
+  bindStrips();
+  $('rcpt').onchange = function () { var f = this.files[0]; if (!f) return; S.exp.amt = $('expAmt').value; readShrunk(f, function (u) { S.exp.img = u; renderExpense(); }); };
+  $('expAmt').oninput = function () { S.exp.amt = this.value; };
+  document.querySelectorAll('[data-cur]').forEach(function (b) { b.onclick = function () { S.exp.amt = $('expAmt').value; S.exp.cur = b.getAttribute('data-cur'); renderExpense(); }; });
+  document.querySelectorAll('[data-item]').forEach(function (b) { b.onclick = function () { S.exp.amt = $('expAmt').value; S.exp.item = b.getAttribute('data-item'); renderExpense(); }; });
+  var mi = $('expMemo'); if (mi) mi.oninput = function () { S.exp.memo = mi.value; };
+  $('expSave').onclick = saveExpense;
+}
+function saveExpense() {
+  var e = S.exp, it = expItemOf(e.item), a = parseFloat(String($('expAmt').value || '').replace(',', '.'));
+  if (!(a > 0)) { toast(t('exp_amount_req'), 'warn'); $('expAmt').focus(); return; }
+  var memo = e.item === 'it_other' ? String(e.memo || '').trim() : '';
+  if (e.item === 'it_other' && !memo) { toast('✏️ ' + t('memo_required'), 'warn'); var m = $('expMemo'); if (m) m.focus(); return; }
+  if (!e.img && !window.confirm(t('exp_no_receipt_q'))) return;
+  var cid = Outbox.uuid(), d = ppNow();
+  var data = { client_id: cid, chatId: ME.chatId, transactionDate: ppDate(0),
+    description: e.item === 'it_other' ? memo : it.ja,
+    amount: a, currency: e.cur, category: it.cat, memo: '現場アプリ v2（' + it.k + '）',
+    photoBase64: e.img || '', photoMime: e.img ? 'image/jpeg' : '', photoName: e.img ? 'receipt' : '' };
+  if (ME.via === 'link') data.k = ME.key; else data._tgInitData = TG.initData;
+  $('expSave').disabled = true;
+  Outbox.enqueue('expense_submit', data, { url: OPS_URL }).then(function () {
+    S.expHist.unshift({ cid: cid, d: d.getDate() + '/' + (d.getMonth() + 1), item: e.item, a: a, cur: e.cur, memo: memo, img: !!e.img });
+    S.expHist = S.expHist.slice(0, 30); Outbox.kvSet('exp_hist', S.expHist);
+    S.exp = { item: e.item, cur: e.cur, memo: '', img: null, amt: '' };
+    toast('📥 ' + t('exp_saved'), 'ok'); renderExpense(); window.scrollTo(0, 0);
+  }).catch(function () { $('expSave').disabled = false; toast('⚠ IndexedDB', 'warn'); });
 }
 
 // ── 管理者: スタッフ専用リンクの発行（日本語のみ・Telegram から開いたときだけ） ──
@@ -1064,11 +1174,14 @@ function render() {
   document.body.setAttribute('data-lang', LANG);
   if (timerId && S.view !== 'job') { clearInterval(timerId); timerId = null; }
   var inFlow = S.view === 'job' || S.view === 'new';
-  $('bar').hidden = !inFlow; $('main').className = inFlow ? 'flow' : '';
+  $('bar').hidden = !inFlow; $('main').className = inFlow ? 'flow' : 'tabbed';
+  $('tabs').hidden = inFlow;
+  $('tabTodayL').textContent = t('tab_today'); $('tabExpL').textContent = t('tab_expense');
+  document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === S.tab)); });
   renderHead();
   if (S.view === 'job' && S.cur) renderJob();
   else if (S.view === 'new') renderNew();
-  else { S.view = 'home'; renderHome(); }
+  else { S.view = 'home'; if (S.tab === 'expense') renderExpense(); else renderHome(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1077,8 +1190,9 @@ function render() {
 function boot() {
   var today = ppDate(0);
   Promise.all([Outbox.kvGet('menu'), Outbox.kvGet('today'), Outbox.kvGet('done:' + today), Outbox.kvGet('draft'), Outbox.kvGet('local'),
-               Outbox.kvGet('att:' + today), Outbox.kvGet('rep:' + today), Outbox.kvGet('me')])
+               Outbox.kvGet('att:' + today), Outbox.kvGet('rep:' + today), Outbox.kvGet('me'), Outbox.kvGet('exp_hist')])
     .then(function (r) {
+      if (r[8]) S.expHist = r[8];
       if (r[5]) S.att = r[5];
       if (r[6]) S.rep = r[6];
       if (r[7] && r[7].chatId === ME.chatId) { ME.staff = r[7].staff; ME.keyOk = r[7].keyOk; ME.state = r[7].state || ME.state; }
@@ -1098,9 +1212,10 @@ function boot() {
       Outbox.start({ url: GAS_URL, appVersion: APP_VERSION, onChange: function (cnt, list) {
         S.ob = cnt;
         S.repPending = (list || []).some(function (r) { return r.kind === 'report_submit' && r.status !== 'sent'; });
+        S.expSent = {}; (list || []).forEach(function (r) { if (r.kind === 'expense_submit' && r.status === 'sent') S.expSent[r.client_id] = true; });
         // 日報を入力中は描き直さない（文字入力が途切れるため）
         var typing = document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
-        if (S.view === 'home' && !typing) renderHome();
+        if (S.view === 'home' && !typing) { if (S.tab === 'expense') renderExpense(); else renderHome(); }
         renderHead();
       } });
       loadData(false);
@@ -1128,6 +1243,7 @@ if ('serviceWorker' in navigator) {
   }).catch(function () {});
 }
 
+document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { S.tab = b.getAttribute('data-tab'); S.view = 'home'; render(); window.scrollTo(0, 0); }; });
 setInterval(function () { var c = $('clock'); if (c) c.textContent = hhmm(ppNow()); }, 15000);
 boot();
 </script>
