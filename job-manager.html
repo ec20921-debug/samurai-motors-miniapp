@@ -904,6 +904,18 @@ body {
   </div>
 </div>
 
+<!-- 2026-10-08: 送信失敗モーダル（記録は端末に残す） -->
+<div class="modal-overlay" id="sendFailModal">
+  <div class="modal">
+    <div style="font-size:48px;margin-bottom:12px;">📤</div>
+    <h2>មិនទាន់បានផ្ញើទេ</h2>
+    <p>（まだ送信されていません）</p>
+    <p id="sendFailMsg" style="font-size:13px;line-height:1.7;"></p>
+    <button onclick="resendPending()">ផ្ញើម្តងទៀត（再送）</button>
+    <button class="btn-secondary" style="margin-top:8px;" onclick="document.getElementById('sendFailModal').classList.remove('show'); resetAll(); loadDashboardBookings();">ត្រឡប់ទៅបញ្ជី（一覧に戻る）</button>
+  </div>
+</div>
+
 <!-- 予約ピッカー モーダル -->
 <div class="bp-overlay" id="bookingPicker">
   <div class="bp-modal">
@@ -923,6 +935,8 @@ body {
 </div>
 
 <div class="toast" id="toast"></div>
+<!-- 2026-10-08: 未送信の帯（一覧・全画面の上に固定。タップで再送） -->
+<div id="pendingBanner" onclick="resendPending()" style="display:none;position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:300;background:#b45309;color:#fff;border-radius:10px;padding:12px 14px;font-size:14px;font-weight:700;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.35);cursor:pointer;"></div>
 
 <script>
 // ===== CONFIG =====
@@ -1281,6 +1295,10 @@ document.addEventListener('DOMContentLoaded', function() {
     renderStep();
     loadDashboardBookings();
   }
+  // 2026-10-08: 前回送れなかった記録があれば帯を出し、自動で再送（job はサーバー側で二重防止済み）
+  renderPendingBanner_();
+  if (loadPending_().length) setTimeout(resendPending, 1500);
+  window.addEventListener('online', function() { if (loadPending_().length) resendPending(); });
 });
 
 // ===== NAVIGATION =====
@@ -1493,12 +1511,8 @@ function startWork() {
     linkToken: linkToken || ''
   };
   if (APPS_SCRIPT_URL) {
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(startData)
-    }).catch(function(){});
+    // 2026-10-08: no-cors をやめて結果を確認（失敗を見える化）。自動再送はしない
+    postJobQuiet_(startData);
   }
 
   // 予約と紐付け（job_id 生成は GAS 側で行うため、ここでは booking_link_job を呼ばずに
@@ -1549,12 +1563,8 @@ function endWork() {
     linkToken: linkToken || ''
   };
   if (APPS_SCRIPT_URL) {
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(endData)
-    }).catch(function(){});
+    // 2026-10-08: no-cors をやめて結果を確認（失敗を見える化）。自動再送はしない
+    postJobQuiet_(endData);
   }
 
   currentStep = 5;
@@ -1678,35 +1688,115 @@ function submitAll() {
     linkToken: linkToken || ''
   };
 
-  if (APPS_SCRIPT_URL) {
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(data)
-    })
-    .then(function() {
-      clearSession();
-      document.getElementById('successModal').classList.add('show');
-    })
-    .catch(function() {
-      saveOffline(data);
-      clearSession();
-      document.getElementById('successModal').classList.add('show');
-    });
-  } else {
-    saveOffline(data);
+  // 2026-10-08: 応答を確認してから「完了」を出す。失敗したら端末に残し、再送ボタンを出す。
+  //   job（最終）はサーバーに「完了行があれば何もしない」ガードがあるので、送り直しても二重にならない。
+  if (!APPS_SCRIPT_URL) { onFinalSendFailed_(data); return; }
+  var btn = document.getElementById('submitBtn');
+  if (btn) { btn.disabled = true; btn.dataset.orig = btn.innerHTML; btn.innerHTML = '⏳ កំពុងផ្ញើ...（送信中...）'; }
+  postJob_(data).then(function() {
+    if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.orig || btn.innerHTML; }
     clearSession();
     document.getElementById('successModal').classList.add('show');
+  }).catch(function() {
+    if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.orig || btn.innerHTML; }
+    onFinalSendFailed_(data);
+  });
+}
+
+// ── 2026-10-08: 送信の結果確認・未送信の保管と再送 ──
+// 成功 = HTTP 応答が JSON で status==='ok'。HTML（コールドスタートの 404 等）・ok なし・通信断は失敗
+function postJob_(payload) {
+  return fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    if (!res || res.status !== 'ok') throw new Error((res && res.message) || 'send failed');
+    return res;
+  });
+}
+
+// 作業開始・終了用: 失敗したら知らせるだけ（最後の保存で全データを送るので自動再送はしない）
+function postJobQuiet_(payload) {
+  postJob_(payload).catch(function() {
+    showToast('⚠️ មិនអាចផ្ញើបានទេ — នឹងផ្ញើទាំងអស់ពេលរក្សាទុកចុងក្រោយ（送信できませんでした。最後の保存でまとめて送ります）');
+  });
+}
+
+function onFinalSendFailed_(data) {
+  var stored = saveOffline(data);
+  // セッションは消さない（端末保存に失敗しても、アプリを閉じなければ再送できる）
+  document.getElementById('sendFailMsg').innerHTML = stored
+    ? 'បានរក្សាទុកទិន្នន័យក្នុងទូរស័ព្ទហើយ។ សូមកុំបិទកម្មវិធី ហើយចុច «ផ្ញើម្តងទៀត»។<br>（データをスマホに保存しました。アプリを閉じずに「再送」を押してください）'
+    : '⚠️ មិនអាចរក្សាទុកក្នុងទូរស័ព្ទបានទេ — សូមកុំបិទកម្មវិធី<br>（スマホに保存できませんでした。アプリを閉じないでください）';
+  document.getElementById('sendFailModal').classList.add('show');
+  renderPendingBanner_();
+}
+
+// 未送信の保管（同じ仕事は1件にまとめる）。保存できたら true
+function pendingKey_(d) {
+  return (d.bookingId || '') + '|' + (d.linkToken || '') + '|' + (d.startTime || '');
+}
+function loadPending_() {
+  try { return JSON.parse(localStorage.getItem('samurai_jobs') || '[]'); } catch (e) { return []; }
+}
+function saveOffline(data) {
+  try {
+    var key = pendingKey_(data);
+    var saved = loadPending_().filter(function(d) { return pendingKey_(d) !== key; });
+    saved.push(data);
+    localStorage.setItem('samurai_jobs', JSON.stringify(saved));
+    return true;
+  } catch (e) {
+    // 写真が大きく容量オーバー → 写真なしで残す（記録自体は失わない。写真は作業開始・終了の送信分が残る）
+    try {
+      var lite = Object.assign({}, data, { beforePhotos: [], afterPhotos: [], photosDropped: true });
+      var saved2 = loadPending_().filter(function(d) { return pendingKey_(d) !== pendingKey_(data); });
+      saved2.push(lite);
+      localStorage.setItem('samurai_jobs', JSON.stringify(saved2));
+      return true;
+    } catch (e2) { return false; }
   }
 }
 
-function saveOffline(data) {
-  try {
-    var saved = JSON.parse(localStorage.getItem('samurai_jobs') || '[]');
-    saved.push(data);
-    localStorage.setItem('samurai_jobs', JSON.stringify(saved));
-  } catch(e) {}
+// 未送信をまとめて再送（1件ずつ順番に。成功したものだけ消す）
+var resendingPending_ = false;
+function resendPending() {
+  if (resendingPending_) return;
+  var list = loadPending_();
+  if (!list.length) { renderPendingBanner_(); return; }
+  resendingPending_ = true;
+  var failed = [];
+  var chain = Promise.resolve();
+  list.forEach(function(d) {
+    chain = chain.then(function() {
+      return postJob_(d).catch(function() { failed.push(d); });
+    });
+  });
+  chain.then(function() {
+    resendingPending_ = false;
+    try { localStorage.setItem('samurai_jobs', JSON.stringify(failed)); } catch (e) {}
+    renderPendingBanner_();
+    if (failed.length === 0) {
+      showToast('✅ បានផ្ញើរួច（送信しました）');
+      var fm = document.getElementById('sendFailModal');
+      if (fm && fm.classList.contains('show')) {
+        fm.classList.remove('show');
+        clearSession();
+        document.getElementById('successModal').classList.add('show');
+      }
+    } else {
+      showToast('⚠️ នៅតែមិនអាចផ្ញើបាន — សូមព្យាយាមម្តងទៀតនៅកន្លែងមានអ៊ីនធឺណិតល្អ（まだ送信できません。電波の良い場所でもう一度）');
+    }
+  });
+}
+
+function renderPendingBanner_() {
+  var el = document.getElementById('pendingBanner');
+  if (!el) return;
+  var n = loadPending_().length;
+  el.style.display = n ? '' : 'none';
+  el.innerHTML = n ? ('📤 មានការងារ ' + n + ' មិនទាន់បានផ្ញើ — ចុចដើម្បីផ្ញើ（未送信 ' + n + ' 件・タップで送信）') : '';
 }
 
 // ===== GPS =====
