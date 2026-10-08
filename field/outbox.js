@@ -88,9 +88,11 @@
   var sending = false;
   var timer = null;
 
-  /** 記録を箱に入れる（保存できたら resolve ＝「保存しました」を出してよい） */
-  function enqueue(kind, payload) {
+  /** 記録を箱に入れる（保存できたら resolve ＝「保存しました」を出してよい）
+   *  opts.url: 送り先（既定は現場の GAS。勤怠・日報は勤務Bot側の GAS） */
+  function enqueue(kind, payload, opts) {
     var rec = {
+      url: (opts && opts.url) || '',
       client_id: payload.client_id,
       job_client_id: payload.job_client_id || payload.client_id,
       kind: kind,
@@ -126,7 +128,7 @@
     var body = Object.assign({}, rec.payload, { action: rec.kind, sent_at: new Date().toISOString(), app_version: cfg.appVersion });
     var ctrl = global.AbortController ? new AbortController() : null;
     var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
-    return fetch(cfg.url, {
+    return fetch(rec.url || cfg.url, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(body),
@@ -166,8 +168,9 @@
         chain = chain.then(function () {
           rec.status = 'sending'; rec.attempts++;
           return put(rec).then(function () { notify(); return postOnce(rec); }).then(function (res) {
+            // 現場の GAS は status ok/duplicate、勤務Bot側の GAS は ok:true（重複は status duplicate）
             var okEcho = res && String(res.client_id || '') === String(rec.client_id) &&
-                         (res.status === 'ok' || res.status === 'duplicate');
+                         (res.status === 'ok' || res.status === 'duplicate' || res.ok === true);
             if (okEcho) {
               rec.status = 'sent';
               rec.sent_at = new Date().toISOString();

@@ -109,6 +109,16 @@ main.flow{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 .opt.center{justify-content:center;text-align:center;flex-direction:column;gap:4px;padding:12px 8px}
 .opt.center .ic{width:auto}
 
+/* ── 今日: 打刻ストリップ ── */
+.punch{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.punch .clock{font-size:34px;font-weight:700;line-height:1}
+.punch .st{font-size:13px;font-weight:700;margin-top:4px;display:inline-flex;gap:6px;align-items:center}
+.punch .st i{width:9px;height:9px;border-radius:50%;background:#98a2b3;display:inline-block}
+.punch .st.work i{background:var(--green)}
+.punch button{margin-left:auto;min-height:60px;min-width:128px;border-radius:14px;color:#fff;font-weight:700;font-size:18px;padding:6px 14px;display:grid;place-items:center;line-height:1.2}
+.punch button.in{background:var(--green)} .punch button.out{background:var(--red)} .punch button:disabled{background:#b9c0ca}
+.fld textarea{font-size:16px;font-family:inherit}
+
 /* ── 今日: 次の予定 ── */
 .next{border:2px solid var(--blue)}
 .next .body{gap:10px}
@@ -227,9 +237,11 @@ main.flow{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261008-202930';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261008-210301';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
+// 勤怠・日報・（今後）経費・営業は勤務Bot側の GAS（v7-operations）
+var OPS_URL = 'https://script.google.com/macros/s/AKfycbxHLCD6vhnNZhSywyWmpaUuwt1goC4n9pwLNNlVzo-3gp9eSwAIMU_EXWPVdbt9Vw/exec';
 
 var TG = (window.Telegram && Telegram.WebApp) ? Telegram.WebApp : null;
 var SURFACE = (TG && TG.initData) ? 'telegram' : 'web';
@@ -258,10 +270,16 @@ var T_JA = {
   update_ready:'新しい版があります。タップして更新', confirm_leave:'作業を中断しますか？（記録はスマホに残ります）', draft_restored:'前回の続きから再開しました',
   old_app:'旧アプリを開く（チャット・キャンペーン）', loading:'読み込み中…', load_failed:'予約を読み込めません。前回の一覧を表示しています', refresh:'更新',
   install_title:'ホーム画面に追加', install_ios:'Safari の共有ボタン →「ホーム画面に追加」', install_android:'右上のメニュー →「ホーム画面に追加」',
-  pick_menu:'サービスを選ぶ', job_running:'作業中の仕事があります。続けてください', no_name:'名前なし'
+  pick_menu:'サービスを選ぶ', job_running:'作業中の仕事があります。続けてください', no_name:'名前なし',
+  punch_title:'勤怠', punch_in:'出勤する', punch_out:'退勤する', st_not_yet:'未打刻', st_working:'勤務中', st_off:'退勤済',
+  gps_ok:'位置情報 OK', gps_ng:'位置情報が取れません（打刻はできます）', confirm_out:'退勤しますか？', punch_saved:'打刻しました',
+  report_title:'日報', report_send:'日報を送る', report_sent:'日報を送りました', report_tomorrow:'明日の予定',
+  report_work:'今日やったこと', report_notes:'気づいたこと・困ったこと', report_saved:'日報をスマホに保存しました。電波があれば送ります',
+  need_link:'専用リンクから開いてください。リンクは Daisuke に聞いてください', link_bad:'このリンクは使えません。Daisuke に新しいリンクをもらってください',
+  not_staff:'スタッフとして登録されていません。Daisuke に連絡してください'
 };
 /*KM-START*/
-var T_KM = {"tab_today": "ថ្ងៃនេះ", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ"};
+var T_KM = {"tab_today": "ថ្ងៃនេះ", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "report_title": "របាយការណ៍", "report_send": "ផ្ញើរបាយការណ៍", "report_tomorrow": "គម្រោងថ្ងៃស្អែក", "report_sent": "បានផ្ញើរបាយការណ៍ហើយ", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "report_work": "ការងារដែលបានធ្វើថ្ងៃនេះ", "report_notes": "អ្វីដែលសង្កេតឃើញ និងបញ្ហាដែលជួប", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "report_saved": "បានរក្សាទុករបាយការណ៍ក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត"};
 /*KM-END*/
 var LANG = 'km';
 try { LANG = localStorage.getItem('sm_field_lang') || 'km'; } catch (e) {}
@@ -306,7 +324,47 @@ function priceOf(job) {
 // ═══════════════════════════════════════════════════════════════
 //  状態
 // ═══════════════════════════════════════════════════════════════
-var S = { view: 'home', items: [], tomorrow: [], local: [], done: {}, load: 'loading', cur: null, ob: { pending: 0, review: 0, sending: 0 }, waitingSW: null, diag: false };
+var S = { view: 'home', items: [], tomorrow: [], local: [], done: {}, load: 'loading', cur: null, ob: { pending: 0, review: 0, sending: 0 }, waitingSW: null, diag: false,
+          att: { clockIn: '', clockOut: '' }, gps: null, rep: { sent: false, work: '', notes: '', tomorrow: '' }, admin: null };
+
+// ═══════════════════════════════════════════════════════════════
+//  本人（誰の打刻・日報か）
+//  Telegram から開いた = 署名つきの user.id ／ ホーム画面アプリ = 専用リンク（?u=<chatId>&k=<鍵>）
+//  ホーム画面アプリは URL ごと保存されるので、u・k は URL に残したまま使う（iPhone は Safari と保存場所が別のため）
+// ═══════════════════════════════════════════════════════════════
+var ME = { chatId: '', key: '', via: '', staff: null, keyOk: null, state: 'unknown' };
+(function resolveIdentity() {
+  if (TG_USER && TG_USER.id) { ME.chatId = String(TG_USER.id); ME.via = 'telegram'; return; }
+  var q = new URLSearchParams(location.search), u = q.get('u'), k = q.get('k');
+  ME.via = 'link';
+  if (u && k) {
+    ME.chatId = u; ME.key = k;
+    try { localStorage.setItem('sm_field_me', JSON.stringify({ u: u, k: k })); } catch (e) {}
+  } else {
+    try { var m = JSON.parse(localStorage.getItem('sm_field_me') || 'null'); if (m) { ME.chatId = m.u; ME.key = m.k; } } catch (e) {}
+  }
+  if (!ME.chatId) ME.state = 'need_link';
+})();
+function postOps(action, data, ms) {
+  var ctrl = window.AbortController ? new AbortController() : null;
+  var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms || 25000);
+  return fetch(OPS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action: action }, SURFACE === 'telegram' ? { _tgInitData: TG.initData } : {}, data || {})), signal: ctrl ? ctrl.signal : undefined })
+    .then(function (r) { return r.json(); })
+    .then(function (j) { clearTimeout(to); return j; }, function (e) { clearTimeout(to); throw e; });
+}
+function loadMe() {
+  if (!ME.chatId) return Promise.resolve();
+  var data = { chatId: ME.chatId }; if (ME.via === 'link') data.k = ME.key;
+  return postOps('whoami', data).then(function (r) {
+    if (!r || !r.ok) return;
+    ME.staff = r.staff || null;
+    if (r.keyOk !== undefined) ME.keyOk = !!r.keyOk;
+    ME.state = !ME.staff ? 'not_staff' : (ME.via === 'link' && ME.keyOk === false ? 'link_bad' : 'ok');
+    Outbox.kvSet('me', { chatId: ME.chatId, staff: ME.staff, keyOk: ME.keyOk, state: ME.state });
+  }).catch(function () {});
+}
+function canPunch() { return !!ME.chatId && ME.state !== 'need_link' && ME.state !== 'not_staff' && ME.state !== 'link_bad'; }
 
 // ═══════════════════════════════════════════════════════════════
 //  ユーティリティ
@@ -373,6 +431,27 @@ function allToday() {
 }
 function isDone(i) { return i.status === 'done' || !!S.done[i.id]; }
 
+function loadAttendance() {
+  if (!canPunch()) return Promise.resolve();
+  var today = ppDate(0);
+  return Promise.all([
+    postOps('attendance_today', { chatId: ME.chatId }).then(function (r) {
+      if (r && r.ok) {
+        // 端末だけの打刻（未送信）があればそちらを優先
+        S.att.clockIn = S.att.localIn || r.clockIn || '';
+        S.att.clockOut = S.att.localOut || r.clockOut || '';
+        Outbox.kvSet('att:' + today, S.att);
+      }
+    }).catch(function () {}),
+    postOps('report_today', { chatId: ME.chatId }).then(function (r) {
+      if (r && r.ok && r.report && !S.rep.dirty) {
+        S.rep.sent = true; S.rep.work = r.report.work; S.rep.notes = r.report.notes; S.rep.tomorrow = r.report.tomorrow;
+        Outbox.kvSet('rep:' + today, S.rep);
+      }
+    }).catch(function () {})
+  ]);
+}
+
 function loadData(manual) {
   S.load = S.items.length ? S.load : 'loading';
   var p1 = fetchJSON(GAS_URL + '?action=menu_prices').then(function (m) {
@@ -382,7 +461,8 @@ function loadData(manual) {
     if (!r || r.status !== 'ok') throw new Error((r && r.message) || 'load failed');
     applyToday(r); S.load = 'ok'; Outbox.kvSet('today', { at: Date.now(), res: r });
   }).catch(function () { S.load = S.items.length ? 'cached' : 'failed'; });
-  return Promise.all([p1, p2]).then(function () {
+  var p3 = loadMe().then(loadAttendance);
+  return Promise.all([p1, p2, p3]).then(function () {
     if (S.view === 'home') render();
     if (manual) toast(S.load === 'ok' ? '✓ ' + t('refresh') : t('load_failed'), S.load === 'ok' ? 'ok' : 'warn');
   });
@@ -495,6 +575,103 @@ function queueEnd(c) {
   return Outbox.enqueue('job_end', p);
 }
 
+function getGps() {
+  return new Promise(function (resolve) {
+    if (!navigator.geolocation) { resolve(null); return; }
+    var done = false, fin = function (v) { if (!done) { done = true; resolve(v); } };
+    setTimeout(function () { fin(null); }, 8000);
+    try {
+      navigator.geolocation.getCurrentPosition(function (p) {
+        fin({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy });
+      }, function () { fin(null); }, { enableHighAccuracy: true, timeout: 7000, maximumAge: 60000 });
+    } catch (e) { fin(null); }
+  });
+}
+function doPunch(type) {
+  if (type === 'out' && !window.confirm(t('confirm_out'))) return;
+  var at = new Date().toISOString(), tm = hhmm(ppNow());
+  var btn = $('punch'); if (btn) btn.disabled = true;
+  getGps().then(function (gps) {
+    S.gps = gps ? 'ok' : 'ng';
+    var data = { client_id: Outbox.uuid(), chatId: ME.chatId, at: at, gps: gps };
+    if (ME.via === 'link') data.k = ME.key; else data._tgInitData = TG.initData;
+    return Outbox.enqueue('punch_' + type, data, { url: OPS_URL }).then(function () {
+      if (type === 'in') { S.att.clockIn = tm; S.att.localIn = tm; } else { S.att.clockOut = tm; S.att.localOut = tm; }
+      Outbox.kvSet('att:' + ppDate(0), S.att);
+      toast((type === 'in' ? '🟢 ' : '🔴 ') + t('punch_saved') + ' ' + tm, 'ok');
+      render();
+    });
+  }).catch(function () { if (btn) btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+}
+function doneToday() {
+  return allToday().filter(isDone).map(function (i) { var d = S.done[i.id]; return Object.assign({}, i, typeof d === 'object' ? d : {}); });
+}
+function autoWorkText() {
+  var jobs = doneToday();
+  if (!jobs.length) return '';
+  return jobs.map(function (j) {
+    return (j.time || '') + ' ' + (j.name || '-') + ' (' + j.menu.map(menuLabel).join(' + ') + ')' +
+      (j.pay ? ' ' + (j.pay === 'free' ? '0$' : (j.amountDone != null ? j.amountDone : j.amount) + '$') + ' ' + j.pay : '');
+  }).join('\n');
+}
+function sendReport() {
+  var r = S.rep, work = (r.work || autoWorkText()).trim();
+  if (!work) { toast(t('report_work'), 'warn'); var w = $('repWork'); if (w) w.focus(); return; }
+  var data = { client_id: Outbox.uuid(), chatId: ME.chatId, work: work, notes: r.notes || '', tomorrow: r.tomorrow || '', targetDate: ppDate(0) };
+  if (ME.via === 'link') data.k = ME.key; else data._tgInitData = TG.initData;
+  Outbox.enqueue('report_submit', data, { url: OPS_URL }).then(function () {
+    r.sent = true; r.dirty = false; r.work = work; Outbox.kvSet('rep:' + ppDate(0), r);
+    toast('📥 ' + t('report_saved'), 'ok'); render();
+  });
+}
+
+// ── 管理者: スタッフ専用リンクの発行（日本語のみ・Telegram から開いたときだけ） ──
+function adminLoadStaff() {
+  S.admin = { loading: true };
+  render();
+  postOps('field_link_staff', {}).then(function (r) {
+    S.admin = r && r.ok ? { staff: r.staff } : { error: (r && (r.message || r.error)) || 'error' };
+    render();
+  }).catch(function (e) { S.admin = { error: String(e) }; render(); });
+}
+function adminIssue(staffId) {
+  postOps('field_link_issue', { targetStaffId: staffId }).then(function (r) {
+    if (!r || !r.ok) { toast('⚠ ' + ((r && (r.message || r.error)) || 'error'), 'warn'); return; }
+    S.admin.issued = { name: (r.staff.nameEn || r.staff.nameJp), link: r.link };
+    render();
+  }).catch(function (e) { toast('⚠ ' + e, 'warn'); });
+}
+function adminCardHtml() {
+  if (!(SURFACE === 'telegram' && ME.staff && ME.staff.role === 'admin')) return '';
+  var a = S.admin, h = '<div class="card"><div class="band">🔗 スタッフ専用リンク（管理者）</div><div class="body">';
+  if (!a) h += '<div class="note">ホーム画面アプリ用の専用リンクを発行します（本人の打刻・日報に使う鍵入り）。</div><button type="button" class="btn sm ghost" id="admList">スタッフ一覧を表示</button>';
+  else if (a.loading) h += '<div class="note">⏳ ' + t('loading') + '</div>';
+  else if (a.error) h += '<div class="note">⚠ ' + esc(a.error) + '</div>';
+  else {
+    h += a.staff.map(function (st) {
+      return '<button type="button" class="btn sm ghost" data-issue="' + esc(st.staffId) + '"' + (st.hasChat ? '' : ' disabled') + '>' +
+        esc(st.nameJp || st.nameEn) + (st.hasChat ? '' : '（Chat ID 未登録）') + '</button>';
+    }).join('');
+    if (a.issued) h += '<div class="note"><b>' + esc(a.issued.name) + '</b> の専用リンク:</div><div class="diag" id="admLink">' + esc(a.issued.link) + '</div>' +
+      '<div class="row2"><button type="button" class="btn sm" id="admCopy">コピー</button><button type="button" class="btn sm green" id="admShare">Telegram で送る</button></div>' +
+      '<div class="note">リンクを知っている人は本人として打刻できます。本人以外に渡さないでください。</div>';
+  }
+  return h + '</div></div>';
+}
+function bindAdmin() {
+  var l = $('admList'); if (l) l.onclick = adminLoadStaff;
+  document.querySelectorAll('[data-issue]').forEach(function (b) { b.onclick = function () { adminIssue(b.getAttribute('data-issue')); }; });
+  var c = $('admCopy'); if (c) c.onclick = function () {
+    var txt = S.admin.issued.link;
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast('✓ コピーしました', 'ok'); }, function () { toast('リンクを長押ししてコピーしてください'); });
+  };
+  var sh = $('admShare'); if (sh) sh.onclick = function () {
+    var u = 'https://t.me/share/url?url=' + encodeURIComponent(S.admin.issued.link);
+    try { if (TG && TG.openTelegramLink) { TG.openTelegramLink(u); return; } } catch (e) {}
+    window.open(u, '_blank');
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  ヘッダー・帯
 // ═══════════════════════════════════════════════════════════════
@@ -517,7 +694,7 @@ function renderHead() {
     h.innerHTML = '<button type="button" class="iconbtn" id="hBack">‹</button><div class="sp"><div class="ttl">' + t('new_job') + '</div></div>' + q;
     $('hBack').onclick = function () { S.view = 'home'; render(); };
   } else {
-    var who = TG_USER ? (TG_USER.first_name || '') : '';
+    var who = ME.staff ? (LANG === 'ja' ? (ME.staff.nameJp || ME.staff.nameEn) : (ME.staff.nameEn || ME.staff.nameJp)) : (TG_USER ? (TG_USER.first_name || '') : '');
     h.innerHTML = '<img src="../logo.png" alt="" id="hLogo"><div class="sp"><div class="brand">SAMURAI MOTORS</div><div class="ttl">' + (who ? '👤 ' + esc(who) : t('tab_today')) + '</div></div>' + q +
       '<button type="button" class="pill latin" id="hLang">' + (LANG === 'km' ? 'ខ្មែរ' : '日本語') + '</button>';
     $('hLang').onclick = function () { LANG = LANG === 'km' ? 'ja' : 'km'; try { localStorage.setItem('sm_field_lang', LANG); } catch (e) {} document.body.setAttribute('data-lang', LANG); render(); };
@@ -558,8 +735,43 @@ function nextItem(list) {
   var up = pend.filter(function (i) { return toMin(i.time) + 90 >= now; });
   return up[0] || pend[0] || null;
 }
+function punchHtml() {
+  if (!canPunch()) {
+    var msg = ME.state === 'need_link' ? 'need_link' : ME.state === 'link_bad' ? 'link_bad' : 'not_staff';
+    if (ME.state === 'unknown' && ME.chatId) return '';
+    return '<div class="strip err"><div class="grow">🔒 ' + t(msg) + '</div></div>';
+  }
+  var a = S.att, st, btn;
+  if (!a.clockIn) { st = '<span class="st"><i></i>' + t('st_not_yet') + '</span>'; btn = '<button type="button" class="in" id="punch">' + t('punch_in') + '</button>'; }
+  else if (!a.clockOut) { st = '<span class="st work"><i></i>' + t('st_working') + ' · <span class="num">' + esc(a.clockIn) + '</span></span>'; btn = '<button type="button" class="out" id="punch">' + t('punch_out') + '</button>'; }
+  else { st = '<span class="st"><i></i>' + t('st_off') + ' · <span class="num">' + esc(a.clockIn) + '–' + esc(a.clockOut) + '</span></span>'; btn = '<button type="button" id="punch" disabled>✓</button>'; }
+  var gpsNote = S.gps === 'ok' ? '<div class="note">📡 ' + t('gps_ok') + '</div>' : (S.gps === 'ng' ? '<div class="note">📡 ' + t('gps_ng') + '</div>' : '');
+  return '<div class="card"><div class="punch"><div><div class="clock num" id="clock">' + hhmm(ppNow()) + '</div>' + st + gpsNote + '</div>' + btn + '</div></div>';
+}
+function reportHtml() {
+  if (!canPunch()) return '';
+  var r = S.rep, jobs = doneToday(), ready = !!S.att.clockOut && !r.sent;
+  var sales = jobs.reduce(function (a, j) { return a + ((j.pay === 'cash' || j.pay === 'aba') ? (Number(j.amountDone != null ? j.amountDone : j.amount) || 0) : 0); }, 0);
+  var h = '<div class="card" style="' + (ready ? 'border:2px solid var(--gold)' : '') + '"><div class="band">📝 ' + t('report_title') + (r.sent ? '<span class="r">' + (S.repPending ? '⏳ ' + t('ob_pending').replace('{n}', '1') : '✅ ' + t('report_sent')) + '</span>' : '') + '</div><div class="body">' +
+    '<div class="kv"><span>' + t('jobs_done') + '</span><b class="num">' + jobs.length + '</b><span>' + t('total') + '</span><b class="num">' + sales + '$</b>' +
+    '<span>' + t('work_time') + '</span><b class="num">' + (S.att.clockIn || '--:--') + ' – ' + (S.att.clockOut || '--:--') + '</b></div>';
+  h += '<div class="fld"><label>' + t('report_work') + '</label><textarea id="repWork" rows="4" style="width:100%;border:2px solid var(--line);border-radius:12px;padding:8px 10px">' + esc(r.work || autoWorkText()) + '</textarea></div>' +
+    '<div class="fld"><label>' + t('report_notes') + '</label><textarea id="repNotes" rows="2" style="width:100%;border:2px solid var(--line);border-radius:12px;padding:8px 10px">' + esc(r.notes) + '</textarea></div>' +
+    '<div class="fld"><label>' + t('report_tomorrow') + '</label><textarea id="repTom" rows="2" style="width:100%;border:2px solid var(--line);border-radius:12px;padding:8px 10px">' + esc(r.tomorrow) + '</textarea></div>' +
+    '<button type="button" class="btn ' + (ready ? 'gold' : 'ghost') + '" id="repSend">' + t('report_send') + '</button>';
+  return h + '</div></div>';
+}
+function bindHomeExtras() {
+  var pb = $('punch'); if (pb && !pb.disabled) pb.onclick = function () { doPunch(S.att.clockIn ? 'out' : 'in'); };
+  [['repWork', 'work'], ['repNotes', 'notes'], ['repTom', 'tomorrow']].forEach(function (f) {
+    var el = $(f[0]); if (el) el.oninput = function () { S.rep[f[1]] = el.value; S.rep.dirty = true; S.rep.sent = false; Outbox.kvSet('rep:' + ppDate(0), S.rep); };
+  });
+  var rs = $('repSend'); if (rs) rs.onclick = sendReport;
+  bindAdmin();
+}
+
 function renderHome() {
-  var list = allToday(), html = stripsHtml();
+  var list = allToday(), html = stripsHtml() + punchHtml();
   if (S.load === 'loading' && !list.length) html += '<div class="card"><div class="body note">⏳ ' + t('loading') + '</div></div>';
 
   var nx = nextItem(list);
@@ -590,15 +802,18 @@ function renderHome() {
       S.tomorrow.map(function (i) { return '<div class="tl-item"><span class="t num">' + esc(i.time) + '</span><span class="ln"><i></i></span><span class="c"><span class="n">' + esc(i.name || t('no_name')) + '</span><span class="s chips">' + itemChips(i) + '</span></span></div>'; }).join('') +
       '</div></div></div>';
   }
+  html += reportHtml();
   html += '<button type="button" class="btn ghost" id="newJob">＋ ' + t('new_job') + '</button>';
   html += '<div class="row2"><button type="button" class="btn sm ghost" id="reload2">🔄 ' + t('refresh') + '</button><button type="button" class="btn sm ghost" id="oldApp">' + t('old_app') + '</button></div>';
   if (SURFACE === 'web' && !STANDALONE) {
     var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
     html += '<div class="card"><div class="band">📲 ' + t('install_title') + '</div><div class="body note">' + (ios ? t('install_ios') : t('install_android')) + '</div></div>';
   }
+  html += adminCardHtml();
   if (S.diag) html += diagHtml();
   $('main').innerHTML = html;
   bindStrips();
+  bindHomeExtras();
   document.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { openItem(b.getAttribute('data-open')); }; });
   document.querySelectorAll('[data-map]').forEach(function (b) { b.onclick = function () { openUrl(mapUrl(b.getAttribute('data-map'))); }; });
   $('newJob').onclick = function () { S.view = 'new'; S.nj = { name: '', car: '', plate: '', size: 'SEDAN', store: false, menu: ['WASH'] }; render(); };
@@ -833,7 +1048,8 @@ function renderBar() {
     else if (c.step === 'after') goStep('close');
     else if (c.step === 'close') {
       queueEnd(c).then(function () {
-        S.done[j.id] = true; Outbox.kvSet('done:' + ppDate(0), S.done);
+        S.done[j.id] = { pay: c.pay, amountDone: c.pay === 'free' ? 0 : (Number(c.amount) || 0), menuDone: Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }) };
+        Outbox.kvSet('done:' + ppDate(0), S.done);
         c.step = 'done'; Outbox.kvDel('draft'); renderJob(); window.scrollTo(0, 0);
       }).catch(function () { btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
     }
@@ -860,8 +1076,12 @@ function render() {
 // ═══════════════════════════════════════════════════════════════
 function boot() {
   var today = ppDate(0);
-  Promise.all([Outbox.kvGet('menu'), Outbox.kvGet('today'), Outbox.kvGet('done:' + today), Outbox.kvGet('draft'), Outbox.kvGet('local')])
+  Promise.all([Outbox.kvGet('menu'), Outbox.kvGet('today'), Outbox.kvGet('done:' + today), Outbox.kvGet('draft'), Outbox.kvGet('local'),
+               Outbox.kvGet('att:' + today), Outbox.kvGet('rep:' + today), Outbox.kvGet('me')])
     .then(function (r) {
+      if (r[5]) S.att = r[5];
+      if (r[6]) S.rep = r[6];
+      if (r[7] && r[7].chatId === ME.chatId) { ME.staff = r[7].staff; ME.keyOk = r[7].keyOk; ME.state = r[7].state || ME.state; }
       if (r[0]) applyMenu(r[0]);
       if (r[1] && r[1].res) { applyToday(r[1].res); S.load = 'cached'; }
       S.done = r[2] || {};
@@ -875,8 +1095,13 @@ function boot() {
     .catch(function () {})
     .then(function () {
       render();
-      Outbox.start({ url: GAS_URL, appVersion: APP_VERSION, onChange: function (cnt) {
-        S.ob = cnt; if (S.view === 'home') renderHome(); renderHead();
+      Outbox.start({ url: GAS_URL, appVersion: APP_VERSION, onChange: function (cnt, list) {
+        S.ob = cnt;
+        S.repPending = (list || []).some(function (r) { return r.kind === 'report_submit' && r.status !== 'sent'; });
+        // 日報を入力中は描き直さない（文字入力が途切れるため）
+        var typing = document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
+        if (S.view === 'home' && !typing) renderHome();
+        renderHead();
       } });
       loadData(false);
     });
@@ -903,6 +1128,7 @@ if ('serviceWorker' in navigator) {
   }).catch(function () {});
 }
 
+setInterval(function () { var c = $('clock'); if (c) c.textContent = hhmm(ppNow()); }, 15000);
 boot();
 </script>
 </body>
