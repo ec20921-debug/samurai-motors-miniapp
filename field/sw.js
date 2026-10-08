@@ -7,7 +7,7 @@
  *   - GAS（script.google.com / script.googleusercontent.com）への通信は一切触らない（保存しない）
  *   - BUILD は同期時に stamp_build.py が書き換える。版が変わると新しい保存場所に入れ直す
  */
-var BUILD = 'field-20261008-202811';
+var BUILD = 'field-20261008-202930';
 var CACHE = 'sm-field-' + BUILD;
 var SHELL = ['./', './index.html', './outbox.js', './manifest.webmanifest', './icon-192.png', './icon-512.png',
              './apple-touch-icon.png', '../tg-auth.js', '../logo.png'];
@@ -61,7 +61,8 @@ function networkFirst(req) {
       if (done) return;
       fromCache('./index.html').then(function (hit) { if (hit && !done) { done = true; resolve(hit); } });
     }, 3000);
-    fetch(req).then(function (r) {
+    // GitHub Pages の HTTP キャッシュ（10分）で古い画面を出さないよう、毎回サーバーに確認する
+    fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then(function (r) {
       if (done) return;
       done = true; clearTimeout(t);
       if (r && r.ok) caches.open(CACHE).then(function (c) { c.put('./index.html', r.clone()); });
