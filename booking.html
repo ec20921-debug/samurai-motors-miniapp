@@ -1849,7 +1849,8 @@ function applyMenuData_(d) {
   state.plans = d.plans || [];
   state.options = d.options || [];                         // Menu v2: GLASS add-on
   state.campaign = d.campaign || null;                     // Menu v2: キャンペーン情報
-  state.dispatchFee = d.dispatchFee || { sedan: 2, suv: 2 };
+  // 2026-10-10: 出張料は方針として無し（Daisuke）。取得失敗時の予備値も 0
+  state.dispatchFee = d.dispatchFee || { sedan: 0, suv: 0 };
   state.menuFp = menuFingerprint_(d);
   // 2026-10-08: 出張料 0（当面徴収しない）のときは「出張料が浮く」系の文言を隠す
   document.body.classList.toggle('no-delivery-fee', !(state.dispatchFee.sedan > 0 || state.dispatchFee.suv > 0));
