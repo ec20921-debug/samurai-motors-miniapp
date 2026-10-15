@@ -273,7 +273,7 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261009-074512';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261015-185250';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・日報・（今後）経費・営業は勤務Bot側の GAS（v7-operations）
@@ -454,6 +454,7 @@ function mapBooking(b) {
     place: b.location || '', store: b.serviceType === '店舗', car: b.carModel || '', plate: b.plate || '',
     size: String(b.vehicleType || '').indexOf('SUV') >= 0 ? 'SUV' : 'SEDAN', menu: menu, chatId: b.chatId || '',
     amount: Number(b.amount) || 0, campaign: !!b.manualCampaign,
+    src: b.source || '', room: b.room || '',   // 2026-10-15: 専用QR（流入元・Picasso 等）と部屋番号
     status: (st === '作業完了' || st === '完了') ? 'done' : (st === '作業中' ? 'working' : 'wait')
   };
 }
@@ -584,7 +585,7 @@ function basePayload(c) {
   var j = c.job, codes = j.menu.filter(function (k) { return !(c.svc[k] && c.svc[k].skip); });
   var glass = codes.filter(function (k) { return k.indexOf('GLASS') === 0; })[0] || '';
   return {
-    name: j.name || '', building: j.store ? 'Samurai Motors' : (j.place || ''), room: '', carModel: j.car || '', plate: j.plate || '',
+    name: j.name || '', building: j.store ? 'Samurai Motors' : (j.src || j.place || ''), room: j.room || '', carModel: j.car || '', plate: j.plate || '',
     plan: codes.indexOf('WASH') >= 0 ? 'SAMURAI WASH (W)' : '', glassOption: glass,
     optionCodes: codes.filter(function (k) { return k !== 'WASH'; }),
     vehicleType: j.size === 'SUV' ? 'SUV' : 'セダン', bookingId: j.bookingId || '', linkToken: '', surface: SURFACE
@@ -841,7 +842,8 @@ function bindStrips() {
 // ═══════════════════════════════════════════════════════════════
 function itemChips(i) {
   var chips = i.menu.map(function (c) { return '<span class="chip menu">' + menuLabelH(c) + '</span>'; }).join('');
-  return chips + ' <span class="chip">' + (i.store ? '🏪 ' + t('place_store') : '🛵 ' + t('place_delivery')) + '</span>';
+  return chips + ' <span class="chip">' + (i.store ? '🏪 ' + t('place_store') : '🛵 ' + t('place_delivery')) + '</span>' +
+    (i.src ? ' <span class="chip menu">🏢 ' + esc(i.src) + (i.room ? ' #' + esc(i.room) : '') + '</span>' : '');
 }
 function nextItem(list) {
   var now = toMin(hhmm(ppNow()));

@@ -1445,6 +1445,31 @@ body {
   animation: splashSweep 1.6s ease-in-out infinite;
 }
 @keyframes splashSweep { to { left: 100%; } }
+
+/* ───────── 英語＋日本語モード（専用QR・Picasso 等の流入元 / 2026-10-15）─────────
+   body.lang-enja のときクメール語を隠し、.ja（日本語の添え）を出す */
+.ja, .ja-inline { display: none; }
+body.lang-enja .km-inline { display: none; }
+body.lang-enja .ja-inline { display: inline; }
+body.lang-enja .km, body.lang-enja .size-km, body.lang-enja .menu-km, body.lang-enja .sub-km,
+body.lang-enja .splash-tagline-km, body.lang-enja .label-km { display: none !important; }
+body.lang-enja .ja { display: block; font-size: 11px; color: var(--text-dim); margin-top: 3px;
+  letter-spacing: 0.2px; text-transform: none; font-weight: 400; font-family: inherit; }
+body.lang-enja .section-title .ja, body.lang-enja .field label .ja { display: inline; margin-left: 6px; margin-top: 0; }
+body.lang-enja .campaign-banner .ja { color: rgba(255,255,255,0.85); }
+.src-banner { flex-direction: column; align-items: flex-start; gap: 4px; }
+.src-banner .src-perk { font-family: var(--serif); font-size: 15px; font-weight: 700; color: #fff; letter-spacing: 0.5px; position: relative; z-index: 1; }
+.src-banner .src-period { font-size: 11px; color: rgba(255,255,255,0.9); letter-spacing: 1.2px; position: relative; z-index: 1; }
+.src-banner .ja { position: relative; z-index: 1; margin-top: 0; }
+.src-field input {
+  width:100%; padding:13px 14px;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:var(--radius); color:var(--text);
+  font-size:16px; font-family:inherit;
+}
+.src-field input:focus { outline:none; border-color:var(--gold); }
+.src-field input::placeholder { color:#555; }
+.price-src-note { display:block; font-size:10px; color:var(--gold-bright); letter-spacing:0.3px; margin-top:2px; }
 </style>
 </head>
 <body>
@@ -1454,7 +1479,7 @@ body {
   <button class="back-btn hidden" id="backBtn" onclick="goBack()">‹</button>
   <div class="header-title">
     <h1 id="headerTitle">Samurai Motors</h1>
-    <p>Japanese-style Mobile Car Wash / សេវាលាងឡានបែបជប៉ុន</p>
+    <p>Japanese-style Mobile Car Wash<span class="km-inline"> / សេវាលាងឡានបែបជប៉ុន</span><span class="ja-inline"> / 日本品質の出張カーケア</span></p>
   </div>
 </div>
 
@@ -1476,6 +1501,7 @@ body {
       <div class="splash-tagline">
         Premium Japanese Quality Car Care
         <span class="splash-tagline-km">សេវាលាងឡានបែបជប៉ុនកម្រិតខ្ពស់</span>
+        <span class="ja">日本品質のカーケア</span>
       </div>
       <div class="splash-bar"></div>
     </div>
@@ -1486,8 +1512,18 @@ body {
     <div class="view-title">
       Book Your Wash
       <span class="km">កក់លាងឡានរបស់អ្នក</span>
+      <span class="ja">ご予約</span>
     </div>
-    <div class="view-desc">Premium Japanese quality car care, delivered to you.</div>
+    <div class="view-desc">Premium Japanese quality car care, delivered to you.<span class="ja">日本品質の出張カーケア。車はいつもの場所に停めたままで。</span></div>
+
+    <!-- 流入元（専用QR）の特典バナー（2026-10-15・booking_init の source があるときだけ） -->
+    <div class="campaign-banner src-banner" id="sourceBanner" style="display:none;">
+      <div class="label" id="sourceLabel"></div>
+      <div class="src-perk" id="sourcePerk"></div>
+      <div class="ja" id="sourcePerkJa"></div>
+      <div class="src-period" id="sourcePeriod"></div>
+      <div class="ja" id="sourcePeriodJa"></div>
+    </div>
 
     <!-- キャンペーンバナー (有効時のみ表示) -->
     <div class="campaign-banner" id="campaignBanner" style="display:none;">
@@ -1499,7 +1535,7 @@ body {
     </div>
 
     <!-- 1. Vehicle Size (FIRST so prices reflect correctly) -->
-    <div class="section-title"><span class="step-num">1</span>Vehicle Size <span class="km">ទំហំឡាន</span></div>
+    <div class="section-title"><span class="step-num">1</span>Vehicle Size <span class="km">ទំហំឡាន</span><span class="ja">車のサイズ</span></div>
     <div class="size-grid">
       <div class="size-card" id="sizeSedan" onclick="selectSize('セダン以下')">
         <div class="size-icon">
@@ -1512,6 +1548,7 @@ body {
         </div>
         <div class="size-label">Sedan & smaller</div>
         <div class="size-km">រថយន្តតូច និង តូចជាង</div>
+        <div class="ja">セダン・小型車</div>
         <div class="size-examples">
           Camry, Civic, Corolla,<br>Vios, Prius, March...
         </div>
@@ -1533,6 +1570,7 @@ body {
         </div>
         <div class="size-label">SUV & larger</div>
         <div class="size-km">SUV និង ធំជាង</div>
+        <div class="ja">SUV・大型車</div>
         <div class="size-examples">
           Highlander, CRV, RAV4,<br>Fortuner, Alphard, Pickup...
         </div>
@@ -1541,13 +1579,14 @@ body {
     </div>
 
     <!-- 2. Menu (Menu v4 2026-09-22): カテゴリ(WASH / GLASS / HEADLIGHT / BODY)を選ぶ → 下に詳細パネルが開く2段構成 -->
-    <div class="section-title"><span class="step-num">2</span>Menu <span class="km">ជម្រើសសេវា</span></div>
+    <div class="section-title"><span class="step-num">2</span>Menu <span class="km">ជម្រើសសេវា</span><span class="ja">メニュー</span></div>
     <div class="card-list" id="menuList"></div>
 
     <!-- 注意ヒント -->
     <div class="menu-hint">
       Select one or more services<br>
       <span class="km" style="opacity:0.7;">ជ្រើសរើសសេវាមួយ ឬច្រើន</span>
+      <span class="ja">1つ以上お選びください</span>
     </div>
   </div>
 
@@ -1556,14 +1595,15 @@ body {
     <div class="view-title">
       Select Date & Time
       <span class="km">ជ្រើសរើសកាលបរិច្ឆេទ និង ម៉ោង</span>
+      <span class="ja">日付と時間</span>
     </div>
-    <div class="view-desc">Pick a date, then choose a time slot.</div>
+    <div class="view-desc">Pick a date, then choose a time slot.<span class="ja">日付を選んでから、時間をお選びください。</span></div>
 
-    <div class="section-title">Date <span class="km">កាលបរិច្ឆេទ</span></div>
+    <div class="section-title">Date <span class="km">កាលបរិច្ឆេទ</span><span class="ja">日付</span></div>
     <div class="date-grid" id="dateGrid"></div>
 
     <div class="time-section" id="timeSection" style="display:none;">
-      <div class="section-title">Time <span class="km">ម៉ោង</span></div>
+      <div class="section-title">Time <span class="km">ម៉ោង</span><span class="ja">時間</span></div>
       <div id="slotContainer"></div>
     </div>
   </div>
@@ -1573,10 +1613,32 @@ body {
     <div class="view-title">
       Your Location
       <span class="km">ទីតាំងរបស់អ្នក</span>
+      <span class="ja">場所</span>
+    </div>
+
+    <!-- 流入元の固定の場所（Picasso 等・2026-10-15）: 地図の代わりに 部屋番号＋車種 を入力 -->
+    <div id="locationSource" class="location-mode" style="display:none;">
+      <div class="store-card">
+        <div class="store-card-icon">🏢</div>
+        <div class="store-card-title" id="sourcePlaceName"></div>
+        <div class="store-card-subtitle">We come to your building's parking.<span class="ja">マンションの駐車場まで伺います。</span></div>
+      </div>
+      <div class="field src-field" style="margin-top:16px;">
+        <label for="srcUnitNo">Unit number<span class="req">*</span><span class="ja">部屋番号（必須）</span></label>
+        <input type="text" id="srcUnitNo" maxlength="40" autocomplete="off" placeholder="e.g. A-1203">
+      </div>
+      <div class="field src-field">
+        <label for="srcCarModel">Car model &amp; color<span class="ja">車種・色（任意）</span></label>
+        <input type="text" id="srcCarModel" maxlength="80" autocomplete="off" placeholder="e.g. Toyota Camry, white">
+      </div>
+      <div style="font-size:13px; color:var(--text-dim); text-align:center; padding:8px 16px; background:var(--card); border-radius:var(--radius); border:1px solid var(--border);">
+        Park as usual — no key needed. After booking, please send us a photo of your car and the parking floor in the chat.
+        <span class="ja">いつもどおり駐車してください。鍵は不要です。予約後、チャットで車の写真と駐車階をお送りください。</span>
+      </div>
     </div>
 
     <!-- サービスタイプ タブ切替 (2026-05-20: 店舗作業オプション追加) -->
-    <div class="service-type-tabs">
+    <div class="service-type-tabs" id="serviceTypeTabs">
       <button type="button" class="svc-tab active" data-svctype="出張" onclick="selectServiceType('出張')">
         🚗 <span class="svc-tab-main">Delivery</span><br>
         <span class="km">ដឹកជញ្ជូន</span>
@@ -1627,8 +1689,9 @@ body {
     <div class="view-title">
       Confirm Booking
       <span class="km">បញ្ជាក់ការកក់</span>
+      <span class="ja">ご予約内容の確認</span>
     </div>
-    <div class="view-desc">Please review and confirm.</div>
+    <div class="view-desc">Please review and confirm.<span class="ja">内容をご確認のうえ、確定してください。</span></div>
     <div class="summary-card" id="summaryCard"></div>
   </div>
 
@@ -1641,6 +1704,7 @@ body {
     <div class="success-subtitle">
       Thank you. Your slot is sealed.
       <span class="km">អរគុណ! ការកក់របស់អ្នកត្រូវបានបញ្ជាក់</span>
+      <span class="ja">ありがとうございます。ご予約を承りました。</span>
     </div>
     <div class="summary-card" id="successSummary"></div>
 
@@ -1662,6 +1726,7 @@ body {
         <div class="timeline-text">
           <span class="lead">1 hour before arrival</span> — Run Kosal will send you a Telegram reminder with map link.
           <span class="km">មុនពេលមកដល់ 1 ម៉ោង — យើងនឹងផ្ញើសារ Telegram រំលឹក និង Map</span>
+          <span class="ja">1時間前に Telegram でお知らせします</span>
         </div>
       </div>
       <div class="timeline-item">
@@ -1669,6 +1734,7 @@ body {
         <div class="timeline-text">
           <span class="lead">Service begins</span> — Before photos delivered via Telegram (4 angles).
           <span class="km">ការងារចាប់ផ្តើម — រូបថតមុនលាងផ្ញើតាម Telegram</span>
+          <span class="ja">施工前の写真を Telegram でお送りします</span>
         </div>
       </div>
       <div class="timeline-item">
@@ -1676,6 +1742,7 @@ body {
         <div class="timeline-text">
           <span class="lead">Completion</span> — After photos + QR for payment.
           <span class="km">បញ្ចប់ — រូបថតបន្ទាប់ + QR Code សម្រាប់បង់ប្រាក់</span>
+          <span class="ja">仕上がりの写真と、お支払い用の QR をお送りします</span>
         </div>
       </div>
       <div class="timeline-item">
@@ -1683,6 +1750,7 @@ body {
         <div class="timeline-text">
           <span class="lead">After 24 hours</span> — We'd love your feedback.
           <span class="km">24 ម៉ោងក្រោយ — យើងសង្ឃឹមស្ទង់មតិ</span>
+          <span class="ja">24時間後に、ご感想をお聞かせください</span>
         </div>
       </div>
     </div>
@@ -1695,6 +1763,7 @@ body {
         After service completion, we will send you a <span class="em">QR code via Telegram</span>.
         Please make payment using that QR code.
         <span class="km">បន្ទាប់ពីលាងសម្អាតរួច យើងនឹងផ្ញើ QR Code តាម Telegram។ សូមបង់ប្រាក់តាម QR Code នោះ។</span>
+        <span class="ja">施工後に Telegram で ABA の QR コードをお送りします。その QR でお支払いください。</span>
       </div>
     </div>
   </div>
@@ -1713,7 +1782,7 @@ body {
       <span>S</span><span>A</span><span>M</span><span>U</span><span>R</span><span>A</span><span>I</span><span class="space">&nbsp;</span><span>M</span><span>O</span><span>T</span><span>O</span><span>R</span><span>S</span>
     </div>
     <div class="slot-loader-katana"></div>
-    <div class="slot-loader-sub">Sealing your reservation<span class="km">កំពុងបញ្ជាក់ការកក់...</span></div>
+    <div class="slot-loader-sub">Sealing your reservation<span class="km">កំពុងបញ្ជាក់ការកក់...</span><span class="ja">ご予約を確定しています…</span></div>
   </div>
 </div>
 
@@ -1747,6 +1816,10 @@ var state = {
   selectedDuration: 0,
   selectedLocation: '',
   serviceType: '出張',           // '出張' (default) or '店舗' — 店舗作業は出張料 $0
+  srcParam: '',                 // 2026-10-15: URL の ?src=（専用QR の流入元コード）
+  source: null,                 // booking_init の source（{code,label,lang,start,end,servicePct,itemPct,placeName,...}）
+  unitNo: '',                   // 流入元の固定場所で使う 部屋番号・車種
+  carModel: '',
   currentView: 'view-loading',
   history: []
 };
@@ -1785,6 +1858,13 @@ document.addEventListener('DOMContentLoaded', function() {
   if (gasParam) GAS_URL = gasParam;
   var devChatId = urlParams.get('chatId');
   if (devChatId && !state.chatId) state.chatId = devChatId;
+  // 2026-10-15: 専用QR の流入元。クメール語のちらつきを避けるため、先に英語＋日本語にしておく
+  //   （サーバーが別の言語の流入元と返したら applyMenuData_ で戻す）
+  var srcParam = String(urlParams.get('src') || '').replace(/[^A-Za-z0-9_-]/g, '').substring(0, 64);
+  if (srcParam) {
+    state.srcParam = srcParam;
+    document.body.classList.add('lang-enja');
+  }
 
   if (!state.chatId) {
     showToast('Please open from Telegram', true);
@@ -1822,7 +1902,7 @@ var registerPromise = null;    // 新規顧客の自動登録（画面は待た�
 
 function menuFingerprint_(d) {
   try {
-    return JSON.stringify([d.plans || [], d.options || [], d.campaign || null, d.dispatchFee || null]);
+    return JSON.stringify([d.plans || [], d.options || [], d.campaign || null, d.dispatchFee || null, d.source || null]);
   } catch (e) { return ''; }
 }
 
@@ -1851,6 +1931,8 @@ function applyMenuData_(d) {
   state.campaign = d.campaign || null;                     // Menu v2: キャンペーン情報
   // 2026-10-11: 出張料はチラシどおり 2$ 固定に戻す（Daisuke・10/10 の「無し」を撤回）。取得失敗時の予備値も 2
   state.dispatchFee = d.dispatchFee || { sedan: 2, suv: 2 };
+  state.source = d.source || null;                         // 2026-10-15: 専用QR の流入元
+  if (srcLangEnJa_()) document.body.classList.add('lang-enja');   // 外すのは最新の init を受けた時だけ（loadInit）
   state.menuFp = menuFingerprint_(d);
   // 2026-10-08: 出張料 0（当面徴収しない）のときは「出張料が浮く」系の文言を隠す
   document.body.classList.toggle('no-delivery-fee', !(state.dispatchFee.sedan > 0 || state.dispatchFee.suv > 0));
@@ -1881,15 +1963,18 @@ function reconcileAfterRefresh_() {
 function loadInit() {
   var url = GAS_URL + '?action=booking_init&chatId=' + encodeURIComponent(state.chatId)
           + '&name=' + encodeURIComponent(state.customerName)
-          + '&username=' + encodeURIComponent(state.username);
+          + '&username=' + encodeURIComponent(state.username)
+          + (state.srcParam ? '&src=' + encodeURIComponent(state.srcParam) : '');
   initPromise = fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(res) {
       if (res.status !== 'ok') throw new Error(res.message || 'Init failed');
-      var data = { plans: res.plans || [], options: res.options || [], campaign: res.campaign || null, dispatchFee: res.dispatchFee || null };
+      var data = { plans: res.plans || [], options: res.options || [], campaign: res.campaign || null, dispatchFee: res.dispatchFee || null, source: res.source || null };
       var prevFp = state.menuFp;
       state.customer = res.customer;
       applyMenuData_(data);
+      // 最新の init で言語を確定（?src= でも、流入元が無効・別言語ならクメール語の添えに戻す）
+      document.body.classList.toggle('lang-enja', srcLangEnJa_());
       writeInitCache_(data);
       state.initFresh = true;
       // 単一プラン(WASH のみ)の場合は自動選択(操作削減)
@@ -1911,6 +1996,7 @@ function loadInit() {
     });
   initPromise.catch(function(err) {
     state.initFresh = false;
+    if (!state.source) document.body.classList.remove('lang-enja');
     showToast('Loading error: ' + err.message, true);
   });
   return initPromise;
@@ -1927,7 +2013,8 @@ function autoRegister() {
   return postJson('booking_register_customer', {
     chatId: state.chatId,
     name: state.customerName,
-    username: state.username
+    username: state.username,
+    src: state.source ? state.source.code : state.srcParam
   }).then(function(res) {
     if (res.status === 'ok') state.customer = res.customer;
   }).catch(function() {});   // 失敗しても送信は従来どおり chatId で続行（サーバー側で救済）
@@ -1968,7 +2055,18 @@ function showView(viewId) {
   }
   if (viewId === 'view-datetime') renderDates();
   if (viewId === 'view-location') {
-    setTimeout(function() { initLocationMap(); }, 100);
+    // 2026-10-15: 流入元の固定場所（Picasso 等）は地図・店舗タブを出さず、部屋番号と車種を聞く
+    var fixed = srcFixedPlace_();
+    document.getElementById('locationSource').style.display = fixed ? 'block' : 'none';
+    document.getElementById('serviceTypeTabs').style.display = fixed ? 'none' : '';
+    if (fixed) {
+      state.serviceType = '出張';
+      document.getElementById('locationDelivery').style.display = 'none';
+      document.getElementById('locationInStore').style.display = 'none';
+      document.getElementById('sourcePlaceName').textContent = state.source.placeName;
+    } else {
+      setTimeout(function() { initLocationMap(); }, 100);
+    }
   }
   if (viewId === 'view-confirm') renderSummary();
 
@@ -1982,6 +2080,22 @@ function showView(viewId) {
 function applyCampaignBanner_() {
   var banner = document.getElementById('campaignBanner');
   if (!banner) return;
+  // 2026-10-15: 流入元の特典があるときは、そちらのバナーだけを出す（割引の併用はしない）
+  var sb = document.getElementById('sourceBanner');
+  if (sb) {
+    var s = state.source;
+    if (srcHasPerk_()) {
+      document.getElementById('sourceLabel').textContent = '★ FOR ' + String(s.placeName || s.label).toUpperCase() + ' RESIDENTS';
+      document.getElementById('sourcePerk').textContent = s.perkEn || '';
+      document.getElementById('sourcePerkJa').textContent = (s.placeName || s.label) + ' にお住まいの皆さまへ：' + (s.perkJa || '');
+      document.getElementById('sourcePeriod').textContent = (s.periodEn || '') + (s.periodEn ? ' · ' : '') + 'Discounts cannot be combined.';
+      document.getElementById('sourcePeriodJa').textContent = (s.periodJa ? s.periodJa + ' のご予約が対象。' : '') + '割引の併用はできません。';
+      sb.style.display = 'flex';
+      banner.style.display = 'none';
+      return;
+    }
+    sb.style.display = 'none';
+  }
   if (state.campaign && state.campaign.active && state.campaign.percent > 0) {
     var label  = document.getElementById('campaignLabel');
     var labKm  = document.getElementById('campaignLabelKm');
@@ -2004,6 +2118,8 @@ function goBack() {
   state.currentView = prev;
   document.getElementById('backBtn').classList.toggle('hidden', state.history.length === 0);
   updateProgress(prev);
+  // 2026-10-15: 流入元の特典は選んだ日付で価格が変わるので、メニューに戻ったら描き直す
+  if (prev === 'view-plan' && srcHasPerk_()) renderMenu();
   updateActionButton();
   window.scrollTo(0, 0);
 }
@@ -2031,26 +2147,26 @@ function updateActionButton() {
 
   switch (state.currentView) {
     case 'view-plan':
-      btn.textContent = 'Next / បន្ទាប់';
+      btn.textContent = L('Next', 'បន្ទាប់', '次へ');
       // Menu v4: WASH / GLASS / HEADLIGHT のいずれか1つ以上 + 車種選択 で next 可
       btn.disabled = !state.selectedSize || (!state.selectedPlan && state.selectedOptions.length === 0);
       btn.classList.add('btn-primary');
       break;
     case 'view-datetime':
-      btn.textContent = 'Next / បន្ទាប់';
+      btn.textContent = L('Next', 'បន្ទាប់', '次へ');
       btn.disabled = !state.selectedDate || !state.selectedSlot;
       btn.classList.add('btn-primary');
       break;
     case 'view-location':
-      btn.textContent = 'Next / បន្ទាប់';
+      btn.textContent = L('Next', 'បន្ទាប់', '次へ');
       btn.classList.add('btn-primary');
       break;
     case 'view-confirm':
-      btn.textContent = '✓ Confirm Booking / បញ្ជាក់ការកក់';
+      btn.textContent = '✓ ' + L('Confirm Booking', 'បញ្ជាក់ការកក់', '予約を確定');
       btn.classList.add('btn-gold');
       break;
     case 'view-success':
-      btn.textContent = 'Close / បិទ';
+      btn.textContent = L('Close', 'បិទ', '閉じる');
       btn.classList.add('btn-secondary');
       break;
     default:
@@ -2068,13 +2184,48 @@ function updateActionButton() {
 // 対外表記: USD は「数字+$」後置で統一(カンボジア慣習)。"$12" ではなく "12$"
 function fmtUsd(n)  { return (Number(n) || 0) + '$'; }
 function fmtUsd2(n) { return (Number(n) || 0).toFixed(2) + '$'; }
+// 流入元の特典価格: 必要な桁だけ（9.6$。チラシの表記に合わせる）
+function fmtUsdTrim(n) { return String(Math.round((Number(n) || 0) * 100) / 100) + '$'; }
+
+// ── 2026-10-15: 専用QR（流入元）ヘルパ ──
+function srcLangEnJa_() { return !!(state.source && state.source.lang === 'en-ja'); }
+function srcHasPerk_() {
+  var s = state.source;
+  return !!(s && (Number(s.servicePct) > 0 || Object.keys(s.itemPct || {}).length > 0));
+}
+function srcFixedPlace_() { return !!(state.source && state.source.placeName); }
+// 品目の割引率(%)。WASH は画面上の code が letter('W') なので 'WASH' として引く
+function srcPctFor_(item) {
+  if (!srcHasPerk_()) return 0;
+  var code = String(item.kind === 'WASH' ? 'WASH' : item.code).toUpperCase();
+  var ip = state.source.itemPct || {};
+  return Object.prototype.hasOwnProperty.call(ip, code) ? Number(ip[code]) : (Number(state.source.servicePct) || 0);
+}
+// メニューの価格に特典を出すか: 日付未選択なら出す（期間はバナーで案内）、選択済みなら期間内のときだけ
+function srcPriceActive_() {
+  return srcHasPerk_() && (!state.selectedDate || srcInPeriod_(state.selectedDate));
+}
+// 空き枠の問い合わせに付ける流入元（期間中の日曜営業の判定用。chatId はサーバー側の紐付け確認用）
+function srcQuery_() {
+  if (!state.source) return '';
+  return '&src=' + encodeURIComponent(state.source.code) + '&chatId=' + encodeURIComponent(state.chatId);
+}
+function srcInPeriod_(ymd) {
+  var s = state.source;
+  if (!s || !ymd) return false;
+  if (s.start && ymd < s.start) return false;
+  if (s.end && ymd > s.end) return false;
+  return true;
+}
+// ボタン等の2言語ラベル: 通常は「英語 / クメール語」、英語＋日本語モードは「英語 / 日本語」
+function L(en, km, ja) { return en + ' / ' + (document.body.classList.contains('lang-enja') ? ja : km); }
 
 // カテゴリ定義(表示名・クメール語は Panha 校閲済み 2026-09-22)
 var MENU_CATEGORIES = [
-  { key: 'WASH',      letter: 'W', nameEn: 'SAMURAI WASH',      nameKm: 'លាងសម្អាត' },
-  { key: 'GLASS',     letter: 'G', nameEn: 'SAMURAI GLASS',     nameKm: 'ស្រោបកញ្ចក់' },
-  { key: 'HEADLIGHT', letter: 'H', nameEn: 'SAMURAI HEADLIGHT', nameKm: 'ខាត់ចង្កៀងមុខ' },
-  { key: 'BODY',      letter: 'B', nameEn: 'SAMURAI BODY',      nameKm: 'ខាត់ខ្លួនរថយន្ត + ស្រោបទឹកមិនជាប់', inquiry: true }
+  { key: 'WASH',      letter: 'W', nameEn: 'SAMURAI WASH',      nameKm: 'លាងសម្អាត', nameJa: 'Waterless 手洗い' },
+  { key: 'GLASS',     letter: 'G', nameEn: 'SAMURAI GLASS',     nameKm: 'ស្រោបកញ្ចក់', nameJa: 'ガラスの撥水コート' },
+  { key: 'HEADLIGHT', letter: 'H', nameEn: 'SAMURAI HEADLIGHT', nameKm: 'ខាត់ចង្កៀងមុខ', nameJa: 'ヘッドライトのくもり・黄ばみ取り' },
+  { key: 'BODY',      letter: 'B', nameEn: 'SAMURAI BODY',      nameKm: 'ខាត់ខ្លួនរថយន្ត + ស្រោបទឹកមិនជាប់', nameJa: 'ボディ磨き・コーティング（お見積り）', inquiry: true }
 ];
 
 // BODY(見積り)枠に添える目安価格一覧(2026-10-08 チラシ v1.1 準拠。予約対象外・写真で見積り)
@@ -2113,7 +2264,9 @@ function quoteListHtml() {
 // 品目コードごとのバッジ(2026-10-08 Daisuke 指示: SAMURAI MAGIC を NEW・カンボジア初として見せる)
 // 品目そのもの(名称・価格・所要時間)は「メニュー」シート連動。ここは見せ方だけ
 var ITEM_BADGES = {
-  HEADLIGHT_MAGIC: { label: 'NEW', noteEn: "Cambodia's first steam technology", noteKm: 'បច្ចេកវិទ្យាចំហាយ លើកដំបូងនៅកម្ពុជា' }  // Panha 校閲済み 2026-10-08
+  HEADLIGHT_MAGIC: { label: 'NEW', noteEn: "Cambodia's first steam technology", noteKm: 'បច្ចេកវិទ្យាចំហាយ លើកដំបូងនៅកម្ពុជា',  // Panha 校閲済み 2026-10-08
+                     // 英語＋日本語モード（Picasso 等）は「日本からの新しいサービス」で打ち出す（2026-10-14 Daisuke 決定）
+                     noteEnJaMode: 'New service from Japan', noteJa: '日本からの新しいサービス' }
 };
 
 // カテゴリごとの品目(WASH は plans、それ以外は options の kind で振り分け)
@@ -2152,6 +2305,13 @@ function priceHtmlFor(item) {
       : fmtUsd(item.priceSedan) + ' ~ ' + fmtUsd(item.priceSuv);
   }
   var price = itemPriceFor(item);
+  // 2026-10-15: 流入元の特典（品目別の割引率）。期間はバナーと確認画面で示す。全体キャンペーンとは併用しない
+  if (srcPriceActive_()) {
+    var sp = srcPctFor_(item);
+    if (!sp) return fmtUsd(price);
+    return '<span class="price-original">' + fmtUsd(price) + '</span><span class="price-discount">' + fmtUsdTrim(price * (1 - sp / 100)) + '</span>'
+      + '<span class="price-src-note">-' + sp + '% residents</span>';
+  }
   if (campActive) {
     var disc = (price * (1 - state.campaign.percent / 100)).toFixed(2);
     return '<span class="price-original">' + fmtUsd(price) + '</span><span class="price-discount">' + disc + '$</span>';
@@ -2178,6 +2338,7 @@ function renderMenu() {
       + '<div class="menu-title">'
       +   '<div class="menu-name">' + escapeHtml(cat.nameEn) + '</div>'
       +   '<div class="menu-km">' + escapeHtml(cat.nameKm) + '</div>'
+      +   (cat.nameJa ? '<div class="ja">' + escapeHtml(cat.nameJa) + '</div>' : '')
       + '</div>'
       + (rightHtml || '')
       + '</div>';
@@ -2211,7 +2372,7 @@ function renderMenu() {
       // ── WASH / HEADLIGHT: 枠そのものがトグル(全メニュー単品受注可) ──
       var item = items[0];
       var feeNote = (item.kind === 'WASH' && feeForCard)
-        ? '<div class="plan-fee-note">+ ' + fmtUsd(feeForCard) + ' Delivery fee / + ' + fmtUsd(feeForCard) + ' ថ្លៃដឹកជញ្ជូន</div>'
+        ? '<div class="plan-fee-note">+ ' + fmtUsd(feeForCard) + ' ' + L('Delivery fee', fmtUsd(feeForCard) + ' ថ្លៃដឹកជញ្ជូន', '出張料') + '</div>'
         : '';
       card.innerHTML =
         headHtml(cat)
@@ -2240,7 +2401,8 @@ function renderMenu() {
         (badge ? '<div class="sub-badge">' + escapeHtml(badge.label) + '</div>' : '')
         + '<div class="sub-name">' + escapeHtml(item.nameEn || item.code) + '</div>'
         + '<div class="sub-km">' + escapeHtml(item.nameKm || '') + '</div>'
-        + (badge ? '<div class="sub-badge-note">' + escapeHtml(badge.noteEn) + '<span class="km">' + escapeHtml(badge.noteKm) + '</span></div>' : '')
+        + (badge ? '<div class="sub-badge-note">' + escapeHtml(srcLangEnJa_() && badge.noteEnJaMode ? badge.noteEnJaMode : badge.noteEn) + '<span class="km">' + escapeHtml(badge.noteKm) + '</span>'
+            + (badge.noteJa ? '<span class="ja">' + escapeHtml(badge.noteJa) + '</span>' : '') + '</div>' : '')
         + '<div class="sub-desc">' + escapeHtml(item.description || '') + '</div>'
         + '<div class="sub-price">' + priceHtmlFor(item) + '</div>'
         + '<div class="sub-duration">⏱ ' + durationText(item) + '</div>';
@@ -2356,6 +2518,8 @@ function renderDates() {
     var dateStr = formatDate(d);
     // 2026-05-06 Daisuke 判断: 日曜だけ休み、祝日は通常営業
     var isClosed   = CLOSED_DAYS.indexOf(d.getDay()) >= 0;       // 日曜のみ
+    // 2026-10-15: 専用QR（流入元）の「期間中の日曜営業」。最終判断はサーバー（空き枠・予約確定）
+    if (isClosed && state.source && state.source.openSunday && srcInPeriod_(dateStr)) isClosed = false;
     var holidayName = CAMBODIA_HOLIDAYS[dateStr] || '';            // 情報ラベルのみに使用
 
     var cell = document.createElement('div');
@@ -2443,7 +2607,8 @@ function prefetchSlots_() {
     + '&days=12'
     + '&plan=' + encodeURIComponent(state.selectedPlan || '')
     + '&vehicleType=' + encodeURIComponent(state.selectedSize)
-    + '&options=' + encodeURIComponent(state.selectedOptions.join(','));
+    + '&options=' + encodeURIComponent(state.selectedOptions.join(','))
+    + srcQuery_();
   var p = fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(res) {
@@ -2521,7 +2686,8 @@ function fetchDaySlots_(date, key, seq, quiet) {
     + '&date=' + encodeURIComponent(date)
     + '&plan=' + encodeURIComponent(state.selectedPlan || '')
     + '&vehicleType=' + encodeURIComponent(state.selectedSize)
-    + '&options=' + encodeURIComponent(state.selectedOptions.join(','));
+    + '&options=' + encodeURIComponent(state.selectedOptions.join(','))
+    + srcQuery_();
   fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(res) {
@@ -2559,7 +2725,8 @@ function renderSlots(slots, durationMin) {
 
   var html = '';
   if (durationMin) {
-    html += '<div class="duration-info">⏱ Duration: ~' + durationMin + 'min / រយៈពេល ~' + durationMin + ' នាទី</div>';
+    html += '<div class="duration-info">⏱ Duration: ~' + durationMin + 'min / '
+      + (document.body.classList.contains('lang-enja') ? '所要 約' + durationMin + '分' : 'រយៈពេល ~' + durationMin + ' នាទី') + '</div>';
   }
   html += '<div class="slot-grid">';
   for (var i = 0; i < slots.length; i++) {
@@ -2596,10 +2763,22 @@ function renderSummary() {
   // キャンペーン割引(案a: サービスのみ -X%)
   var serviceSubtotal = items.reduce(function(s, it) { return s + (Number(it.price) || 0); }, 0);
   var camp = state.campaign;
-  var campActive = camp && camp.active && camp.percent > 0;
-  var discount = campActive ? Math.round(serviceSubtotal * camp.percent) / 100 : 0;
+  // 2026-10-15: 流入元の特典（予約日が期間内のときだけ・品目別の割引率）。効くときは全体キャンペーンを使わない
+  var srcActive = srcHasPerk_() && srcInPeriod_(state.selectedDate);
+  var srcLines = [];
+  if (srcActive) {
+    items.forEach(function(it) {
+      var pct = srcPctFor_(it);
+      if (pct > 0 && Number(it.price) > 0) srcLines.push({ it: it, pct: pct, d: Math.round(Number(it.price) * pct) / 100 });
+    });
+  }
+  if (!srcLines.length) srcActive = false;   // 対象品目なし＝特典なし（サーバーと同じ判定）
+  var campActive = !srcActive && camp && camp.active && camp.percent > 0;
+  var discount = srcActive
+    ? Math.round(srcLines.reduce(function(s, l) { return s + l.d; }, 0) * 100) / 100
+    : (campActive ? Math.round(serviceSubtotal * camp.percent) / 100 : 0);
   var serviceAfter = serviceSubtotal - discount;
-  var total = serviceAfter + fee;
+  var total = Math.round((serviceAfter + fee) * 100) / 100;
   var sizeLabel = (state.selectedSize === 'SUV以上') ? 'SUV & larger' : 'Sedan & smaller';
 
   // 品目の表示名: WASH はそのまま、他は「SAMURAI GLASS — 3 Windows + Mirrors」
@@ -2616,11 +2795,19 @@ function renderSummary() {
   html += summaryRow('Vehicle', sizeLabel);
   html += summaryRow('Date', state.selectedDate);
   html += summaryRow('Time', state.selectedSlot + ' (~' + state.selectedDuration + 'min)');
-  html += summaryRow('Location', escapeHtml(state.selectedLocation));
+  html += summaryRow('Location', escapeHtml(state.selectedLocation) + (srcFixedPlace_() && state.unitNo ? ' · Unit ' + escapeHtml(state.unitNo) : ''));
+  if (srcFixedPlace_() && state.carModel) html += summaryRow('Car', escapeHtml(state.carModel));
   // 料金内訳: 各品目 / [Subtotal / Discount] / Delivery / Total
   items.forEach(function(it) {
-    html += summaryRow(itemLabel(it), fmtUsd2(it.price));
+    html += summaryRow(itemLabel(it), srcHasPerk_() ? fmtUsdTrim(it.price) : fmtUsd2(it.price));
   });
+  if (srcActive && discount > 0) {
+    srcLines.forEach(function(l) {
+      html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">🎁 ' + escapeHtml(l.it.kind === 'WASH' ? l.it.nameEn : l.it.catName) + ' (-' + l.pct + '%)</div><div class="value" style="color:var(--gold-bright)">-' + fmtUsdTrim(l.d) + '</div></div>';
+    });
+  } else if (srcHasPerk_() && state.source.periodEn) {
+    html += '<div class="summary-row" style="color:var(--text-dim)"><div class="label" style="font-size:11px">Residents\' discount applies to ' + escapeHtml(state.source.periodEn) + '<span class="ja">特典は ' + escapeHtml(state.source.periodJa || '') + ' のご予約が対象です</span></div><div class="value"></div></div>';
+  }
   if (campActive) {
     html += summaryRow('Service subtotal', fmtUsd2(serviceSubtotal));
     html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">★ ' + escapeHtml(camp.nameEn || 'Campaign') + ' (-' + camp.percent + '%)</div><div class="value" style="color:var(--gold-bright)">-' + fmtUsd2(discount) + '</div></div>';
@@ -2630,9 +2817,9 @@ function renderSummary() {
     if (baseFee > 0) html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">🏪 In-store / នៅហាង</div><div class="value" style="color:var(--gold-bright)">0$ (saved ' + fmtUsd2(baseFee) + ')</div></div>';
   } else if (fee > 0) {
     // 2026-10-08: 出張料 0（当面徴収しない）のときは行ごと出さない
-    html += summaryRow('🚚 Delivery fee / ថ្លៃដឹកជញ្ជូន', fmtUsd2(fee));
+    html += summaryRow('🚚 ' + L('Delivery fee', 'ថ្លៃដឹកជញ្ជូន', '出張料'), srcHasPerk_() ? fmtUsdTrim(fee) : fmtUsd2(fee));
   }
-  html += '<div class="summary-row total"><div class="label">Total / សរុប</div><div class="value">' + fmtUsd2(total) + '</div></div>';
+  html += '<div class="summary-row total"><div class="label">' + L('Total', 'សរុប', '合計') + '</div><div class="value">' + (srcHasPerk_() ? fmtUsdTrim(total) : fmtUsd2(total)) + '</div></div>';
 
   document.getElementById('summaryCard').innerHTML = html;
 }
@@ -2679,7 +2866,18 @@ function handleNext() {
         return;
       }
       // 店舗作業の場合は地図ピン留め不要、出張作業の場合はピン留め必須
-      if (state.serviceType === '店舗') {
+      // 2026-10-15: 流入元の固定場所は 部屋番号 必須（場所はサーバー側で流入元の住所に固定）
+      if (srcFixedPlace_()) {
+        state.unitNo = String(document.getElementById('srcUnitNo').value || '').trim();
+        state.carModel = String(document.getElementById('srcCarModel').value || '').trim();
+        if (!state.unitNo) {
+          showToast('Please enter your unit number / 部屋番号を入力してください', true);
+          document.getElementById('srcUnitNo').focus();
+          return;
+        }
+        state.serviceType = '出張';
+        state.selectedLocation = '🏢 ' + state.source.placeName;
+      } else if (state.serviceType === '店舗') {
         state.selectedLocation = STORE_INFO.locationLabel + ' ' + STORE_INFO.mapsUrl;
       } else {
         if (!savedCoords) {
@@ -2758,7 +2956,11 @@ function submitBooking() {
     date: state.selectedDate,
     startTime: state.selectedSlot,
     location: state.selectedLocation,
-    serviceType: state.serviceType            // '出張' or '店舗' (2026-05-20)
+    serviceType: state.serviceType,           // '出張' or '店舗' (2026-05-20)
+    // 2026-10-15: 専用QR（流入元）。金額・場所はサーバーが流入元タブから決める（画面の値は表示用）
+    src: state.source ? state.source.code : state.srcParam,
+    unitNo: srcFixedPlace_() ? state.unitNo : '',
+    carModel: srcFixedPlace_() ? state.carModel : ''
   };
 
   bookingSubmitted = true; // 送信開始で即座にフラグを立てる
@@ -2780,7 +2982,7 @@ function submitBooking() {
     document.getElementById('successSummary').innerHTML =
       summaryRow('Booking ID', res.bookingId)
       + summaryRow('Date & Time', state.selectedDate + ' ' + state.selectedSlot + ' - ' + res.endTime)
-      + '<div class="summary-row total"><div class="label">Total</div><div class="value">' + fmtUsd2(res.amount) + '</div></div>';
+      + '<div class="summary-row total"><div class="label">' + L('Total', 'សរុប', '合計') + '</div><div class="value">' + (state.source ? fmtUsdTrim(res.amount) : fmtUsd2(res.amount)) + '</div></div>';
     state.history = [];
     showView('view-success');
   }).catch(function(err) {

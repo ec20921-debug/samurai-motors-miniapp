@@ -2020,6 +2020,12 @@ function renderDashboardCard(b) {
       '💵 ការទូទាត់រួច / 清算する</button>';
   }
 
+  // 2026-10-15: 専用QR（流入元・Picasso 等）バッジ。部屋番号も出す
+  var srcBadge = b.source
+    ? '<span style="display:inline-block;background:rgba(46,160,67,0.18);color:#7EE787;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:0.3px;margin-left:6px;border:1px solid rgba(46,160,67,0.45);">🏢 ' +
+      escapeHtml(b.source) + (b.room ? ' #' + escapeHtml(b.room) : '') + '</span>'
+    : '';
+
   // 手動特価バッジ
   var campBadge = '';
   if (b.manualCampaign) {
@@ -2032,7 +2038,7 @@ function renderDashboardCard(b) {
   return '<div class="chat-item" data-id="' + b.bookingId + '" style="' + doneCls + 'flex-wrap:wrap;">' +
     '<div class="chat-avatar" style="background:' + color + '">' + initial + '</div>' +
     '<div class="chat-body">' +
-      '<div class="chat-name">' + name + svcBadge + campBadge + '</div>' +
+      '<div class="chat-name">' + name + svcBadge + campBadge + srcBadge + '</div>' +
       '<div class="chat-preview">' + preview + '</div>' +
       '<div class="chat-preview" style="font-size:11px;margin-top:2px">' + sub + '</div>' +
     '</div>' +
