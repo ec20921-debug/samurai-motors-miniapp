@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAMURAI SCOUT / ហាងដៃគូ</title>
+<!-- 2026-10-20 ホーム画面に置いて1タップで開く（Daisuke「Telegram じゃなくて Safari でホーム画面に追加したい」） -->
+<link rel="manifest" href="scout.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SCOUT">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="scout-apple-touch-icon.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="tg-auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Kantumruy+Pro:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -773,6 +781,13 @@ input[type="date"], .due-row input { color-scheme:light; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { box-shadow:0 3px 14px rgba(0,0,0,.18); }
 .hear-item, .note-item, .visit-item, .cm-item, .gps-box, .suggest-chip { background:#fff; }
 .pend { color:#1d1b16; }
+.install-bar { display:flex; align-items:center; gap:10px; background:#fff6df; border:1.5px solid var(--gold); border-radius:16px;
+  padding:12px 14px; margin-bottom:10px; font-size:14.5px; line-height:1.55; }
+.install-bar span { flex:1; min-width:0; }
+.install-bar button { flex:none; border:0; background:none; font-size:20px; color:var(--text-dim); cursor:pointer; }
+.need-link { text-align:center; padding:60px 16px; font-size:17px; line-height:1.7; }
+.need-link .nl-ic { font-size:52px; margin-bottom:10px; }
+.admin-link { word-break:break-all; background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px; font-size:13px; margin-top:8px; }
 .badge.unv { background:#fff; border:1.5px solid #8a8576; color:#3a362e; }
 </style>
 </head>
@@ -787,6 +802,8 @@ input[type="date"], .due-row input { color-scheme:light; }
     </div>
   </header>
 
+  <div class="install-bar hidden" id="installBar"><span id="installText"></span><button type="button" id="btnInstallX" aria-label="close">✕</button></div>
+  <div class="need-link hidden" id="needLink"><div class="nl-ic">🔗</div><div id="needLinkText"></div></div>
   <div class="off-bar hidden" id="offBar"><span id="offBarText"></span><button type="button" id="btnOffSend"></button></div>
   <div class="off-bar fail hidden" id="failBar"><span id="failBarText"></span></div>
   <div class="off-bar cache hidden" id="cacheBar"><span id="cacheBarText"></span></div>
@@ -816,6 +833,15 @@ input[type="date"], .due-row input { color-scheme:light; }
         <div class="empty" id="listEmpty">…</div>
       </div>
     </div>
+
+    <details class="fold hidden" id="adminFold" style="margin-top:18px">
+      <summary>🔗 ホーム画面用リンク（管理者）</summary>
+      <div class="fin">
+        <div class="notes-hint">スタッフに送ると、Safari で開いて「ホーム画面に追加」→ 次から1タップで開けます。鍵はスタッフごと（現場アプリ v2 と同じ）。全員の鍵を無効にする時は GAS のスクリプトプロパティ FIELD_LINK_SECRET を削除。</div>
+        <button type="button" class="ghost" id="btnAdminList" style="width:100%">スタッフ一覧を出す</button>
+        <div id="adminList"></div>
+      </div>
+    </details>
 
     <div id="mapWrap">
       <div class="map-tools"><div id="map"></div><button type="button" class="here-btn" id="btnHere"></button><button type="button" class="unv-toggle" id="btnUnv"></button></div>
@@ -1217,6 +1243,10 @@ var STR = {
   newShopName: 'ឈ្មោះហាង (តាមដែលសរសេរនៅមុខហាង) / 店名（看板のとおり）',
   newShopReact:'ប្រតិកម្ម (មិនចាំបាច់) / 反応（なくてもOK）',
   close:       'បិទ / 閉じる',
+  // ↓ 2026-10-20 ホーム画面アプリ（専用リンク）。km は Panha 校閲済み（provisional・Run Kosal 確認: អេក្រង់ដើម（ホーム画面）/ តំណភ្ជាប់ / □↑ の表示 / iPhone が英語表示か）
+  installTip:  '📲 បន្ថែមទៅអេក្រង់ដើម ដើម្បីបើកបានដោយចុចតែម្តង។ ចុចប៊ូតុងចែករំលែក □↑ នៅខាងក្រោម រួចចុច «Add to Home Screen» / 📲 ホーム画面に追加すると、1タップで開けます。下にある共有ボタン □↑ を押して、「ホーム画面に追加」を押す',
+  needLink:    '🔗 សូមបើកតាមតំណភ្ជាប់ផ្ទាល់ខ្លួនរបស់អ្នក (សុំពីលោក Daisuke) / 🔗 自分専用のリンクから開いてください（Daisuke にもらってください）',
+  keyBad:      '⚠️ តំណភ្ជាប់នេះប្រើមិនបានទេ។ សូមសុំតំណភ្ជាប់ថ្មី។ / ⚠️ このリンクは使えません。新しいリンクをもらってください',
   // 次にやることのボタン（保存値もこの「km / 日本語」の形。画面では選んだ言語だけ出る）
   nextOpts:    [['📞', 'ទូរស័ព្ទទៅ / 電話する'], ['🧪', 'ធ្វើការសាកល្បង / デモをする'], ['🔁', 'ចុះជួបម្តងទៀត / また訪問する']],
   // ヒントのチップ [km, ja]。押すと「km៖ 」を欄の先頭に入れる（Panha 指定の区切り）
@@ -1308,6 +1338,7 @@ var homeTab = 'list';                                   // 下のタブ（地図
 var todayVisit = null, todayChain = Promise.resolve();  // 今日の訪問（こまめ保存）
 var calcShop = null, calcFrom = '';                     // 計算タブのお店（店の画面から来たら 'shop'）
 var tlLimit = 8;
+var meStaff = null;                                     // 自分（whoami）。管理者ならホーム画面用リンクを作れる
 var listFilter = 'all', showUnvisited = true; // 一覧の絞り込み・地図の白いピン（未訪問の店）
 function isUnvisited(s) { return s.status === '未訪問'; } // 現在地（一覧の近い順・地図の青い点）
 var menuPrices = [];                                    // 商談計算の料金（メニュータブ）
@@ -1338,6 +1369,29 @@ if (!currentChatId && window.Telegram && Telegram.WebApp &&
     Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
   currentChatId = String(Telegram.WebApp.initDataUnsafe.user.id || '');
 }
+// ── ホーム画面アプリ（2026-10-20）: Telegram の外では、スタッフ専用リンク `?gas=…&u=<chatId>&k=<鍵>` で本人を決める ──
+//   鍵は現場アプリ v2 と同じ（FieldLink.gs・スタッフごと）。開いたリンクはこの端末に覚えておき、次からはリンク無しでも開ける。
+//   iPhone のホーム画面に追加すると、開いていたリンク（gas・u・k 付き）がそのまま起動先になる
+var IN_TELEGRAM = !!(window.Telegram && Telegram.WebApp && Telegram.WebApp.initData);
+var linkKey = '';
+(function resolveMe() {
+  var u = urlParams.get('u'), k = urlParams.get('k');
+  if (u && k) {
+    if (!currentChatId) currentChatId = u;
+    if (currentChatId === u) {
+      linkKey = k;
+      try { localStorage.setItem('sl_me_v1', JSON.stringify({ u: u, k: k, gas: GAS_URL })); } catch (e) {}
+    }
+  }
+  if (!currentChatId || !GAS_URL) {
+    var me = null;
+    try { me = JSON.parse(localStorage.getItem('sl_me_v1') || 'null'); } catch (e) {}
+    if (me && me.u && (!currentChatId || currentChatId === me.u)) {
+      currentChatId = currentChatId || me.u; linkKey = linkKey || me.k || '';
+      if (!GAS_URL && me.gas) GAS_URL = me.gas;
+    }
+  }
+})();
 
 // v7 booking.html と同一方式: POST + text/plain。応答は text で受けて JSON.parse
 // （認可切れ等の HTML 応答を切り分けるため。home-internal.html と同方式）
@@ -1380,7 +1434,9 @@ function apiRead(payload, attempt) {
 // ※ 2026-07-28: 一時的なサーバーエラーでも「スタッフ未登録」と出る誤表示の是正
 //   （勤怠アプリで実発生。「未登録」は ok:true で staff なし確定のときだけ表示する）
 function fetchWho(attempt) {
-  return api({ action: 'whoami' })
+  var p = { action: 'whoami' };
+  if (linkKey) p.k = linkKey; // 専用リンクで開いた時は鍵が正しいかも確かめる（FieldLink.gs）
+  return api(p)
     .then(function(d) {
       if (d && d.ok) return d;                      // 成功（staff の有無はここで確定）
       throw new Error(d && d.error ? d.error : 'SERVER_ERROR');
@@ -1394,8 +1450,7 @@ function fetchWho(attempt) {
 
 function loadWho() {
   var line = document.getElementById('whoLine');
-  if (!currentChatId) { line.textContent = '⚠️ chatId 取得失敗'; return Promise.resolve(); }
-  if (!GAS_URL)       { line.textContent = '⚠️ GAS URL 未設定'; return Promise.resolve(); }
+  if (!currentChatId || !GAS_URL) { showNeedLink(); return Promise.resolve(); }
   line.textContent = '…';
   line.onclick = null;
   if (navigator.onLine === false) { // 圏外が分かっている時は待たずに先へ（店一覧は控えを出す）
@@ -1408,6 +1463,9 @@ function loadWho() {
       if (d.staff) {
         var en = String(d.staff.nameEn || '').trim(), jp = String(d.staff.nameJp || '').trim() || en;
         line.innerHTML = '👤 <strong>' + esc(jp) + '</strong>' + (en && en !== jp ? ' (' + esc(en) + ')' : '');
+        meStaff = d.staff;
+        if (linkKey && d.keyOk === false) toast(STR.keyBad, 'err');
+        renderAdminLink();
       } else {
         // ok:true かつ staff なし = 本当に未登録（3回とも成功応答での確定）
         line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
@@ -3432,6 +3490,64 @@ function openNewShop() {
   });
   setTimeout(function() { var el = document.getElementById('nsName'); if (el) el.focus(); }, 120);
 }
+
+
+// ═══════════════════════════════════════════
+//  ホーム画面アプリ（2026-10-20）
+// ═══════════════════════════════════════════
+function showNeedLink() {
+  document.getElementById('needLink').className = 'need-link';
+  document.getElementById('needLinkText').textContent = STR.needLink;
+  document.getElementById('viewHome').className = 'hidden';
+  document.getElementById('whoLine').textContent = '';
+}
+// Safari で開いていて、まだホーム画面アプリになっていない時だけ「ホーム画面に追加」を案内（✕ で閉じたら出さない）
+(function installTip() {
+  var standalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var closed = false; try { closed = localStorage.getItem('sl_install_closed') === '1'; } catch (e) {}
+  if (IN_TELEGRAM || standalone || closed || !currentChatId) return;
+  document.getElementById('installText').textContent = STR.installTip;
+  document.getElementById('installBar').className = 'install-bar';
+  document.getElementById('btnInstallX').addEventListener('click', function() {
+    document.getElementById('installBar').className = 'install-bar hidden';
+    try { localStorage.setItem('sl_install_closed', '1'); } catch (e) {}
+  });
+})();
+// 管理者: スタッフのホーム画面用リンクを作る（Telegram から開いた時だけ。発行は FieldLink.gs の field_link_issue をそのまま使う）
+function renderAdminLink() {
+  document.getElementById('adminFold').className = 'fold' + (IN_TELEGRAM && meStaff && meStaff.role === 'admin' ? '' : ' hidden');
+}
+document.getElementById('btnAdminList').addEventListener('click', function() {
+  var box = document.getElementById('adminList');
+  box.innerHTML = '<div class="empty">…</div>';
+  api({ action: 'field_link_staff' }).then(function(r) {
+    if (!r || !r.ok) { box.innerHTML = '<div class="empty">⚠️ ' + esc((r && (r.message || r.error)) || STR.netError) + '</div>'; return; }
+    box.innerHTML = r.staff.map(function(st) {
+      return '<button type="button" class="pick" data-adm="' + esc(st.staffId) + '"' + (st.hasChat ? '' : ' disabled') + ' style="display:block;width:100%;text-align:left;margin-top:8px">' +
+        '<b>' + esc(st.nameEn || st.nameJp) + '</b>' + (st.hasChat ? '' : ' <small>（Chat ID 未登録）</small>') + '</button>';
+    }).join('');
+  }).catch(function() { box.innerHTML = '<div class="empty">⚠️ ' + esc(STR.netError) + '</div>'; });
+});
+document.getElementById('adminList').addEventListener('click', function(e) {
+  var b = e.target.closest('[data-adm]'); if (!b) return;
+  api({ action: 'field_link_issue', targetStaffId: b.getAttribute('data-adm') }).then(function(r) {
+    if (!r || !r.ok) { toast('⚠️ ' + ((r && (r.message || r.error)) || STR.netError), 'err'); return; }
+    var q = new URL(r.link).searchParams;  // 現場アプリ用リンクから本人と鍵だけ取り出し、このアプリのリンクにする
+    var link = location.origin + location.pathname + '?gas=' + encodeURIComponent(GAS_URL) +
+      '&u=' + encodeURIComponent(q.get('u')) + '&k=' + encodeURIComponent(q.get('k'));
+    var old = document.getElementById('admOut'); if (old) old.remove();
+    var out = document.createElement('div');
+    out.id = 'admOut';
+    out.innerHTML = '<div class="notes-hint" style="margin-top:10px"><b>' + esc(r.staff.nameEn || r.staff.nameJp) + '</b> のリンク（本人だけに送る）</div>' +
+      '<div class="admin-link">' + esc(link) + '</div><button type="button" class="primary" id="admCopy">リンクをコピー</button>';
+    b.parentNode.appendChild(out);
+    document.getElementById('admCopy').addEventListener('click', function() {
+      var done = function() { toast('コピーしました ✅', 'ok'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done, function() { window.prompt('コピーしてください', link); });
+      else window.prompt('コピーしてください', link);
+    });
+  }).catch(function() { toast('⚠️ ' + STR.netError, 'err'); });
+});
 
 // ═══════════════════════════════════════════
 //  Toast / esc
