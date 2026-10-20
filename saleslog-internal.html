@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>車屋提携 / ហាងដៃគូ</title>
+<title>SAMURAI SCOUT / ហាងដៃគូ</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="tg-auth.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
@@ -262,6 +262,17 @@ body {
   font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; width:100%; }
 .note-item { background:var(--card); border:1.5px solid var(--border); border-radius:12px; padding:9px 12px; margin-top:8px; font-size:13.5px; line-height:1.55; }
 .note-item .nm { font-size:11px; color:var(--text-dim); margin-bottom:2px; }
+
+/* ── 2026-10-20 オフライン対策: 未送信の帯・前回の情報の帯 ── */
+.off-bar { display:flex; align-items:center; gap:8px; background:#3a2a10; border:1.5px solid var(--amber); border-radius:12px;
+  padding:8px 10px; margin-bottom:10px; font-size:12.5px; line-height:1.45; }
+.off-bar span { flex:1; min-width:0; white-space:pre-line; }
+.off-bar button { flex:none; border:none; border-radius:9px; padding:7px 10px; background:var(--amber); color:#1a1a1a; font-weight:700;
+  font-size:12px; font-family:inherit; cursor:pointer; }
+.off-bar.cache { background:#1f2733; border-color:#4a6a9a; }
+.off-bar.fail { background:#3a1414; border-color:var(--red); }
+.pend { font-size:10.5px; font-weight:700; color:#1a1a1a; background:var(--amber); border-radius:5px; padding:1px 6px; margin-left:6px; }
+.toast { white-space:pre-line; }
 
 /* ── フォーム共通 ── */
 .back-btn {
@@ -523,10 +534,14 @@ input[type="date"] { color-scheme: dark; }
 <body>
 <div class="wrap">
 
-  <div class="title">🤝 ហាងដៃគូ</div>
-  <div class="subtitle">車屋提携 営業ログ / Partner Shop Visit Log</div>
+  <div class="title">🧭 SAMURAI SCOUT</div>
+  <div class="subtitle">ហាងដៃគូ / 車屋・施設まわりのアプリ（営業ログ）</div>
 
   <div class="who" id="whoLine">…</div>
+
+  <div class="off-bar hidden" id="offBar"><span id="offBarText"></span><button type="button" id="btnOffSend"></button></div>
+  <div class="off-bar fail hidden" id="failBar"><span id="failBarText"></span></div>
+  <div class="off-bar cache hidden" id="cacheBar"><span id="cacheBarText"></span></div>
 
   <!-- ═══════ ホーム（店一覧 ⇆ 地図） ═══════ -->
   <div id="viewHome">
@@ -894,6 +909,14 @@ var STR = {
   notesEmpty:  'មិនទាន់មានកំណត់ចំណាំទេ / まだメモはありません',
   notesSaved:  'បានរក្សាទុកកំណត់ចំណាំហើយ ✅',
   notesNeed:   'សូមសរសេរកំណត់ចំណាំសិន / メモを書いてください',
+  // ↓ 2026-10-20 オフライン対策。Panha 校閲済み（provisional・Ron の確認待ち: 「គ្មានអ៊ីនធឺណិត」か「គ្មានសញ្ញា」か 等）
+  offQueued:   'គ្មានអ៊ីនធឺណិត បានរក្សាទុកក្នុងទូរស័ព្ទហើយ។\nពេលមានអ៊ីនធឺណិតវិញ នឹងផ្ញើដោយស្វ័យប្រវត្តិ។\n電波がないので、スマホに保存しました。電波が戻ったら自動で送ります',
+  offPending:  'មិនទាន់ផ្ញើ ចំនួន {n} / 未送信 {n}件',
+  offSend:     'ផ្ញើឥឡូវនេះ / 今すぐ送る',
+  offSent:     'កំណត់ត្រាដែលមិនទាន់ផ្ញើ បានផ្ញើរួចហើយ។ ✅',
+  offCache:    'គ្មានអ៊ីនធឺណិត។ កំពុងបង្ហាញព័ត៌មានដែលបានមើលពីមុន។ / 電波がないので、前に見た情報を出しています',
+  offBadge:    'មិនទាន់ផ្ញើ / 未送信',
+  offFailed:   'មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមប្រាប់លោក Ron ឬអ្នកទទួលបន្ទុកខាងជប៉ុន។ / 送れなかった記録があります。ロンさんか日本の担当に知らせてください',
   // ヒントのチップ [km, ja]。押すと「km៖ 」を欄の先頭に入れる（Panha 指定の区切り）
   tips:        [['បញ្ហាដែលកំពុងជួប', '困っていること'], ['ស្ថានភាពរថយន្តរបស់ភ្ញៀវ', 'お客さんの車の状態'],
                 ['ប្រតិកម្មចំពោះតម្លៃសេវា', '料金への反応'], ['អ្នកសម្រេចចិត្តគឺនរណា', '決める人は誰か']]
@@ -1013,11 +1036,15 @@ if (!currentChatId && window.Telegram && Telegram.WebApp &&
 // （認可切れ等の HTML 応答を切り分けるため。home-internal.html と同方式）
 function api(payload) {
   payload.chatId = currentChatId;
+  // 電波が弱い所で固まらないよう 20 秒で打ち切る（書き込みは clientId 付きなので、届いていても送り直しで二重にならない）
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 20000) : null;
   return fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
-  }).then(function(r) { return r.text(); })
+    body: JSON.stringify(payload),
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function(r) { if (timer) clearTimeout(timer); return r.text(); })
     .then(function(txt) {
       try { return JSON.parse(txt); }
       catch (e) { return { ok: false, transient: true, error: '非JSON応答（先頭300文字）: ' + txt.substring(0, 300) }; }
@@ -1064,6 +1091,11 @@ function loadWho() {
   if (!GAS_URL)       { line.textContent = '⚠️ GAS URL 未設定'; return Promise.resolve(); }
   line.textContent = '…';
   line.onclick = null;
+  if (navigator.onLine === false) { // 圏外が分かっている時は待たずに先へ（店一覧は控えを出す）
+    line.textContent = '📶 ' + STR.offCache.split(' / ')[0];
+    window.addEventListener('online', function once() { window.removeEventListener('online', once); loadWho(); });
+    return Promise.resolve();
+  }
   return fetchWho(1)
     .then(function(d) {
       if (d.staff) {
@@ -1080,19 +1112,132 @@ function loadWho() {
 }
 
 // ═══════════════════════════════════════════
+//  オフライン対策（2026-10-20）
+//  - 書き込み（訪問・メモ・商談計算）は、電波が無ければスマホの「未送信の箱」に入れ、戻ったら自動で送る
+//  - 送り直しても二重にならないよう、1件ごとに clientId を付ける（GAS 側で同じ番号は1回だけ書く）
+//  - 店一覧・店の画面は、最後に見た内容をスマホに残し、電波が無い時はそれを出す
+//  ※ スマホの保存場所（localStorage）が使えない端末では、従来どおり「通信エラー」になるだけ
+// ═══════════════════════════════════════════
+var OUTBOX_KEY = 'sl_outbox_v1', FAILED_KEY = 'sl_outbox_failed_v1', SHOPS_KEY = 'sl_shops_v1', DETAIL_KEY = 'sl_detail_v1';
+function lsGet(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+function newClientId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function outbox() { return lsGet(OUTBOX_KEY, []); }
+
+// 送れたら結果を返す。電波が無い・応答が壊れていたら箱に入れて { ok:true, queued:true } を返す
+function sendOrQueue(payload) {
+  payload.clientId = payload.clientId || newClientId();
+  return api(payload)
+    .catch(function() { return { ok: false, transient: true }; })
+    .then(function(d) {
+      if (d && d.ok) return d;
+      if (!d || d.transient) {
+        var box = outbox();
+        box.push({ payload: payload, ts: Date.now() });
+        if (!lsSet(OUTBOX_KEY, box)) return { ok: false, error: STR.netError }; // 保存できない端末
+        renderOffBars();
+        return { ok: true, queued: true };
+      }
+      return d; // 業務上のエラー（店が無い 等）はそのまま
+    });
+}
+
+var flushing = false;
+function flushOutbox(manual) {
+  if (flushing || !GAS_URL) return Promise.resolve();
+  if (!outbox().length) { if (manual) renderOffBars(); return Promise.resolve(); }
+  flushing = true;
+  var sent = 0;
+  var step = function() {
+    var cur = outbox();
+    if (!cur.length) return Promise.resolve();
+    var item = cur[0];
+    return api(item.payload)
+      .catch(function() { return { ok: false, transient: true }; })
+      .then(function(d) {
+        if (!d || (!d.ok && d.transient)) return; // まだ電波が無い → 次の機会に
+        var rest = outbox().slice(1);
+        if (!d.ok) { // サーバーが受け付けない記録は別の箱へ（消さずに残す）
+          var failed = lsGet(FAILED_KEY, []);
+          failed.push({ payload: item.payload, error: d.error || '', ts: Date.now() });
+          lsSet(FAILED_KEY, failed);
+        } else {
+          sent++;
+        }
+        lsSet(OUTBOX_KEY, rest);
+        return step();
+      });
+  };
+  return step().then(function() {
+    flushing = false;
+    renderOffBars();
+    if (sent) {
+      toast(STR.offSent, 'ok');
+      if (document.getElementById('viewHome').className === '') loadShops();
+    }
+  });
+}
+
+function renderOffBars() {
+  var n = outbox().length, f = lsGet(FAILED_KEY, []).length;
+  document.getElementById('offBar').className = 'off-bar' + (n ? '' : ' hidden');
+  document.getElementById('offBarText').textContent = '📶 ' + STR.offPending.replace(/\{n\}/g, n);
+  document.getElementById('failBar').className = 'off-bar fail' + (f ? '' : ' hidden');
+  document.getElementById('failBarText').textContent = '⚠️ ' + STR.offFailed + ' (' + f + ')';
+}
+function showCacheBar(at) {
+  var bar = document.getElementById('cacheBar');
+  if (!at) { bar.className = 'off-bar cache hidden'; return; }
+  var d = new Date(at);
+  bar.className = 'off-bar cache';
+  document.getElementById('cacheBarText').textContent = '📶 ' + STR.offCache + ' (' +
+    (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ')';
+}
+// 店の画面の控え（最後に見た 60 店まで）
+function saveDetailCache(shopId, d) {
+  var all = lsGet(DETAIL_KEY, {});
+  all[shopId] = { at: Date.now(), d: d };
+  var ids = Object.keys(all).sort(function(a, b) { return all[b].at - all[a].at; });
+  ids.slice(60).forEach(function(id) { delete all[id]; });
+  if (!lsSet(DETAIL_KEY, all)) { lsSet(DETAIL_KEY, {}); }
+}
+function loadDetailCache(shopId) { var all = lsGet(DETAIL_KEY, {}); return all[shopId] || null; }
+
+window.addEventListener('online', function() { flushOutbox(); });
+setInterval(function() { if (outbox().length) flushOutbox(); }, 30000);
+document.addEventListener('visibilitychange', function() { if (!document.hidden && outbox().length) flushOutbox(); });
+
+// ═══════════════════════════════════════════
 //  店一覧
 // ═══════════════════════════════════════════
 function loadShops() {
   var empty = document.getElementById('listEmpty');
   if (empty) empty.textContent = STR.loading;
+  if (navigator.onLine === false) { // 圏外が分かっている時は、何度も読み直さず控えをすぐ出す
+    var c0 = lsGet(SHOPS_KEY, null);
+    if (c0 && c0.shops) {
+      shopsCache = c0.shops; menuPrices = c0.prices || [];
+      showCacheBar(c0.at); renderShopList(); refreshMapMarkers();
+      return Promise.resolve();
+    }
+  }
   return apiRead({ action: 'saleslog_shops' })
     .then(function(d) {
       if (!d.ok) {
+        // 電波が無い時は、最後に見た店一覧を出す
+        var c = (!d || d.transient) ? lsGet(SHOPS_KEY, null) : null;
+        if (c && c.shops) {
+          shopsCache = c.shops; menuPrices = c.prices || [];
+          showCacheBar(c.at); renderShopList(); refreshMapMarkers();
+          return;
+        }
         renderListError('⚠️ ' + (d.error || STR.netError));
         return;
       }
       shopsCache = d.shops || [];
       menuPrices = d.prices || [];
+      lsSet(SHOPS_KEY, { at: Date.now(), shops: shopsCache, prices: menuPrices });
+      showCacheBar(null);
       renderShopList();
       refreshMapMarkers();
     })
@@ -1378,7 +1523,14 @@ function openShop(shopId, toHearing) {
   document.getElementById('unpaidBar').className = 'unpaid-bar hidden';
   apiRead({ action: 'saleslog_shop_detail', shopId: shopId })
     .then(function(d) {
-      if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return; }
+      if (!d.ok) {
+        var c = (!d || d.transient) ? loadDetailCache(shopId) : null;
+        if (!c) { toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return; }
+        d = c.d; showCacheBar(c.at);
+      } else {
+        saveDetailCache(shopId, d);
+        showCacheBar(null);
+      }
       currentShop = d.shop;
       currentVisits = d.visits || [];
       currentHearings = d.hearings || [];
@@ -2118,11 +2270,18 @@ function saveVisit() {
   var origLabel = btn.textContent;
   btn.textContent = STR.saving;
 
-  api(payload)
+  sendOrQueue(payload)
     .then(function(d) {
       btn.disabled = false;
       btn.textContent = origLabel;
       if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
+      if (d.queued) {
+        // 電波が無い: スマホに保存済み。新しい店はまだ一覧に無いのでホームへ、それ以外は店の画面（控え）へ
+        toast('📶 ' + STR.offQueued, 'ok');
+        if (formMode !== 'new' && (formShopId || currentShop)) openShop(formMode === 'append' ? formShopId : currentShop.shopId);
+        else showView('home');
+        return;
+      }
       toast(formMode === 'edit' ? STR.updated : STR.saved, 'ok');
       var backShopId = (formMode === 'append') ? formShopId
                      : (formMode === 'edit' && currentShop) ? currentShop.shopId
@@ -2411,12 +2570,12 @@ function saveHearing() {
   var btn = document.getElementById('btnHearSave');
   var orig = btn.textContent;
   btn.disabled = true; btn.textContent = STR.saving;
-  api({ action: 'saleslog_hearing_create', shopId: currentShop.shopId, mode: hMode,
-        inputs: hIn[hMode], note: document.getElementById('hearNote').value.trim(), gps: hereGps || currentGps || null })
+  sendOrQueue({ action: 'saleslog_hearing_create', shopId: currentShop.shopId, mode: hMode,
+        inputs: JSON.parse(JSON.stringify(hIn[hMode])), note: document.getElementById('hearNote').value.trim(), gps: hereGps || currentGps || null })
     .then(function(d) {
       btn.disabled = false; btn.textContent = orig;
       if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
-      toast(STR.saved, 'ok');
+      toast(d.queued ? '📶 ' + STR.offQueued : STR.saved, 'ok');
       openShop(currentShop.shopId);
     })
     .catch(function() { btn.disabled = false; btn.textContent = orig; toast('⚠️ ' + STR.netError, 'err'); });
@@ -2479,7 +2638,8 @@ function renderNotes() {
   var list = document.getElementById('noteList');
   if (!currentNotes.length) { list.innerHTML = '<div class="empty" style="padding:12px 0">' + esc(STR.notesEmpty) + '</div>'; return; }
   list.innerHTML = currentNotes.map(function(n) {
-    return '<div class="note-item"><div class="nm">' + esc(n.datetime) + (n.staff ? ' · ' + esc(n.staff) : '') + '</div>' + esc(n.text) + '</div>';
+    return '<div class="note-item"><div class="nm">' + esc(n.datetime) + (n.staff ? ' · ' + esc(n.staff) : '') +
+      (n.pending ? '<span class="pend">' + esc(STR.offBadge.split(' / ')[0]) + '</span>' : '') + '</div>' + esc(n.text) + '</div>';
   }).join('');
 }
 function saveShopNote() {
@@ -2489,11 +2649,17 @@ function saveShopNote() {
   if (!text) { toast(STR.notesNeed, 'err'); return; }
   var btn = document.getElementById('btnNoteAdd');
   btn.disabled = true;
-  api({ action: 'saleslog_note_create', shopId: currentShop.shopId, texts: [text], gps: hereGps || null })
+  sendOrQueue({ action: 'saleslog_note_create', shopId: currentShop.shopId, texts: [text], gps: hereGps || null })
     .then(function(d) {
       btn.disabled = false;
       if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
       ta.value = '';
+      if (d.queued) {
+        currentNotes.unshift({ datetime: '', staff: '', text: text, pending: true });
+        renderNotes();
+        toast('📶 ' + STR.offQueued, 'ok');
+        return;
+      }
       currentNotes = d.notes || currentNotes;
       renderNotes();
       toast(STR.notesSaved, 'ok');
@@ -2601,7 +2767,15 @@ function esc(s) {
 // ═══════════════════════════════════════════
 //  起動
 // ═══════════════════════════════════════════
-loadWho().then(loadShops);
+document.getElementById('btnOffSend').textContent = STR.offSend;
+document.getElementById('btnOffSend').addEventListener('click', function() { flushOutbox(true); });
+renderOffBars();
+loadWho().then(loadShops).then(function() { flushOutbox(); });
+
+// アプリ本体をスマホに保存（電波が弱い所でも開きやすくする）。Telegram の端末によっては使えないので失敗しても何もしない
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  try { navigator.serviceWorker.register('saleslog-sw.js', { scope: './saleslog-internal.html' }).catch(function() {}); } catch (e) {}
+}
 </script>
 </body>
 </html>
