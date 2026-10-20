@@ -6,19 +6,24 @@
 <title>SAMURAI SCOUT / ហាងដៃគូ</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="tg-auth.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Kantumruy+Pro:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <style>
 :root {
-  --bg: #0f0f0f;
-  --card: #1a1a1a;
-  --border: #2a2a2a;
-  --gold: #c9a84c;
-  --text: #e8e8e8;
-  --text-dim: #888;
+  /* 2026-10-20 白い背景（Daisuke「白がいいね、絶対見やすいから」— 屋外の日差しでも読める）。
+     文字・数字・カードの形は提携電卓（「いいね」と言った画面）に揃え、金色は白の上で読める濃さにする */
+  --bg: #ffffff;
+  --card: #f6f3ec;
+  --card2: #ffffff;
+  --border: #e2dccd;
+  --gold: #d4a23a;
+  --gold2: #8a5f10;
+  --text: #1d1b16;
+  --text-dim: #6f6859;
+  --f-num: 'Anton', Impact, 'Arial Narrow', sans-serif;
   --green: #2E7D32;
   --blue: #1565C0;
   --amber: #F57C00;
@@ -27,11 +32,13 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
-  font-family: 'Noto Sans Khmer','Noto Sans JP', sans-serif;
+  font-family: 'Kantumruy Pro','Noto Sans JP', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
-  padding: 20px 16px 40px;
+  font-size: 16px;
+  padding: 0 16px calc(96px + env(safe-area-inset-bottom, 0px));
+  -webkit-tap-highlight-color: transparent;
 }
 .wrap { max-width: 480px; margin: 0 auto; }
 
@@ -529,15 +536,256 @@ input[type="date"] { color-scheme: dark; }
 .toast.err { border-color: var(--red); }
 .toast.ok  { border-color: #00897B; }
 .hidden { display: none !important; }
+
+/* ════════ 2026-10-20 作り直し: おじいちゃんでも分かる・こまめに保存・電卓の見た目 ════════ */
+/* 上: アプリ名と言語だけ。下: 大きなタブ。1画面に1つの言語（ខ្មែរ / 日本 を切り替え） */
+header.top { position:sticky; top:0; z-index:60; background:var(--bg); display:flex; align-items:center; gap:10px;
+  margin:0 -16px 10px; padding:12px 16px 10px; border-bottom:1px solid #1d1a12; }
+.brand { font-family:var(--f-num); font-size:22px; letter-spacing:.05em; color:var(--gold2); line-height:1.05; min-width:0; }
+.brand small { display:block; font-family:'Kantumruy Pro','Noto Sans JP',sans-serif; font-size:12.5px; letter-spacing:0;
+  color:var(--text-dim); font-weight:500; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.brand small strong { color:var(--text); }
+.seg { display:flex; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:4px; gap:4px; }
+.seg button { flex:1; border:0; background:none; border-radius:10px; padding:9px 8px; font-weight:700; font-size:14px;
+  color:var(--text-dim); font-family:inherit; cursor:pointer; line-height:1.3; }
+.seg button[aria-pressed="true"], .seg button.sel { background:var(--gold); color:#16130b; }
+.lang { margin-left:auto; flex:none; }
+.lang button { padding:8px 12px; font-size:14px; white-space:nowrap; min-width:52px; }
+
+nav.tabs { position:fixed; left:0; right:0; bottom:0; z-index:70; background:rgba(13,12,10,.97); border-top:1px solid var(--border);
+  padding:6px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
+nav.tabs > div { display:flex; gap:4px; max-width:520px; margin:0 auto; align-items:flex-end; }
+nav.tabs button { flex:1; border:0; background:none; padding:6px 0 2px; color:var(--text-dim); font-size:12px; font-weight:700;
+  font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; line-height:1.2; }
+nav.tabs button svg { width:27px; height:27px; }
+nav.tabs button[aria-current="page"] { color:var(--gold2); }
+nav.tabs button.plus .pc { width:52px; height:52px; margin-top:-22px; border-radius:50%; background:var(--gold); color:#15120a;
+  display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:400; box-shadow:0 6px 18px rgba(0,0,0,.55);
+  border:3px solid var(--bg); }
+nav.tabs button.plus { color:var(--gold2); }
+
+/* 一覧 */
+.find-row input { background:var(--card); border-color:var(--border); font-size:16px; padding:12px 14px; border-radius:14px; }
+.near-btn { border-radius:14px; font-size:14px; padding:0 14px; background:var(--card); border-color:var(--border); }
+.filter-row { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:4px; gap:4px; }
+.filter-row button { border:0; background:none; border-radius:10px; padding:9px 4px; font-size:13px; }
+.filter-row button.on { background:var(--gold); color:#16130b; }
+.shop-card { border:1px solid var(--border); border-radius:18px; padding:14px 16px; }
+.shop-name { font-size:17px; font-weight:700; }
+.shop-meta { font-size:13px; }
+.shop-last { font-size:14px; color:#d8cfb8; }
+.dist { font-family:var(--f-num); font-weight:400; font-size:17px; color:var(--gold2); letter-spacing:.02em; }
+.badge { font-size:13px; border-radius:8px; padding:3px 10px; }
+.follow-box { border:1px solid var(--amber); border-radius:18px; padding:12px 14px; background:linear-gradient(160deg,#2a1d0c,#18160f 70%); }
+.follow-box .fh { font-size:15px; }
+.follow-item .ft { font-size:14px; }
+.follow-item .ft b { font-size:16px; }
+#map { height:calc(100vh - 250px); border-radius:18px; border:1px solid var(--border); }
+.here-btn { border-radius:12px; padding:11px 14px; font-size:14px; }
+.unv-toggle { border-radius:12px; padding:10px 12px; font-size:13px; }
+
+/* 戻る */
+.back-btn { font-size:16px; color:var(--text); padding:6px 0 12px; font-weight:600; }
+
+/* お店の画面: いちばん上のカード */
+.hero { background:linear-gradient(160deg,#2a2412,#15130d 70%); border:1px solid var(--gold); border-radius:22px; padding:16px; margin-bottom:12px; }
+.hero-name { font-size:23px; font-weight:700; line-height:1.3; word-break:break-word; }
+.hero-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:8px; font-size:13.5px; color:var(--text-dim); }
+.hero-meta .chip { border:1px solid var(--border); background:rgba(0,0,0,.25); border-radius:999px; padding:3px 10px; color:var(--text); }
+.hero-last { margin-top:10px; font-size:15px; line-height:1.55; color:#e3dac4; }
+.hero-last b { color:var(--gold2); }
+.hero-last .nx { display:block; margin-top:4px; color:#ffb35c; }
+.hero-acts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:14px; }
+.act { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:58px; border-radius:14px;
+  border:1px solid var(--border); background:rgba(0,0,0,.28); color:var(--text); font-size:13px; font-weight:700; text-decoration:none;
+  font-family:inherit; cursor:pointer; line-height:1.25; text-align:center; padding:6px 4px; }
+.act .ic { font-size:22px; }
+.act.gold { background:var(--gold); border-color:var(--gold); color:#16130b; }
+.act.off { opacity:.35; pointer-events:none; }
+
+/* 今日の訪問（押したらすぐ保存） */
+.today { background:var(--card); border:1.5px solid var(--gold); border-radius:22px; padding:14px 14px 16px; margin-bottom:12px; }
+.today-h { display:flex; align-items:center; gap:8px; font-size:17px; font-weight:700; color:var(--gold2); }
+.today-ok { margin-left:auto; font-size:13px; font-weight:700; color:#7fe0a6; text-align:right; }
+.today-ok.wait { color:#c25e00; }
+.today-hint { font-size:14px; color:var(--text-dim); margin:4px 0 10px; line-height:1.5; }
+.big-react { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.big-react button { display:flex; align-items:center; gap:10px; min-height:66px; border-radius:16px; border:1.5px solid var(--border);
+  background:var(--card2); color:var(--text); font-family:inherit; font-size:15px; font-weight:700; text-align:left; padding:8px 12px;
+  cursor:pointer; line-height:1.3; }
+.big-react button .L { flex:none; width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  font-family:var(--f-num); font-weight:400; font-size:22px; color:#fff; }
+.big-react button[data-qr="A"] .L { background:var(--green); } .big-react button[data-qr="B"] .L { background:var(--blue); }
+.big-react button[data-qr="C"] .L { background:var(--amber); } .big-react button[data-qr="D"] .L { background:var(--red); }
+.big-react button.sel { border-color:var(--gold2); background:rgba(217,173,72,.18); box-shadow:0 0 0 2px rgba(243,213,138,.35) inset; }
+.big-react button.sel::after { content:'✓'; margin-left:auto; color:var(--gold2); font-size:20px; }
+.link-btn { display:block; width:100%; margin-top:10px; border:1px dashed var(--border); background:none; color:var(--text-dim);
+  border-radius:14px; padding:12px; font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; }
+.sub-h { font-size:15px; font-weight:700; color:var(--text); margin:16px 0 8px; }
+.qchips { display:flex; flex-wrap:wrap; gap:8px; }
+.qchips button { border:1.5px solid var(--border); background:var(--card2); color:var(--text); border-radius:999px; padding:10px 15px;
+  font-size:14.5px; font-weight:700; font-family:inherit; cursor:pointer; min-height:46px; }
+.qchips button.sel { border-color:var(--gold2); background:rgba(217,173,72,.2); color:var(--gold2); }
+.next-now { margin-top:10px; font-size:15px; font-weight:700; color:#ffb35c; }
+.next-custom { display:flex; gap:8px; margin-top:8px; }
+.next-custom input { flex:1; min-width:0; background:var(--card2); border:1.5px solid var(--border); border-radius:12px; color:var(--text);
+  padding:12px; font-size:16px; font-family:inherit; }
+.next-custom button, .note-add-btn { flex:none; border:none; border-radius:12px; padding:0 18px; background:var(--gold); color:#16130b;
+  font-weight:700; font-size:15px; font-family:inherit; cursor:pointer; min-height:48px; }
+
+/* 聞いたこと（1行ずつ保存） */
+.card2 { background:var(--card); border:1px solid var(--border); border-radius:22px; padding:14px; margin-bottom:12px; }
+.card2 .ch { font-size:17px; font-weight:700; color:var(--gold2); margin-bottom:4px; }
+.notes-hint { font-size:13.5px; margin:2px 0 10px; }
+.tip-row button { font-size:13px; padding:7px 12px; border-color:var(--border); }
+.note-input { background:var(--card2); border-color:var(--border); font-size:16px; border-radius:14px; }
+
+/* これまでの記録（訪問・メモ・計算を1本に） */
+.tl { position:relative; padding-left:4px; }
+.tl-item { display:flex; gap:12px; padding:12px 0; border-top:1px solid #24201a; cursor:default; }
+.tl-item:first-child { border-top:0; }
+.tl-item.tap { cursor:pointer; }
+.tl-ic { flex:none; width:38px; height:38px; border-radius:12px; background:var(--card2); border:1px solid var(--border);
+  display:flex; align-items:center; justify-content:center; font-size:18px; }
+.tl-b { flex:1; min-width:0; font-size:15px; line-height:1.55; word-break:break-word; }
+.tl-d { font-size:12.5px; color:var(--text-dim); display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.tl-m { font-family:var(--f-num); font-weight:400; font-size:20px; color:var(--gold2); margin-left:auto; }
+.tl-more { display:block; width:100%; border:1px solid var(--border); background:none; color:var(--text-dim); border-radius:12px;
+  padding:11px; font-size:14px; font-family:inherit; cursor:pointer; margin-top:6px; }
+
+/* たたむ所（お店の情報・コミッション） */
+details.fold { background:var(--card); border:1px solid var(--border); border-radius:18px; margin-bottom:12px; }
+details.fold > summary { list-style:none; cursor:pointer; padding:15px 16px; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; }
+details.fold > summary::-webkit-details-marker { display:none; }
+details.fold > summary::after { content:'›'; margin-left:auto; font-size:22px; color:var(--text-dim); transform:rotate(90deg); }
+details.fold[open] > summary::after { transform:rotate(-90deg); }
+details.fold > .fin { padding:0 14px 14px; }
+.section-head { margin:22px 0 6px; }
+.section-head .h { font-size:15px; color:var(--text); text-transform:none; letter-spacing:0; font-weight:700; }
+
+/* 入力欄・保存ボタン */
+.field label { font-size:14px; color:var(--text-dim); }
+.field input, .field textarea { background:var(--card2); border-color:var(--border); font-size:16px; border-radius:12px; }
+.save-btn, .primary { display:block; width:100%; border:0; border-radius:16px; padding:16px; background:var(--gold); color:#15120a;
+  font-weight:900; font-size:17px; font-family:inherit; cursor:pointer; margin-top:10px; }
+.save-btn:disabled, .primary:disabled { opacity:.4; }
+.choice-btn, .status-btn, .react-btn { border-color:var(--border); background:var(--card2); border-radius:12px; min-height:46px; }
+.choice-btn .ckm, .status-btn .skm, .react-btn .rkm { font-size:14px; }
+.toast { bottom:calc(96px + env(safe-area-inset-bottom, 0px)); border-radius:999px; font-size:15px; font-weight:700; padding:12px 20px;
+  background:#2a2618; border-color:var(--gold); }
+.toast.ok { background:var(--gold); color:#15120a; border-color:var(--gold); }
+.off-bar { border-radius:14px; font-size:14px; }
+
+/* 計算（提携電卓と同じ見た目） */
+.calc-top { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.shopchip { min-width:0; flex:1; display:flex; align-items:center; gap:8px; background:var(--card2); border:1px solid var(--border);
+  border-radius:999px; padding:11px 16px; color:var(--text); font-family:inherit; font-size:15px; font-weight:700; cursor:pointer; text-align:left; }
+.shopchip span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.shopchip i { font-style:normal; color:var(--gold); }
+.shopchip b { color:var(--text-dim); font-weight:400; }
+.hres { top:62px; border:1px solid var(--gold); border-radius:20px; padding:14px 16px 12px; box-shadow:0 10px 30px rgba(0,0,0,.5); }
+.hres .l { font-size:13px; color:var(--gold2); letter-spacing:.02em; }
+.hres .big { display:flex; align-items:baseline; gap:8px; font-family:var(--f-num); font-weight:400; font-size:66px; line-height:1; margin-top:2px; }
+.hres .big small { font-family:var(--f-num); font-size:26px; color:var(--gold2); margin-left:0; }
+.hres .big small span { font-family:'Kantumruy Pro','Noto Sans JP',sans-serif; font-size:14px; color:var(--text-dim); }
+.hres .cells div { border-radius:12px; padding:7px 10px; }
+.hres .cells span { font-size:11.5px; }
+.hres .cells b { font-family:var(--f-num); font-weight:400; font-size:22px; }
+.hres .n { font-size:11.5px; }
+.hmode { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:4px; gap:4px; margin:14px 0 12px; }
+.hmode button { border:0; background:none; border-radius:10px; padding:10px 4px; font-size:13.5px; }
+.hmode button.sel { background:var(--gold); color:#16130b; border:0; }
+.hcard { border:1px solid var(--border); border-radius:18px; padding:6px 14px; }
+.hcard h4 { font-size:14px; color:var(--gold2); }
+.hrow { padding:11px 0; }
+.hrow label { font-size:15px; }
+.hrow label small { font-size:12px; }
+.hstep { background:var(--card2); border:1px solid var(--border); }
+.hstep button { width:46px; height:48px; color:var(--gold2); }
+.hstep input { width:64px; height:48px; font-family:var(--f-num); font-weight:400; font-size:26px; }
+.hchip { border-color:var(--border); background:var(--card2); padding:7px 12px; font-size:13px; }
+.hsum b { font-family:var(--f-num); font-weight:400; font-size:20px; }
+.hsum .hi { font-size:26px; color:var(--gold2); }
+.note-line { width:100%; background:var(--card2); border:1px solid var(--border); border-radius:14px; color:var(--text); padding:13px 14px;
+  font-size:16px; font-family:inherit; margin-top:12px; }
+
+/* 下から出る画面（新しいお店・お店を選ぶ） */
+.sheet { position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.62); display:flex; align-items:flex-end; justify-content:center; }
+.sheet .in { width:100%; max-width:560px; max-height:92%; overflow:auto; background:var(--card); border-radius:24px 24px 0 0;
+  border-top:1px solid var(--gold); padding:18px 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
+.sheet h3 { font-size:20px; margin-bottom:12px; }
+.sheet .lbl { font-size:14px; color:var(--text-dim); margin:14px 0 8px; font-weight:700; }
+.sheet input[type=text], .sheet input[type=search] { width:100%; background:var(--card2); border:1.5px solid var(--border); border-radius:14px;
+  color:var(--text); padding:14px; font-size:18px; font-family:inherit; }
+.sheet .pick { display:block; width:100%; text-align:left; background:var(--card2); border:1px solid var(--border); border-radius:14px;
+  color:var(--text); padding:12px 14px; margin-top:8px; font-family:inherit; cursor:pointer; }
+.sheet .pick b { font-size:16px; display:block; }
+.sheet .pick small { font-size:13px; color:var(--text-dim); }
+.sheet .row2 { display:flex; gap:8px; margin-top:16px; }
+.sheet .row2 button { flex:1; margin-top:0; }
+.ghost { border:1px solid var(--border); background:var(--card2); color:var(--text); border-radius:16px; padding:15px; font-weight:700;
+  font-size:16px; font-family:inherit; cursor:pointer; }
+
+/* 1画面に1つの言語（クメール語と日本語を両方持つボタンの片方を隠す） */
+body.L-ja .rkm, body.L-ja .skm, body.L-ja .ckm { display:none; }
+body.L-ja .rjp, body.L-ja .sjp, body.L-ja .cjp { font-size:14px; color:var(--text); font-weight:600; }
+body.L-km .rjp, body.L-km .sjp, body.L-km .cjp { display:none; }
+
+/* ── 白い背景用の上書き（上の暗い色の指定を直す） ── */
+header.top { background:var(--bg); border-bottom:1px solid #eee8db; }
+nav.tabs { background:rgba(255,255,255,.97); border-top:1px solid var(--border); box-shadow:0 -2px 12px rgba(0,0,0,.05); }
+nav.tabs button.plus .pc { border-color:#fff; box-shadow:0 6px 16px rgba(160,110,20,.35); }
+.shop-card, details.fold, .today, .sheet .in, .hcard, .ghost, .act, .shopchip, .find-row input, .note-input, .near-btn { background:#fff; }
+.shop-card { box-shadow:0 1px 3px rgba(60,40,0,.06); }
+.shop-card:active { border-color:var(--gold); }
+.shop-last { color:#4a443a; }
+.follow-box { background:linear-gradient(160deg,#fff1df,#ffffff 70%); }
+.hero { background:linear-gradient(160deg,#fff6df,#ffffff 72%); box-shadow:0 2px 10px rgba(160,110,20,.08); }
+.hero-meta .chip { background:#fff; }
+.hero-last { color:var(--text); }
+.hero-last .nx, .next-now { color:#c25e00; }
+.act { color:var(--text); }
+.act.gold { background:var(--gold); color:#1d1b16; }
+.today-ok { color:#1f8a4c; }
+.big-react button { background:#fff; }
+.big-react button.sel { background:#fff4d6; box-shadow:0 0 0 2px rgba(212,162,58,.45) inset; border-color:var(--gold); }
+.qchips button { background:#fff; }
+.qchips button.sel { background:#fff4d6; border-color:var(--gold); color:var(--gold2); }
+.next-custom input, .sheet input[type=text], .sheet input[type=search], .field input, .field textarea, .note-line, .hstep { background:#fff; }
+.tl-item { border-top-color:#eee8db; }
+.tl-ic { background:var(--card); }
+.hres { background:linear-gradient(160deg,#fff6df,#ffffff 72%); box-shadow:0 6px 18px rgba(160,110,20,.12); }
+.hres .big { color:var(--text); }
+.hres .cells div { background:rgba(212,162,58,.10); }
+.hstep input { color:var(--text); }
+.hmode button.sel, .seg button[aria-pressed="true"], .seg button.sel, .filter-row button.on { color:#1d1b16; }
+.toast { width:max-content; max-width:90%; top:74px; bottom:auto; transform:translateX(-50%) translateY(-200px); background:#1d1b16; color:#fff; border-color:#1d1b16;
+  box-shadow:0 8px 20px rgba(0,0,0,.18); opacity:0; transition:transform .3s, opacity .3s; }
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+.toast.ok { background:var(--gold); color:#1d1b16; border-color:var(--gold); }
+.toast.err { background:#fdecec; color:#8a1c1c; border-color:var(--red); }
+.off-bar { background:#fff4e0; color:var(--text); }
+.off-bar.cache { background:#eef3fb; border-color:#8aa7d6; }
+.off-bar.fail { background:#fdecec; }
+.popup-open-btn.alt { background:#fff; }
+.unv-toggle.off { background:#eee; color:#666; border-color:#ccc; }
+input[type="date"], .due-row input { color-scheme:light; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { box-shadow:0 3px 14px rgba(0,0,0,.18); }
+.hear-item, .note-item, .visit-item, .cm-item, .gps-box, .suggest-chip { background:#fff; }
+.pend { color:#1d1b16; }
+.badge.unv { background:#fff; border:1.5px solid #8a8576; color:#3a362e; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div class="title">🧭 SAMURAI SCOUT</div>
-  <div class="subtitle">ហាងដៃគូ / 車屋・施設まわりのアプリ（営業ログ）</div>
-
-  <div class="who" id="whoLine">…</div>
+  <header class="top">
+    <div class="brand">SAMURAI SCOUT<small id="whoLine">…</small></div>
+    <div class="seg lang" role="group" aria-label="language" id="langSeg">
+      <button type="button" data-lang="km">ខ្មែរ</button>
+      <button type="button" data-lang="ja">日本</button>
+    </div>
+  </header>
 
   <div class="off-bar hidden" id="offBar"><span id="offBarText"></span><button type="button" id="btnOffSend"></button></div>
   <div class="off-bar fail hidden" id="failBar"><span id="failBarText"></span></div>
@@ -545,13 +793,6 @@ input[type="date"] { color-scheme: dark; }
 
   <!-- ═══════ ホーム（店一覧 ⇆ 地図） ═══════ -->
   <div id="viewHome">
-    <div class="tab-row">
-      <button class="tab-btn active" id="tabList">📋 បញ្ជី / 一覧</button>
-      <button class="tab-btn" id="tabMap">🗺 ផែនទី / 地図</button>
-    </div>
-
-    <button class="new-btn" id="btnNew">➕ កត់ត្រាថ្មី / 新規訪問</button>
-
     <div class="find-row">
       <input type="search" id="shopSearch" autocomplete="off">
       <button type="button" class="near-btn" id="btnNear"></button>
@@ -582,79 +823,103 @@ input[type="date"] { color-scheme: dark; }
     </div>
   </div>
 
-  <!-- ═══════ 店詳細（情報編集＋訪問タイムライン） ═══════ -->
+  <!-- ═══════ 店の画面（2026-10-20 作り直し: 上=お店のカード／今日の訪問=押したらすぐ保存／聞いたこと=1行ずつ保存／これまでの記録） ═══════ -->
   <div id="viewShop" class="hidden">
     <button class="back-btn" id="btnShopBack">← ត្រឡប់ / 戻る</button>
-    <div class="form-title" id="shopTitle">ព័ត៌មានហាង / 店の情報</div>
-    <div class="shop-src hidden" id="shopSrc"></div>
-    <button type="button" class="hear-btn" id="btnHear"></button>
-
-    <div class="field">
-      <label>ឈ្មោះហាង / 店名 <span class="req">*</span></label>
-      <input type="text" id="sShop" maxlength="100">
-    </div>
-    <div class="field">
-      <label>ប្រភេទហាង / 業種（複数選択可）</label>
-      <div class="grid2" id="sTypeGrid"></div>
-    </div>
-    <div class="field">
-      <label>ឈ្មោះម្ចាស់ហាង / オーナー名</label>
-      <input type="text" id="sOwner" maxlength="100">
-    </div>
-    <div class="field">
-      <label>លេខទូរស័ព្ទ / 電話番号</label>
-      <input type="tel" id="sPhone" maxlength="30" inputmode="tel">
-    </div>
-    <div class="field">
-      <label>🔗 Facebook <span id="sFbLink"></span></label>
-      <input type="url" id="sFb" maxlength="300" placeholder="https://facebook.com/..." inputmode="url">
-    </div>
-    <div class="field">
-      <label>ស្ថានភាព / ステータス</label>
-      <div class="status-grid" id="statusGrid">
-        <button type="button" class="status-btn s0" data-s="営業中"><span class="skm">កំពុងចរចា</span><span class="sjp">営業中</span></button>
-        <button type="button" class="status-btn s1" data-s="提携済"><span class="skm">ជាដៃគូ</span><span class="sjp">提携済</span></button>
-        <button type="button" class="status-btn s2" data-s="見送り"><span class="skm">បោះបង់</span><span class="sjp">見送り</span></button>
+    <div class="hero">
+      <div class="hero-name" id="shopTitle"></div>
+      <div class="hero-meta" id="heroMeta"></div>
+      <div class="hero-last" id="heroLast"></div>
+      <div class="hero-acts">
+        <a class="act" id="actCall" href="#"><span class="ic">📞</span><span id="actCallL"></span></a>
+        <a class="act" id="actMap" href="#" target="_blank" rel="noopener"><span class="ic">🧭</span><span id="actMapL"></span></a>
+        <button type="button" class="act gold" id="btnHear"><span class="ic">🧮</span><span id="actCalcL"></span></button>
       </div>
     </div>
-    <div class="field">
-      <label>📍 GPS</label>
-      <div class="gps-box" id="shopGpsBox">—</div>
-    </div>
-    <div class="field">
-      <label>កំណត់ចំណាំ / 店メモ</label>
-      <textarea id="sMemo" maxlength="2000"></textarea>
-    </div>
-    <button class="save-btn" id="btnShopSave">💾 រក្សាទុក / 保存</button>
+    <div class="shop-src hidden" id="shopSrc"></div>
 
-    <div class="section-head">
-      <span class="h" id="notesHead"></span>
-    </div>
-    <div class="notes-hint" id="notesHint"></div>
-    <div class="tip-row" data-tips="sNoteText"></div>
-    <div class="note-add-row">
-      <textarea class="note-input" id="sNoteText" maxlength="1000"></textarea>
-      <button type="button" class="note-add-btn" id="btnNoteAdd"></button>
-    </div>
-    <div id="noteList"></div>
+    <section class="today" id="todayCard">
+      <div class="today-h"><span id="todayHead"></span><span class="today-ok" id="todayOk"></span></div>
+      <div class="today-hint" id="todayHint"></div>
+      <div class="big-react" id="bigReact">
+        <button type="button" data-qr="A"><span class="L">A</span><span>កំណត់ការសាកល្បង / デモ決定</span></button>
+        <button type="button" data-qr="B"><span class="L">B</span><span>ចាប់អារម្មណ៍ / 興味あり</span></button>
+        <button type="button" data-qr="C"><span class="L">C</span><span>រង់ចាំសម្រេច / 保留</span></button>
+        <button type="button" data-qr="D"><span class="L">D</span><span>បដិសេធ / 断り</span></button>
+      </div>
+      <button type="button" class="link-btn" id="btnJustVisit"></button>
+      <div class="sub-h" id="nextHead"></div>
+      <div class="qchips" id="nextChips"></div>
+      <div class="next-custom hidden" id="nextCustom"><input type="text" id="nextText" maxlength="300"><button type="button" id="btnNextText"></button></div>
+      <div class="sub-h" id="dueHead"></div>
+      <div class="qchips" id="dueChips"></div>
+      <div class="next-now hidden" id="nextNow"></div>
+    </section>
 
-    <div class="section-head">
-      <span class="h" id="historyHead">ប្រវត្តិការចុះជួប / 訪問履歴</span>
-      <button class="add-visit-btn" id="btnAddVisit">➕ បន្ថែមការចុះជួប / 追記</button>
-    </div>
-    <div id="visitList"></div>
+    <section class="card2">
+      <div class="ch" id="notesHead"></div>
+      <div class="notes-hint" id="notesHint"></div>
+      <div class="tip-row" data-tips="sNoteText"></div>
+      <div class="note-add-row">
+        <textarea class="note-input" id="sNoteText" maxlength="1000"></textarea>
+        <button type="button" class="note-add-btn" id="btnNoteAdd"></button>
+      </div>
+    </section>
 
-    <div class="section-head">
-      <span class="h" id="hearHead"></span>
-    </div>
-    <div id="hearList"></div>
+    <div class="section-head"><span class="h" id="historyHead"></span></div>
+    <div class="tl" id="timeline"></div>
 
-    <div class="section-head">
-      <span class="h" id="commissionHead">💰 កម្រៃជើងសារ / コミッション</span>
-      <button class="add-visit-btn" id="btnAddCommission">➕ កត់ត្រា / 記帳</button>
-    </div>
-    <div class="unpaid-bar hidden" id="unpaidBar"></div>
-    <div id="commissionList"></div>
+    <details class="fold" id="infoFold">
+      <summary id="infoHead"></summary>
+      <div class="fin">
+        <div class="field">
+          <label>ឈ្មោះហាង / 店名 <span class="req">*</span></label>
+          <input type="text" id="sShop" maxlength="100">
+        </div>
+        <div class="field">
+          <label>ប្រភេទហាង / 業種（複数選択可）</label>
+          <div class="grid2" id="sTypeGrid"></div>
+        </div>
+        <div class="field">
+          <label>ឈ្មោះម្ចាស់ហាង / オーナー名</label>
+          <input type="text" id="sOwner" maxlength="100">
+        </div>
+        <div class="field">
+          <label>លេខទូរស័ព្ទ / 電話番号</label>
+          <input type="tel" id="sPhone" maxlength="30" inputmode="tel">
+        </div>
+        <div class="field">
+          <label>🔗 Facebook <span id="sFbLink"></span></label>
+          <input type="url" id="sFb" maxlength="300" placeholder="https://facebook.com/..." inputmode="url">
+        </div>
+        <div class="field">
+          <label>ស្ថានភាព / ステータス</label>
+          <div class="status-grid" id="statusGrid">
+            <button type="button" class="status-btn s0" data-s="営業中"><span class="skm">កំពុងចរចា</span><span class="sjp">営業中</span></button>
+            <button type="button" class="status-btn s1" data-s="提携済"><span class="skm">ជាដៃគូ</span><span class="sjp">提携済</span></button>
+            <button type="button" class="status-btn s2" data-s="見送り"><span class="skm">បោះបង់</span><span class="sjp">見送り</span></button>
+          </div>
+        </div>
+        <div class="field">
+          <label>📍 GPS</label>
+          <div class="gps-box" id="shopGpsBox">—</div>
+        </div>
+        <div class="field">
+          <label>កំណត់ចំណាំ / 店メモ</label>
+          <textarea id="sMemo" maxlength="2000"></textarea>
+        </div>
+        <button class="save-btn" id="btnShopSave">💾 រក្សាទុក / 保存</button>
+      </div>
+    </details>
+
+    <details class="fold" id="cmFold">
+      <summary id="commissionHead">💰 កម្រៃជើងសារ / コミッション</summary>
+      <div class="fin">
+        <button class="add-visit-btn" id="btnAddCommission">➕ កត់ត្រា / 記帳</button>
+        <div class="unpaid-bar hidden" id="unpaidBar" style="margin-top:10px"></div>
+        <div id="commissionList" style="margin-top:10px"></div>
+      </div>
+    </details>
   </div>
 
   <!-- ═══════ 訪問フォーム（新規 / 追記 / 編集 共用） ═══════ -->
@@ -740,10 +1005,10 @@ input[type="date"] { color-scheme: dark; }
     </div>
   </div>
 
-  <!-- ═══════ 商談計算（ヒアリング）— 2026-10-20 ═══════ -->
+  <!-- ═══════ 計算（商談計算）— 2026-10-20 下のタブからも開ける。見た目は提携電卓と同じ ═══════ -->
   <div id="viewHearing" class="hidden">
-    <button class="back-btn" id="btnHearBack">← ត្រឡប់ / 戻る</button>
-    <div class="form-title" id="hearTitle"></div>
+    <button class="back-btn hidden" id="btnHearBack">← ត្រឡប់ / 戻る</button>
+    <div class="calc-top"><button type="button" class="shopchip" id="calcShop"><i>◉</i><span id="calcShopName"></span><b>▾</b></button></div>
     <div class="hres" aria-live="polite">
       <div class="l" id="hrLab"></div>
       <div class="big"><span id="hrBig">0</span><small>$ <span id="hrUnit"></span></small></div>
@@ -756,11 +1021,8 @@ input[type="date"] { color-scheme: dark; }
       <button type="button" id="hmFacility"></button>
     </div>
     <div id="hearInputs"></div>
-    <div class="field">
-      <label id="hearNoteLabel"></label>
-      <textarea id="hearNote" maxlength="2000"></textarea>
-    </div>
-    <button class="save-btn" id="btnHearSave">💾 រក្សាទុក / 保存</button>
+    <input type="text" class="note-line" id="hearNote" maxlength="2000">
+    <button class="primary" id="btnHearSave"></button>
     <div class="hint" id="hearHint"></div>
   </div>
 
@@ -827,26 +1089,35 @@ input[type="date"] { color-scheme: dark; }
 
 </div>
 
+<nav class="tabs" aria-label="menu"><div>
+  <button type="button" id="tabMap" data-nav="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9 4L3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg><span id="navMapL"></span></button>
+  <button type="button" id="tabList" data-nav="list" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10l1.5-5h13L20 10M4 10v9h16v-9M4 10h16M9 19v-5h6v5"/></svg><span id="navListL"></span></button>
+  <button type="button" id="btnNew" class="plus"><span class="pc">＋</span><span id="navNewL"></span></button>
+  <button type="button" id="tabCalc" data-nav="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7h7M8.5 12h1M12 12h1M15.5 12h0M8.5 16h1M12 16h1M15.5 16h0" stroke-linecap="round"/></svg><span id="navCalcL"></span></button>
+</div></nav>
+<div class="sheet hidden" id="sheet"><div class="in" id="sheetIn"></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 // ═══════════════════════════════════════════
 //  文言（クメール語は Panha 校閲済みテーブル準拠・日本語併記）
 // ═══════════════════════════════════════════
+// 1画面に1つの言語（2026-10-20）。「ខ្មែរ / 日本語」の形で書いた文字を、選んだ方だけ表示する（下の applyLang）
+var LANG = (function() { try { return localStorage.getItem('sl_lang_v1') === 'ja' ? 'ja' : 'km'; } catch (e) { return 'km'; } })();
 var STR = {
   gpsGetting:  'កំពុងស្វែងរកទីតាំង… / GPS取得中…',
   gpsOk:       'ទីតាំង OK',
   gpsFail:     'មិនអាចយកទីតាំងបានទេ (អាចរក្សាទុកបាន) / GPS取得不可（保存は可能）',
   gpsOld:      'សូមធ្វើបច្ចុប្បន្នភាព Telegram ដើម្បីប្រើ GPS / Telegramを更新するとGPSが使えます',
   // ↓ 2026-07-28 GPS 不具合修正で追加（原因別の出し分け）。Panha 校閲済み
-  //   ការអនុញ្ញាត（許可）は本アプリ初出のため provisional。ロン君の native check 推奨
+  //   ការអនុញ្ញាត（許可）は本アプリ初出のため provisional。Run Kosalの native check 推奨
   gpsDenied:   'គ្មានការអនុញ្ញាតទីតាំង។ សូមចុច «បើកការកំណត់» ដើម្បីអនុញ្ញាត។ / 位置情報が許可されていません。「設定を開く」から許可してください',
   gpsBtnSet:   'បើកការកំណត់ / 設定を開く',
   gpsOffDev:   'GPS លើទូរស័ព្ទបិទ។ សូមចូលការកំណត់ ដើម្បីបើក GPS។ / スマホ本体の位置情報がオフです。設定でオンにしてください',
   gpsTimeout:  'ការយកទីតាំងកំពុងចំណាយពេលច្រើន។ សូមព្យាយាមម្តងទៀត។ / 位置情報の取得に時間がかかっています。もう一度お試しください',
   saving:      'កំពុងរក្សាទុក… / 保存中…',
-  saved:       'បានរក្សាទុក ✅',
-  updated:     'បានកែសម្រួល ✅',
+  saved:       'បានរក្សាទុក ✅ / 保存しました ✅',
+  updated:     'បានកែសម្រួល ✅ / 直しました ✅',
   needShop:    'សូមបញ្ចូលឈ្មោះហាង / 店名を入力してください',
   netError:    'បញ្ហាបណ្តាញ / 通信エラー',
   emptyList:   'មិនទាន់មានកំណត់ត្រាទេ / まだ記録がありません',
@@ -862,14 +1133,14 @@ var STR = {
   cmNewTitle:  '💰 កត់ត្រាកម្រៃជើងសារ / コミッション記帳',
   cmEditTitle: '✏️ កែសម្រួល / コミッション編集',
   cmEmpty:     'មិនទាន់មានកំណត់ត្រាកម្រៃទេ / まだ記帳がありません',
-  cmSaved:     'បានកត់ត្រា ✅',
+  cmSaved:     'បានកត់ត្រា ✅ / 記帳しました ✅',
   needAmount:  'សូមបញ្ចូលតម្លៃ / 金額を入力してください',
   unpaid:      'ចំនួនជំពាក់ / 未払い残',
   dirToShop:   'យើងបង់ឱ្យហាង / 店へ支払う分',
   dirFromShop: 'ហាងបង់មកយើង / 店から受け取る分',
   introLabel:  'អ្នកណែនាំ / 紹介者',
   introNote:   'ក្រុមហ៊ុនបង់ថ្ងៃទី១០ ខែបន្ទាប់ / 本部から翌月10日払い',
-  // ↓ 2026-10-20 訪問支援（検索・近い順・現在地・商談計算）。Panha 校閲済み（Ron の native check 前・provisional）
+  // ↓ 2026-10-20 訪問支援（検索・近い順・現在地・商談計算）。Panha 校閲済み（Run Kosal の native check 前・provisional）
   search:      'ស្វែងរកឈ្មោះហាង / 店名で検索',
   nearBtn:     '🧭 ជិតបំផុត / 近い順',
   hereBtn:     '📍 ទីតាំងខ្ញុំ / 現在地',
@@ -883,7 +1154,7 @@ var STR = {
   hearNote:    'អ្វីដែលម្ចាស់ហាងនិយាយ និងកំណត់ចំណាំរថយន្តស្តុក / 言われたこと・在庫車のメモ',
   hearHint:    '※ រក្សាទុកក្នុង Google Sheet ផ្ទាំង «商談ヒアリング» / GSS の「商談ヒアリング」タブに保存されます',
   priceErr:    'មិនអាចអានតម្លៃសេវាបានទេ / サービス料金（メニュー）を読めません',
-  // ↓ 2026-10-20 一本化（未訪問の店・フォロー）。Panha 校閲済み（provisional・Ron の確認待ち）
+  // ↓ 2026-10-20 一本化（未訪問の店・フォロー）。Panha 校閲済み（provisional・Run Kosal の確認待ち）
   unvisited:   'មិនទាន់ចុះជួប / 未訪問',
   fAll:        'ទាំងអស់ / すべて',
   fVisited:    'បានចុះជួប / 訪問済み',
@@ -900,23 +1171,54 @@ var STR = {
   followNone:  'ថ្ងៃនេះគ្មានអ្វីត្រូវតាមដានទេ / 今日やるフォローはありません',
   address:     'អាសយដ្ឋាន / 住所',
   fromList:    'មកពីបញ្ជីហាងគោលដៅ / 見込みリストから登録',
-  // ↓ 2026-10-20 ヒアリングメモ。Panha 校閲済み（provisional・Ron の確認待ち）
+  // ↓ 2026-10-20 ヒアリングメモ。Panha 校閲済み（provisional・Run Kosal の確認待ち）
   notesHead:   '🗒 កំណត់ចំណាំអ្វីដែលបានស្តាប់ / ヒアリングメモ',
   notesHint:   'អ្វីដែលបានស្តាប់ ឬសង្កេតឃើញ សរសេរបានច្រើនតាមចិត្ត។ AI នឹងសង្ខេបឱ្យ។ / 聞いたこと・気づいたことを、いくつでも書けます。まとめは AI がします',
-  notesPh:     'ឧទាហរណ៍៖ ម្ចាស់ហាងគិតពីពេលវេលា ច្រើនជាងតម្លៃសេវា',
+  notesPh:     'ឧទាហរណ៍៖ ម្ចាស់ហាងគិតពីពេលវេលា ច្រើនជាងតម្លៃសេវា / 例：オーナーは料金より時間を気にしている',
   notesAdd:    'បន្ថែម / 追加',
   notesMore:   '+ សរសេរមួយទៀត / もう1つ書く',
   notesEmpty:  'មិនទាន់មានកំណត់ចំណាំទេ / まだメモはありません',
-  notesSaved:  'បានរក្សាទុកកំណត់ចំណាំហើយ ✅',
+  notesSaved:  'បានរក្សាទុកកំណត់ចំណាំហើយ ✅ / メモを保存しました ✅',
   notesNeed:   'សូមសរសេរកំណត់ចំណាំសិន / メモを書いてください',
-  // ↓ 2026-10-20 オフライン対策。Panha 校閲済み（provisional・Ron の確認待ち: 「គ្មានអ៊ីនធឺណិត」か「គ្មានសញ្ញា」か 等）
+  // ↓ 2026-10-20 オフライン対策。Panha 校閲済み（provisional・Run Kosal の確認待ち: 「គ្មានអ៊ីនធឺណិត」か「គ្មានសញ្ញា」か 等）
   offQueued:   'គ្មានអ៊ីនធឺណិត បានរក្សាទុកក្នុងទូរស័ព្ទហើយ។\nពេលមានអ៊ីនធឺណិតវិញ នឹងផ្ញើដោយស្វ័យប្រវត្តិ។\n電波がないので、スマホに保存しました。電波が戻ったら自動で送ります',
   offPending:  'មិនទាន់ផ្ញើ ចំនួន {n} / 未送信 {n}件',
   offSend:     'ផ្ញើឥឡូវនេះ / 今すぐ送る',
-  offSent:     'កំណត់ត្រាដែលមិនទាន់ផ្ញើ បានផ្ញើរួចហើយ។ ✅',
+  offSent:     'កំណត់ត្រាដែលមិនទាន់ផ្ញើ បានផ្ញើរួចហើយ។ ✅ / 未送信の記録を送りました ✅',
   offCache:    'គ្មានអ៊ីនធឺណិត។ កំពុងបង្ហាញព័ត៌មានដែលបានមើលពីមុន។ / 電波がないので、前に見た情報を出しています',
   offBadge:    'មិនទាន់ផ្ញើ / 未送信',
-  offFailed:   'មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមប្រាប់លោក Ron ឬអ្នកទទួលបន្ទុកខាងជប៉ុន។ / 送れなかった記録があります。ロンさんか日本の担当に知らせてください',
+  offFailed:   'មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមប្រាប់លោក Run Kosal ឬអ្នកទទួលបន្ទុកខាងជប៉ុន។ / 送れなかった記録があります。Run Kosal さんか日本の担当に知らせてください',
+  // ↓ 2026-10-20 作り直し（下のタブ・今日の訪問・こまめ保存・計算タブ）。km は Panha 校閲済み（provisional・Run Kosal の確認待ち:
+  //   ផ្លូវទៅ（道案内）/ ហាងថ្មី が「新しく開いた店」に読まれないか / ធ្វើការសាកល្បង / 看板の言い方 / ចុចម្តងទៀតបាន）
+  navMap:      'ផែនទី / 地図',
+  navList:     'ហាង / お店',
+  navNew:      'ហាងថ្មី / 新しいお店',
+  navCalc:     'គណនា / 計算',
+  actCall:     'ទូរស័ព្ទ / 電話',
+  actMap:      'ផ្លូវទៅ / 道案内',
+  todayHead:   '📍 ការចុះជួបថ្ងៃនេះ / 今日の訪問',
+  todayHint:   'ចុចប៊ូតុងណាមួយ វានឹងរក្សាទុកភ្លាមៗ / ボタンを押すと、すぐ保存されます',
+  todayHint2:  'ចង់ប្តូរ ចុចម្តងទៀតបាន / 変えたいときは、もう一度押せばOK',
+  todaySaved:  'បានរក្សាទុក / 保存済み',
+  todayPend:   'បានរក្សាទុកក្នុងទូរស័ព្ទ (មិនទាន់ផ្ញើ) / スマホに保存（未送信）',
+  justVisit:   'មិនទាន់មានប្រតិកម្ម — រក្សាទុកតែការចុះជួប / 反応はまだ — 行ったことだけ保存',
+  nextHead:    '⏰ អ្វីដែលត្រូវធ្វើបន្ទាប់ / 次にやること',
+  dueHead:     '📅 ថ្ងៃណា? / いつ？',
+  nextOther:   'ផ្សេងទៀត / ほかのこと',
+  saveShort:   'រក្សាទុក / 保存',
+  historyHead: '📜 កំណត់ត្រាទាំងអស់ / これまでの記録',
+  infoHead:    '✏️ ព័ត៌មានហាង (ឈ្មោះ លេខទូរស័ព្ទ និងប្រភេទហាង) / お店の情報（名前・電話・業種）',
+  moreBtn:     'មើលបន្ថែម / もっと見る',
+  calcPick:    'ជ្រើសរើសហាង / お店を選ぶ',
+  calcSave:    '📌 រក្សាទុកលេខនេះ / この数字を残す',
+  calcNotePh:  'កំណត់ចំណាំ (មិនចាំបាច់) / メモ（なくてもOK）',
+  pickTitle:   'គណនាសម្រាប់ហាងណា? / どのお店の計算？',
+  newShopTitle:'➕ ហាងថ្មី / 新しいお店',
+  newShopName: 'ឈ្មោះហាង (តាមដែលសរសេរនៅមុខហាង) / 店名（看板のとおり）',
+  newShopReact:'ប្រតិកម្ម (មិនចាំបាច់) / 反応（なくてもOK）',
+  close:       'បិទ / 閉じる',
+  // 次にやることのボタン（保存値もこの「km / 日本語」の形。画面では選んだ言語だけ出る）
+  nextOpts:    [['📞', 'ទូរស័ព្ទទៅ / 電話する'], ['🧪', 'ធ្វើការសាកល្បង / デモをする'], ['🔁', 'ចុះជួបម្តងទៀត / また訪問する']],
   // ヒントのチップ [km, ja]。押すと「km៖ 」を欄の先頭に入れる（Panha 指定の区切り）
   tips:        [['បញ្ហាដែលកំពុងជួប', '困っていること'], ['ស្ថានភាពរថយន្តរបស់ភ្ញៀវ', 'お客さんの車の状態'],
                 ['ប្រតិកម្មចំពោះតម្លៃសេវា', '料金への反応'], ['អ្នកសម្រេចចិត្តគឺនរណា', '決める人は誰か']]
@@ -956,11 +1258,12 @@ var HS = {
   parked: ['', '毎日停まっている車'], orders_title: ['', '月の見込み件数'], not_fit: ['', '駐車時間が足りないため不可'],
   potential: ['', '見込み評価']
 };
-// Panha 校閲済みの施設モード km（2026-10-20・全行 provisional / Ron の確認待ち）。下で HS / SHOP_TYPES に流し込む
+// Panha 校閲済みの施設モード km（2026-10-20・全行 provisional / Run Kosal の確認待ち）。下で HS / SHOP_TYPES に流し込む
 var FAC_KM = {"t_golf": "ទីលានវាយកូនហ្គោល", "t_rest": "ភោជនីយដ្ឋាន", "t_hotel": "សណ្ឋាគារ", "t_mall": "ផ្សារទំនើប", "facility": "កន្លែងអាជីវកម្ម (ហ្គោល ភោជនីយដ្ឋាន សណ្ឋាគារ ផ្សារទំនើប)", "spaces": "ចំនួនកន្លែងចតរថយន្ត", "occ": "ម៉ោងមមាញឹក កន្លែងចតពេញប៉ុនណា", "occ30": "ប្រហែល 30%", "occ50": "ប្រហែលពាក់កណ្ដាល", "occ80": "ប្រហែល 80%", "stay": "រយៈពេលចតរថយន្ត ក្នុងមួយគ្រឿង", "stay_lt1": "តិចជាង 1 ម៉ោង", "stay_1to3": "1 ដល់ 3 ម៉ោង", "stay_gt3": "ច្រើនជាង 3 ម៉ោង", "peak": "ម៉ោងមមាញឹក", "peak_day": "ពេលថ្ងៃ", "peak_night": "ពេលយប់", "peak_both": "ទាំងពីរ", "visitors": "ចំនួនភ្ញៀវក្នុងមួយថ្ងៃ", "parked": "ចំនួនរថយន្តដែលចតក្នុងមួយថ្ងៃ", "orders_title": "ចំនួនដងធ្វើសេវាក្នុងមួយខែ (ប៉ាន់ស្មាន)", "not_fit": "ពេលចតខ្លីពេក មិនអាចធ្វើសេវាបានទេ", "potential": "សក្តានុពល"};
 function hs(k, sep) { var v = HS[k]; return v[0] ? v[0] + (sep || ' / ') + v[1] : v[1]; }
 function hsKm(k) { return HS[k][0] || HS[k][1]; }
 function hsJp(k) { return HS[k][0] ? HS[k][1] : ''; }
+var REACT_LABELS = { A: 'កំណត់ការសាកល្បង / デモ決定', B: 'ចាប់អារម្មណ៍ / 興味あり', C: 'រង់ចាំសម្រេច / 保留', D: 'បដិសេធ / 断り' };
 var STATUS_LABELS = {
   '営業中': 'កំពុងចរចា / 営業中',
   '提携済': 'ជាដៃគូ / 提携済',
@@ -968,7 +1271,7 @@ var STATUS_LABELS = {
   '未訪問': 'មិនទាន់ចុះជួប / 未訪問'
 };
 // 車屋の業種（複数選択・保存値は日本語ラベル。バックエンド SALESLOG_SHOP_TYPES と一致必須）
-// ※ 暫定セット — ロン君ヒアリング後に見直す
+// ※ 暫定セット — Run Kosalヒアリング後に見直す
 var SHOP_TYPES = [
   { v: '中古車販売', km: 'លក់រថយន្តជើងទី២',                jp: '中古車販売' },
   { v: '整備・修理', km: 'ជួសជុលរថយន្ត',                    jp: '整備・修理' },
@@ -1000,7 +1303,11 @@ var editingVisitId = null;    // edit 時の対象訪問
 var selectedReaction = '';
 var selectedStatus = '';
 var map = null, mapMarkers = [];
-var hereGps = null, meMarker = null, nearMode = false, potMode = false;
+var hereGps = null, hereGpsAt = 0, meMarker = null, nearMode = false, potMode = false;
+var homeTab = 'list';                                   // 下のタブ（地図 / お店）
+var todayVisit = null, todayChain = Promise.resolve();  // 今日の訪問（こまめ保存）
+var calcShop = null, calcFrom = '';                     // 計算タブのお店（店の画面から来たら 'shop'）
+var tlLimit = 8;
 var listFilter = 'all', showUnvisited = true; // 一覧の絞り込み・地図の白いピン（未訪問の店）
 function isUnvisited(s) { return s.status === '未訪問'; } // 現在地（一覧の近い順・地図の青い点）
 var menuPrices = [];                                    // 商談計算の料金（メニュータブ）
@@ -1092,14 +1399,15 @@ function loadWho() {
   line.textContent = '…';
   line.onclick = null;
   if (navigator.onLine === false) { // 圏外が分かっている時は待たずに先へ（店一覧は控えを出す）
-    line.textContent = '📶 ' + STR.offCache.split(' / ')[0];
+    line.textContent = '📶 ' + pickLang(STR.offCache);
     window.addEventListener('online', function once() { window.removeEventListener('online', once); loadWho(); });
     return Promise.resolve();
   }
   return fetchWho(1)
     .then(function(d) {
       if (d.staff) {
-        line.innerHTML = '👤 <strong>' + esc(d.staff.nameJp) + '</strong> (' + esc(d.staff.nameEn) + ')';
+        var en = String(d.staff.nameEn || '').trim(), jp = String(d.staff.nameJp || '').trim() || en;
+        line.innerHTML = '👤 <strong>' + esc(jp) + '</strong>' + (en && en !== jp ? ' (' + esc(en) + ')' : '');
       } else {
         // ok:true かつ staff なし = 本当に未登録（3回とも成功応答での確定）
         line.textContent = '⚠️ スタッフ未登録 chat_id=' + currentChatId;
@@ -1127,6 +1435,12 @@ function outbox() { return lsGet(OUTBOX_KEY, []); }
 // 送れたら結果を返す。電波が無い・応答が壊れていたら箱に入れて { ok:true, queued:true } を返す
 function sendOrQueue(payload) {
   payload.clientId = payload.clientId || newClientId();
+  if (outbox().length) { // 先に貯まっている記録があるなら、追い越さないように後ろに並べる
+    var q = outbox(); q.push({ payload: payload, ts: Date.now() });
+    if (!lsSet(OUTBOX_KEY, q)) return Promise.resolve({ ok: false, error: STR.netError });
+    renderOffBars(); flushOutbox();
+    return Promise.resolve({ ok: true, queued: true });
+  }
   return api(payload)
     .catch(function() { return { ok: false, transient: true }; })
     .then(function(d) {
@@ -1254,7 +1568,7 @@ function renderListError(msg) {
 }
 
 function badgeFor(shop) {
-  if (isUnvisited(shop)) return '<span class="badge unv">' + esc(STR.unvisited.split(' / ')[0]) + '</span>';
+  if (isUnvisited(shop)) return '<span class="badge unv">' + esc(STR.unvisited) + '</span>';
   if (shop.status === '提携済') return '<span class="badge partner">⭐ ' + esc(shop.lastReaction || 'A') + '</span>';
   var cls = shop.lastReaction ? 'r' + shop.lastReaction : 'rNone';
   return '<span class="badge ' + cls + '">' + esc(shop.lastReaction || '—') + '</span>';
@@ -1268,7 +1582,7 @@ function renderFollow() {
     .sort(function(a, b) { return a.nextDue.localeCompare(b.nextDue); });
   if (!shopsCache.length) { box.className = 'follow-box hidden'; return; }
   box.className = 'follow-box';
-  document.getElementById('followHead').textContent = STR.followHead + (due.length ? ' · ' + due.length : '');
+  document.getElementById('followHead').textContent = pickLang(STR.followHead) + (due.length ? ' · ' + due.length : '');
   var list = document.getElementById('followList');
   if (!due.length) { list.innerHTML = '<div class="follow-none">' + esc(STR.followNone) + '</div>'; return; }
   list.innerHTML = '';
@@ -1276,7 +1590,7 @@ function renderFollow() {
     var late = s.nextDue < today;
     var item = document.createElement('div');
     item.className = 'follow-item';
-    item.innerHTML = '<span class="fb' + (late ? ' late' : '') + '">' + esc((late ? STR.overdue : STR.dueToday).split(' / ')[0]) +
+    item.innerHTML = '<span class="fb' + (late ? ' late' : '') + '">' + esc(late ? STR.overdue : STR.dueToday) +
       '<br>' + esc(s.nextDue.substring(5)) + '</span><div class="ft"><b>' + esc(s.shopName) + '</b>' + esc(s.nextAction || '') + '</div>';
     item.addEventListener('click', function() { openShop(s.shopId); });
     list.appendChild(item);
@@ -1436,6 +1750,7 @@ function locateHere(cb) {
   var finish = function(lat, lng) {
     if (done) return; done = true;
     hereGps = { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) };
+    hereGpsAt = Date.now();
     showMeOnMap();
     cb(true);
   };
@@ -1477,10 +1792,16 @@ function hereThen(after) {
   });
 }
 
+function setNav(which) {
+  ['tabMap', 'tabList', 'tabCalc'].forEach(function(id) {
+    var b = document.getElementById(id);
+    if (b.getAttribute('data-nav') === which) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+}
 function switchTab(tab) {
   var isMap = tab === 'map';
-  document.getElementById('tabList').className = 'tab-btn' + (isMap ? '' : ' active');
-  document.getElementById('tabMap').className  = 'tab-btn' + (isMap ? ' active' : '');
+  homeTab = isMap ? 'map' : 'list';
+  setNav(homeTab);
   document.getElementById('listWrap').style.display = isMap ? 'none' : '';
   document.getElementById('mapWrap').style.display  = isMap ? 'block' : 'none';
   // 地図では「今日のフォロー」と一覧の絞り込みを隠して地図を広く（フォローは一覧タブで見る）
@@ -1502,6 +1823,7 @@ function showView(name) {
   document.getElementById('viewForm').className = name === 'form' ? '' : 'hidden';
   document.getElementById('viewCommission').className = name === 'commission' ? '' : 'hidden';
   document.getElementById('viewHearing').className = name === 'hearing' ? '' : 'hidden';
+  setNav(name === 'hearing' ? 'calc' : homeTab);
   window.scrollTo(0, 0);
 }
 
@@ -1518,30 +1840,47 @@ function ppTodayStr() {
 // ═══════════════════════════════════════════
 function openShop(shopId, toHearing) {
   showView('shop');
-  document.getElementById('visitList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
+  tlLimit = 8;
+  document.getElementById('infoFold').open = false;
+  // 一覧の情報で先にカードを出す（電波が弱くても、押した瞬間にお店の画面が出る）
+  var pre = null;
+  for (var i = 0; i < shopsCache.length; i++) if (shopsCache[i].shopId === shopId) pre = shopsCache[i];
+  if (pre) {
+    currentShop = Object.assign({}, pre); currentVisits = []; currentHearings = []; currentNotes = [];
+    resolveToday(); renderShopDetail();
+  }
+  document.getElementById('timeline').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
+  if (!hereGps || Date.now() - hereGpsAt > 120000) locateHere(function() {}); // 訪問の記録に付ける位置を先に取っておく
   document.getElementById('commissionList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
   document.getElementById('unpaidBar').className = 'unpaid-bar hidden';
   apiRead({ action: 'saleslog_shop_detail', shopId: shopId })
     .then(function(d) {
       if (!d.ok) {
         var c = (!d || d.transient) ? loadDetailCache(shopId) : null;
-        if (!c) { toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return; }
+        if (!c) {
+          // 電波が無くても、一覧の情報で出したお店の画面はそのまま使う（反応・メモは未送信の箱に入る）
+          if (pre && (!d || d.transient) && currentShop && currentShop.shopId === shopId) {
+            showCacheBar(Date.now()); renderTimeline(); if (toHearing) openHearing(); return;
+          }
+          toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return;
+        }
         d = c.d; showCacheBar(c.at);
       } else {
         saveDetailCache(shopId, d);
         showCacheBar(null);
       }
-      currentShop = d.shop;
+      var base = null;
+      for (var j = 0; j < shopsCache.length; j++) if (shopsCache[j].shopId === shopId) base = shopsCache[j];
+      currentShop = Object.assign({}, base || {}, d.shop);
       currentVisits = d.visits || [];
       currentHearings = d.hearings || [];
       currentNotes = d.notes || [];
+      resolveToday();
       renderShopDetail();
-      renderHearings();
-      renderNotes();
       loadCommissions(shopId);
       if (toHearing) openHearing();
     })
-    .catch(function() { toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
+    .catch(function() { if (pre) { renderTimeline(); return; } toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
 }
 
 // ═══════════════════════════════════════════
@@ -1790,16 +2129,37 @@ function saveCommission() {
 
 function renderShopDetail() {
   var s = currentShop;
+  document.getElementById('shopTitle').textContent = s.shopName;
+  var chips = [];
+  chips.push(STATUS_LABELS[s.status] || s.status || '');
+  if (s.shopTypes && s.shopTypes.length) chips.push(s.shopTypes.join('・'));
+  if (hereGps && s.lat !== null && s.lng !== null && s.lat !== undefined) chips.push('📍 ' + fmtDist(distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng)));
+  if (s.potential) chips.push('⭐ ' + s.potential + (s.potentialMine !== null && s.potentialMine !== undefined ? ' · ' + hMoney(s.potentialMine) + '$' : ''));
+  if (s.visitCount) chips.push('🔁 ' + s.visitCount);
+  document.getElementById('heroMeta').innerHTML = chips.filter(function(c) { return c; })
+    .map(function(c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
+  var last = '';
+  if (s.lastMemo) last += '<b>' + esc(STR.lastLabel) + (s.lastVisit ? ' ' + esc(s.lastVisit.substring(5).replace('-', '/')) : '') + '</b><br>' + esc(s.lastMemo);
+  if (s.nextAction || s.nextDue) last += '<span class="nx">⏰ ' + esc((s.nextDue ? s.nextDue.substring(5).replace('-', '/') + ' ' : '')) + '<span>' + esc(s.nextAction || '') + '</span></span>';
+  document.getElementById('heroLast').innerHTML = last;
+  var call = document.getElementById('actCall');
+  if (s.phone) { call.href = 'tel:' + String(s.phone).replace(/[^\d+]/g, ''); call.className = 'act'; }
+  else { call.removeAttribute('href'); call.className = 'act off'; }
+  var nav = document.getElementById('actMap');
+  if (s.lat !== null && s.lat !== undefined && s.lng !== null) {
+    nav.href = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(s.lat + ',' + s.lng); nav.className = 'act';
+  } else { nav.removeAttribute('href'); nav.className = 'act off'; }
+
   var src = document.getElementById('shopSrc');
   var srcParts = [];
-  if (isUnvisited(s)) srcParts.push(STR.unvisited);
-  if (s.source) srcParts.push(STR.fromList + (s.tier ? ' · Tier ' + s.tier : ''));
-  if (s.address) srcParts.push(STR.address + ': ' + s.address);
+  if (s.source) srcParts.push(pickLang(STR.fromList) + (s.tier ? ' · Tier ' + s.tier : ''));
+  if (s.address) srcParts.push(pickLang(STR.address) + ': ' + s.address);
   src.className = 'shop-src' + (srcParts.length ? '' : ' hidden');
   src.textContent = srcParts.join(' ／ ');
-  document.getElementById('sShop').value  = s.shopName;
-  document.getElementById('sOwner').value = s.ownerName;
-  document.getElementById('sPhone').value = s.phone;
+
+  document.getElementById('sShop').value  = s.shopName || '';
+  document.getElementById('sOwner').value = s.ownerName || '';
+  document.getElementById('sPhone').value = s.phone || '';
   document.getElementById('sFb').value    = s.facebook || '';
   // http で始まる値のみ開くリンクを出す（ページ名だけの記録も許容するため）
   var fbLink = document.getElementById('sFbLink');
@@ -1808,12 +2168,12 @@ function renderShopDetail() {
   } else {
     fbLink.innerHTML = '';
   }
-  document.getElementById('sMemo').value  = s.memo;
-  setStatus(s.status || '営業中');
+  document.getElementById('sMemo').value  = s.memo || '';
+  setStatus(s.status === '未訪問' ? '' : (s.status || '営業中'));
   setTypeSelection('s', 'sTypeGrid', s.shopTypes || []);
 
   var box = document.getElementById('shopGpsBox');
-  if (s.lat !== null && s.lng !== null) {
+  if (s.lat !== null && s.lat !== undefined && s.lng !== null) {
     box.className = 'gps-box ok';
     box.innerHTML = '📍 ' + esc(s.lat + ', ' + s.lng) +
       ' <a href="https://www.google.com/maps?q=' + encodeURIComponent(s.lat + ',' + s.lng) +
@@ -1822,27 +2182,167 @@ function renderShopDetail() {
     box.className = 'gps-box';
     box.textContent = '📍 ' + STR.noLocation;
   }
+  renderTodayCard();
+  renderTimeline();
+}
 
-  var list = document.getElementById('visitList');
-  list.innerHTML = '';
-  if (!currentVisits.length) {
-    list.innerHTML = '<div class="empty">' + esc(STR.emptyList) + '</div>';
-    return;
+// ═══════════════════════════════════════════
+//  今日の訪問（2026-10-20 こまめ保存）
+//  反応・次にやること・期日は、押したその場で1つずつ保存する（全部書いてから保存、をやめる）。
+//  最初の1回で訪問を作り、2回目からはその訪問を直す。電波が無い時は作った時の clientId で指して後ろに並べる
+// ═══════════════════════════════════════════
+var TODAY_KEY = 'sl_today_v1';
+function nowHM() {
+  var now = new Date(), pp = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60000);
+  return String(pp.getHours()).padStart(2, '0') + ':' + String(pp.getMinutes()).padStart(2, '0');
+}
+function persistToday(shopId, tv) {
+  var all = lsGet(TODAY_KEY, {}), d = ppTodayStr();
+  Object.keys(all).forEach(function(k) { if (all[k].date !== d) delete all[k]; });
+  tv.date = d; all[shopId] = tv; lsSet(TODAY_KEY, all);
+}
+function resolveToday() {
+  var d = ppTodayStr(), loc = lsGet(TODAY_KEY, {})[currentShop.shopId];
+  if (loc && loc.date !== d) loc = null;
+  var sv = null;
+  for (var i = 0; i < currentVisits.length; i++) if (String(currentVisits[i].datetime).indexOf(d) === 0) { sv = currentVisits[i]; break; }
+  if (loc) { if (!loc.visitId && sv) { loc.visitId = sv.visitId; persistToday(currentShop.shopId, loc); } todayVisit = loc; }
+  else if (sv) todayVisit = { visitId: sv.visitId, reaction: sv.reaction, nextAction: sv.nextAction, nextDue: sv.nextDue, time: String(sv.datetime).substring(11, 16), date: d };
+  else todayVisit = null;
+}
+function dueAfter(days) {
+  var t = ppTodayStr().split('-').map(Number);
+  return new Date(Date.UTC(t[0], t[1] - 1, t[2] + days)).toISOString().substring(0, 10);
+}
+function freshGps() { return (hereGps && Date.now() - hereGpsAt < 10 * 60000) ? hereGps : (currentGps || null); }
+var shopsRefreshTimer = null;
+function refreshShopsSoon() { clearTimeout(shopsRefreshTimer); shopsRefreshTimer = setTimeout(function() { loadShops(); }, 1500); }
+
+function renderTodayCard() {
+  var t = todayVisit;
+  document.getElementById('todayHead').textContent = STR.todayHead;
+  var ok = document.getElementById('todayOk');
+  ok.className = 'today-ok' + (t && !t.visitId ? ' wait' : '');
+  ok.textContent = t ? (t.visitId ? '✓ ' + (t.time || '') + ' ' + pickLang(STR.todaySaved) : '📶 ' + pickLang(STR.todayPend)) : '';
+  document.getElementById('todayHint').textContent = t ? STR.todayHint2 : STR.todayHint;
+  var bs = document.querySelectorAll('#bigReact [data-qr]');
+  for (var i = 0; i < bs.length; i++) bs[i].className = (t && t.reaction === bs[i].getAttribute('data-qr')) ? 'sel' : '';
+  document.getElementById('btnJustVisit').className = 'link-btn' + (t ? ' hidden' : '');
+  var na = t ? (t.nextAction || '') : '';
+  var known = STR.nextOpts.map(function(o) { return o[1]; });
+  document.getElementById('nextChips').innerHTML = STR.nextOpts.map(function(o) {
+    return '<button type="button" data-next="' + esc(o[1]) + '" class="' + (na === o[1] ? 'sel' : '') + '">' + o[0] + ' ' + esc(o[1]) + '</button>';
+  }).join('') + '<button type="button" data-next-other="1" class="' + (na && known.indexOf(na) < 0 ? 'sel' : '') + '">✏️ ' + esc(STR.nextOther) + '</button>';
+  var due = t ? (t.nextDue || '') : '';
+  document.getElementById('dueChips').innerHTML = [[1, STR.dueTomorrow], [3, STR.due3d], [7, STR.due1w]].map(function(x) {
+    var v = dueAfter(x[0]);
+    return '<button type="button" data-qdue="' + v + '" class="' + (due === v ? 'sel' : '') + '">' + esc(x[1]) + '</button>';
+  }).join('');
+  var now = document.getElementById('nextNow');
+  if (t && (t.nextAction || t.nextDue)) {
+    now.className = 'next-now';
+    now.innerHTML = '⏰ ' + esc(t.nextDue ? t.nextDue.substring(5).replace('-', '/') + ' ' : '') + '<span>' + esc(t.nextAction || '') + '</span>';
+  } else { now.className = 'next-now hidden'; }
+}
+
+// fields = { reaction } / { nextAction } / { nextDue } など。押すたびに呼ぶ
+function todayDo(fields) {
+  if (!currentShop) return;
+  var shopId = currentShop.shopId, tv, payload = null;
+  if (!todayVisit) {
+    tv = todayVisit = Object.assign({ clientId: newClientId(), time: nowHM(), reaction: '', nextAction: '', nextDue: '' }, fields);
+    payload = Object.assign({ action: 'saleslog_create', shopId: shopId, gps: freshGps(), clientId: tv.clientId }, fields);
+    if (currentShop.status === '未訪問') currentShop.status = '営業中'; // 初めての訪問で営業中（サーバーも同じ動き）
+  } else {
+    tv = todayVisit;
+    Object.assign(tv, fields);
   }
-  currentVisits.forEach(function(v) {
-    var item = document.createElement('div');
-    item.className = 'visit-item';
-    var cls = v.reaction ? 'r' + v.reaction : 'rNone';
-    item.innerHTML =
-      '<div class="vhead">' +
-        '<span class="vdate">' + esc(v.datetime) + (v.lat !== null && v.lng !== null ? ' 📍' : '') + '</span>' +
-        '<span class="badge ' + cls + '">' + esc(v.reaction || '—') + '</span>' +
-      '</div>' +
-      (v.memo ? '<div class="vmemo">' + esc(v.memo) + '</div>' : '') +
-      (v.nextAction || v.nextDue ? '<div class="vnext">⏰ ' + esc((v.nextDue ? v.nextDue + ' ' : '') + (v.nextAction || '')) + '</div>' : '');
-    item.addEventListener('click', function() { openVisitEdit(v); });
-    list.appendChild(item);
+  persistToday(shopId, tv);
+  renderTodayCard();
+  todayChain = todayChain.then(function() {
+    var pl = payload || Object.assign({ action: 'saleslog_update' }, fields, tv.visitId ? { visitId: tv.visitId } : { visitClientId: tv.clientId });
+    return sendOrQueue(pl).then(function(d) {
+      if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
+      if (payload && d.visitId) tv.visitId = d.visitId;
+      if (!payload && d.visitId && !tv.visitId) tv.visitId = d.visitId;
+      persistToday(shopId, tv);
+      if (currentShop && currentShop.shopId === shopId) { renderTodayCard(); if (payload) renderShopDetail(); }
+      toast(d.queued ? '📶 ' + pickLang(STR.todayPend) : STR.saved, 'ok');
+      if (!d.queued) refreshShopsSoon();
+    }).catch(function() { toast('⚠️ ' + STR.netError, 'err'); });
   });
+}
+document.getElementById('bigReact').addEventListener('click', function(e) {
+  var b = e.target.closest('[data-qr]'); if (!b) return;
+  var r = b.getAttribute('data-qr');
+  if (todayVisit && todayVisit.reaction === r) return; // 同じものをもう一度押しても何もしない（押し間違いで消さない）
+  todayDo({ reaction: r });
+});
+document.getElementById('btnJustVisit').addEventListener('click', function() { if (!todayVisit) todayDo({}); });
+document.getElementById('nextChips').addEventListener('click', function(e) {
+  var b = e.target.closest('[data-next]');
+  if (b) { document.getElementById('nextCustom').className = 'next-custom hidden'; todayDo({ nextAction: b.getAttribute('data-next') }); return; }
+  if (e.target.closest('[data-next-other]')) {
+    var box = document.getElementById('nextCustom');
+    box.className = 'next-custom';
+    var inp = document.getElementById('nextText');
+    var known = STR.nextOpts.map(function(o) { return o[1]; });
+    inp.value = todayVisit && todayVisit.nextAction && known.indexOf(todayVisit.nextAction) < 0 ? todayVisit.nextAction : '';
+    inp.focus();
+  }
+});
+document.getElementById('btnNextText').addEventListener('click', function() {
+  var v = document.getElementById('nextText').value.trim();
+  if (!v) { document.getElementById('nextText').focus(); return; }
+  document.getElementById('nextCustom').className = 'next-custom hidden';
+  todayDo({ nextAction: v });
+});
+document.getElementById('dueChips').addEventListener('click', function(e) {
+  var b = e.target.closest('[data-qdue]'); if (!b) return;
+  todayDo({ nextDue: b.getAttribute('data-qdue') });
+});
+
+// ── これまでの記録（訪問・聞いたこと・計算を新しい順に1本で） ──
+function renderTimeline() {
+  var items = [];
+  currentVisits.forEach(function(v) { items.push({ t: v.datetime, k: 'v', o: v }); });
+  currentNotes.forEach(function(n) { items.push({ t: n.datetime || '9999', k: 'n', o: n }); });
+  currentHearings.forEach(function(h) { items.push({ t: h.datetime, k: 'h', o: h }); });
+  items.sort(function(a, b) { return String(b.t).localeCompare(String(a.t)); });
+  var box = document.getElementById('timeline');
+  document.getElementById('historyHead').textContent = STR.historyHead;
+  if (!items.length) { box.innerHTML = '<div class="empty" style="padding:14px 0">' + esc(STR.emptyList) + '</div>'; return; }
+  var html = items.slice(0, tlLimit).map(function(it, idx) {
+    var o = it.o, d = esc(String(o.datetime || '').substring(5).replace('-', '/'));
+    if (it.k === 'v') {
+      var cls = o.reaction ? 'r' + o.reaction : 'rNone';
+      return '<div class="tl-item tap" data-tlv="' + idx + '"><div class="tl-ic">📍</div><div class="tl-b"><div class="tl-d">' + d +
+        (o.lat !== null && o.lat !== undefined ? ' · GPS' : '') + ' <span class="badge ' + cls + '">' + esc(o.reaction || '—') + '</span>' +
+        (o.reaction ? '<span>' + esc(REACT_LABELS[o.reaction] || '') + '</span>' : '') + '</div>' +
+        (o.memo ? '<div>' + esc(o.memo) + '</div>' : '') +
+        (o.nextAction || o.nextDue ? '<div class="vnext">⏰ ' + esc(o.nextDue ? o.nextDue.substring(5).replace('-', '/') + ' ' : '') + '<span>' + esc(o.nextAction || '') + '</span></div>' : '') +
+        '</div></div>';
+    }
+    if (it.k === 'n') {
+      return '<div class="tl-item"><div class="tl-ic">🗒</div><div class="tl-b"><div class="tl-d">' + d + (o.staff ? ' · ' + esc(o.staff) : '') +
+        (o.pending ? '<span class="pend">' + esc(STR.offBadge) + '</span>' : '') + '</div><div>' + esc(o.text) + '</div></div></div>';
+    }
+    var how = o.mode === 'facility'
+      ? 'WASH ' + o.wash + ' · GLASS ' + o.glass3 + ' · HEADLIGHT ' + o.headlight + ' · MAGIC ' + o.magic
+      : o.mode === 'dealer' ? '🚗 ' + o.stock + ' · 💡 ' + o.light + '+' + o.heavy + ' · 🪟 ' + o.glass + ' · 👥 ' + o.buyers
+      : '🚗 ' + o.carsDay + ' × ' + o.days + ' · 1/' + o.oneIn + ' · ' + o.avg + '$';
+    return '<div class="tl-item"><div class="tl-ic">🧮</div><div class="tl-b"><div class="tl-d">' + d + (o.staff ? ' · ' + esc(o.staff) : '') +
+      (o.potential ? ' <span class="pot ' + esc(o.potential) + '">⭐' + esc(o.potential) + '</span>' : '') +
+      '<span class="tl-m">' + hMoney(o.mine || 0) + '$</span></div><div style="color:var(--text-dim);font-size:13.5px">' + esc(how) + '</div>' +
+      (o.note ? '<div>' + esc(o.note) + '</div>' : '') + '</div></div>';
+  }).join('');
+  if (items.length > tlLimit) html += '<button type="button" class="tl-more" id="tlMore">' + esc(STR.moreBtn) + ' (' + (items.length - tlLimit) + ')</button>';
+  box.innerHTML = html;
+  box.onclick = function(e) {
+    if (e.target.closest('#tlMore')) { tlLimit += 20; renderTimeline(); return; }
+    var v = e.target.closest('[data-tlv]');
+    if (v) { var it = items[Number(v.getAttribute('data-tlv'))]; if (it && it.k === 'v') openVisitEdit(it.o); }
+  };
 }
 
 // ── 業種チップ（複数選択・店詳細=sTypeGrid / 新規フォーム=fTypeGrid 共通） ──
@@ -2306,14 +2806,12 @@ function saveVisit() {
 // ═══════════════════════════════════════════
 //  イベント束ね
 // ═══════════════════════════════════════════
-document.getElementById('tabList').addEventListener('click', function() { switchTab('list'); });
-document.getElementById('tabMap').addEventListener('click',  function() { switchTab('map'); });
-document.getElementById('btnNew').addEventListener('click',  function() { openForm('new'); });
-document.getElementById('btnShopBack').addEventListener('click', function() { showView('home'); loadShops(); });
+document.getElementById('tabList').addEventListener('click', function() { showView('home'); switchTab('list'); });
+document.getElementById('tabMap').addEventListener('click',  function() { showView('home'); switchTab('map'); });
+document.getElementById('tabCalc').addEventListener('click', function() { openCalcTab(); });
+document.getElementById('btnNew').addEventListener('click',  function() { openNewShop(); });
+document.getElementById('btnShopBack').addEventListener('click', function() { showView('home'); switchTab(homeTab); loadShops(); });
 document.getElementById('btnShopSave').addEventListener('click', saveShop);
-document.getElementById('btnAddVisit').addEventListener('click', function() {
-  if (currentShop) openForm('append', { shopId: currentShop.shopId, shopName: currentShop.shopName });
-});
 document.getElementById('btnFormBack').addEventListener('click', function() {
   if ((formMode === 'append' || formMode === 'edit') && currentShop) {
     openShop(currentShop.shopId);
@@ -2415,7 +2913,7 @@ function hearingCalc_(mode, inp, rate) {
   o.potential = hPotential(o.mine);
   return o;
 }
-function hRate() { return (currentShop && Number(currentShop.commissionRate)) || 30; }
+function hRate() { return (calcShop && Number(calcShop.commissionRate)) || 30; }
 
 function hStep(key, val, min, max) {
   return '<div class="hstep"><button type="button" data-hs="' + key + '" data-d="-1" aria-label="−">−</button>' +
@@ -2423,8 +2921,7 @@ function hStep(key, val, min, max) {
     '<button type="button" data-hs="' + key + '" data-d="1" aria-label="+">＋</button></div>';
 }
 function hRow(labelKey, sub, key, val, min, max) {
-  var jp = hsJp(labelKey);
-  return '<div class="hrow"><label>' + esc(hsKm(labelKey)) + '<small>' + esc(jp + (jp && sub ? ' · ' : '') + (sub || '')) + '</small></label>' +
+  return '<div class="hrow"><label>' + esc(hs(labelKey)) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</label>' +
     hStep(key, val, min, max) + '</div>';
 }
 function hAvgChips(cur) {
@@ -2447,18 +2944,18 @@ function renderHearingInputs() {
         return '<button type="button" class="hchip' + (String(f[field]) === String(o[0]) ? ' sel' : '') + '" data-fac="' + field + '" data-v="' + o[0] + '">' + esc(hs(o[1])) + '</button>';
       }).join('') + '</div>';
     };
-    var lbl = function(k) { var jp = hsJp(k); return '<h4>' + esc(hsKm(k)) + (jp ? ' <small style="color:var(--text-dim);font-weight:400">' + esc(jp) + '</small>' : '') + '</h4>'; };
+    var lbl = function(k) { return '<h4>' + esc(hs(k)) + '</h4>'; };
     var svc = [['WASH', 'wash', 'SAMURAI WASH'], ['GLASS_3', 'glass3', 'SAMURAI GLASS'], ['HEADLIGHT', 'headlight', 'SAMURAI HEADLIGHT'], ['HEADLIGHT_MAGIC', 'magic', 'SAMURAI MAGIC']];
     var rows = svc.map(function(x) {
       var price = priceOf(x[0]);
       if (allowed.indexOf(x[0]) < 0) {
         return '<div class="hrow off"><label>' + esc(x[2]) + '<small>' + price + '$</small></label><span class="offnote">' + esc(hs('not_fit')) + '</span></div>';
       }
-      return '<div class="hrow"><label>' + esc(x[2]) + '<small>' + price + '$ × ' + esc(hsKm('jobs_unit')) + '</small></label>' + hStep(x[1], f[x[1]], 0, 10000) + '</div>';
+      return '<div class="hrow"><label>' + esc(x[2]) + '<small>' + esc(price + '$ × ' + pickLang(hs('jobs_unit'))) + '</small></label>' + hStep(x[1], f[x[1]], 0, 10000) + '</div>';
     }).join('');
     el.innerHTML = '<div class="hcard">' + lbl('orders_title') + rows + '</div>' +
       '<div class="hcard">' +
-      hRow('spaces', HS.cars_unit[1], 'spaces', f.spaces, 0, 10000) +
+      hRow('spaces', hs('cars_unit'), 'spaces', f.spaces, 0, 10000) +
       lbl('occ') + chipSet('occ', [[30, 'occ30'], [50, 'occ50'], [80, 'occ80']]) +
       lbl('stay') + chipSet('stay', [['lt1', 'stay_lt1'], ['1to3', 'stay_1to3'], ['gt3', 'stay_gt3']]) +
       lbl('peak') + chipSet('peak', [['day', 'peak_day'], ['night', 'peak_night'], ['both', 'peak_both']]) +
@@ -2468,9 +2965,9 @@ function renderHearingInputs() {
   }
   if (hMode === 'garage') {
     el.innerHTML = '<div class="hcard">' +
-      hRow('cars_day', HS.cars_unit[1], 'carsDay', g.carsDay, 0, 1000) +
-      hRow('days_month', HS.days_unit[1], 'days', g.days, 1, 31) +
-      hRow('take_rate', HS.one_in[1].replace('{n}', g.oneIn), 'oneIn', g.oneIn, 1, 100) +
+      hRow('cars_day', hs('cars_unit'), 'carsDay', g.carsDay, 0, 1000) +
+      hRow('days_month', hs('days_unit'), 'days', g.days, 1, 31) +
+      hRow('take_rate', hs('one_in').replace(/\{n\}/g, g.oneIn), 'oneIn', g.oneIn, 1, 100) +
       hRow('avg_price', '$', 'avg', g.avg, 1, 1000) + hAvgChips(g.avg) + '</div>';
   } else {
     var glassOpts = [['GLASS_3', false, 'GLASS 3 Sedan'], ['GLASS_3', true, 'GLASS 3 SUV'], ['GLASS_ALL', false, 'GLASS ALL Sedan'], ['GLASS_ALL', true, 'GLASS ALL SUV']];
@@ -2479,14 +2976,14 @@ function renderHearingInputs() {
       return '<button type="button" class="hchip' + (d.glassPrice === p ? ' sel' : '') + '" data-glass="' + p + '">' + esc(x[2]) + ' ' + p + '$</button>';
     }).join('');
     el.innerHTML = '<div class="hcard"><h4>' + esc(hs('refresh_title')) + '</h4>' +
-      hRow('stock_total', HS.cars_unit[1], 'stock', d.stock, 0, 5000) +
+      hRow('stock_total', hs('cars_unit'), 'stock', d.stock, 0, 5000) +
       hRow('hl_light', 'HEADLIGHT ' + priceOf('HEADLIGHT') + '$', 'light', d.light, 0, 5000) +
       hRow('hl_heavy', 'SAMURAI MAGIC ' + priceOf('HEADLIGHT_MAGIC') + '$', 'heavy', d.heavy, 0, 5000) +
       hRow('glass_dirty', '', 'glass', d.glass, 0, 5000) +
       '<div class="hchips">' + chips + '</div><div class="hsum" id="hSum"></div></div>' +
       '<div class="hcard"><h4>' + esc(hs('referral_title')) + '</h4>' +
       hRow('buyers_month', '', 'buyers', d.buyers, 0, 10000) +
-      hRow('take_rate', HS.one_in[1].replace('{n}', d.oneIn), 'oneIn', d.oneIn, 1, 100) +
+      hRow('take_rate', hs('one_in').replace(/\{n\}/g, d.oneIn), 'oneIn', d.oneIn, 1, 100) +
       hRow('avg_price', '$', 'avg', d.avg, 1, 1000) + hAvgChips(d.avg) + '</div>';
   }
   renderHearingResult();
@@ -2495,15 +2992,14 @@ function renderHearingResult() {
   var r = hearingCalc_(hMode, hIn[hMode], hRate());
   document.getElementById('hrLab').textContent = hs('your_month');
   document.getElementById('hrBig').textContent = hMoney(r.mine);
-  document.getElementById('hrUnit').textContent = HS.month_unit[0] + ' ' + HS.month_unit[1];
+  document.getElementById('hrUnit').textContent = hs('month_unit');
   var cells = hMode !== 'dealer'
-    ? [['jobs_month', r.jobs + ' ' + HS.jobs_unit[0]], ['sales_month', hMoney(r.sales) + '$'], ['your_year', hMoney(r.year) + '$']]
-    : [['price_partner_short', hMoney(r.partner) + '$'], ['jobs_month', r.jobs + ' ' + HS.jobs_unit[0]], ['your_year', hMoney(r.year) + '$']];
+    ? [['jobs_month', r.jobs + ' ' + pickLang(hs('jobs_unit'))], ['sales_month', hMoney(r.sales) + '$'], ['your_year', hMoney(r.year) + '$']]
+    : [['price_partner_short', hMoney(r.partner) + '$'], ['jobs_month', r.jobs + ' ' + pickLang(hs('jobs_unit'))], ['your_year', hMoney(r.year) + '$']];
   document.getElementById('hrCells').innerHTML = cells.map(function(c) {
-    return '<div><span>' + esc(HS[c[0]][0]) + '<br>' + esc(HS[c[0]][1]) + '</span><b>' + esc(c[1]) + '</b></div>';
+    return '<div><span>' + esc(hs(c[0])) + '</span><b>' + esc(c[1]) + '</b></div>';
   }).join('');
-  document.getElementById('hrNote').textContent =
-    HS.rate_note[0].replace('{r}', hRate()) + ' / ' + HS.rate_note[1].replace('{r}', hRate()) + ' · ' + HS.example_note[0];
+  document.getElementById('hrNote').innerHTML = '<span>' + esc(hs('rate_note').replace(/\{r\}/g, hRate())) + '</span> · <span>' + esc(hs('example_note')) + '</span>';
   var sum = document.getElementById('hSum');
   if (sum) {
     sum.innerHTML = '<span>' + esc(hs('price_regular')) + '</span><b class="strike">' + hMoney(r.regular) + '$</b>' +
@@ -2511,19 +3007,64 @@ function renderHearingResult() {
       '<span>' + esc(hs('you_save')) + '</span><b>' + hMoney(r.save) + '$</b>';
   }
 }
+function modeForShop(shop) {
+  var types = (shop && shop.shopTypes) || [];
+  var FAC_TYPES = ['レジデンス', 'ゴルフ場', 'レストラン', 'ホテル', '商業施設'];
+  return types.indexOf('中古車販売') >= 0 ? 'dealer'
+       : types.some(function(t) { return FAC_TYPES.indexOf(t) >= 0; }) ? 'facility' : 'garage';
+}
+// 店の画面の「計算」から（その店で計算 → 残したら店の画面に戻る）
 function openHearing() {
   if (!currentShop) return;
+  calcShop = currentShop; calcFrom = 'shop';
+  hMode = modeForShop(calcShop);
+  startCalc();
+}
+// 下のタブの「計算」から（お店を選ばなくても計算できる。残すときにお店を聞く）
+function openCalcTab() {
+  calcFrom = '';
+  startCalc();
+}
+function startCalc() {
   if (!menuPrices.length) { toast('⚠️ ' + STR.priceErr, 'err'); }
   if (!hIn.dealer.glassPrice) hIn.dealer.glassPrice = priceOf('GLASS_3') || 0;
-  var types = currentShop.shopTypes || [];
-  var FAC_TYPES = ['レジデンス', 'ゴルフ場', 'レストラン', 'ホテル', '商業施設'];
-  hMode = types.indexOf('中古車販売') >= 0 ? 'dealer'
-        : types.some(function(t) { return FAC_TYPES.indexOf(t) >= 0; }) ? 'facility' : 'garage';
-  document.getElementById('hearTitle').textContent = STR.hearTitle + ' — ' + currentShop.shopName;
+  document.getElementById('btnHearBack').className = 'back-btn' + (calcFrom === 'shop' ? '' : ' hidden');
+  renderCalcShop();
   document.getElementById('hearNote').value = '';
   showView('hearing');
   renderHearingInputs();
 }
+function renderCalcShop() {
+  document.getElementById('calcShopName').textContent = calcShop ? calcShop.shopName : STR.calcPick;
+}
+// お店を選ぶ（近い順。名前で探せる）
+function openPickShop(onPick) {
+  openSheet('<h3>' + esc(STR.pickTitle) + '</h3><input type="search" id="pkQ" autocomplete="off" placeholder="' + esc(STR.search) + '"><div id="pkList"></div>' +
+    '<div class="row2"><button type="button" class="ghost" data-close>' + esc(STR.close) + '</button></div>');
+  var draw = function() {
+    var q = (document.getElementById('pkQ').value || '').trim().toLowerCase();
+    var rows = shopsCache.filter(function(x) { return !q || x.shopName.toLowerCase().indexOf(q) >= 0; });
+    if (hereGps) rows = rows.map(function(x) { return { s: x, d: (x.lat === null || x.lng === null) ? Infinity : distMeters(hereGps.lat, hereGps.lng, x.lat, x.lng) }; })
+      .sort(function(a, b) { return a.d - b.d; }).map(function(x) { return x.s; });
+    document.getElementById('pkList').innerHTML = rows.slice(0, 30).map(function(x) {
+      var dd = (hereGps && x.lat !== null && x.lng !== null) ? fmtDist(distMeters(hereGps.lat, hereGps.lng, x.lat, x.lng)) : '';
+      return '<button type="button" class="pick" data-pk="' + esc(x.shopId) + '"><b>' + esc(x.shopName) + '</b><small>' +
+        esc([dd, (x.shopTypes || []).join('・')].filter(function(v) { return v; }).join(' · ')) + '</small></button>';
+    }).join('') || '<div class="empty">' + esc(STR.noMatch) + '</div>';
+  };
+  draw();
+  document.getElementById('pkQ').addEventListener('input', draw);
+  document.getElementById('pkList').addEventListener('click', function(e) {
+    var b = e.target.closest('[data-pk]'); if (!b) return;
+    var id = b.getAttribute('data-pk'), shop = null;
+    for (var i = 0; i < shopsCache.length; i++) if (shopsCache[i].shopId === id) shop = shopsCache[i];
+    closeSheet();
+    if (shop) onPick(shop);
+  });
+}
+document.getElementById('calcShop').addEventListener('click', function() {
+  openPickShop(function(shop) { calcShop = shop; hMode = modeForShop(shop); renderCalcShop(); renderHearingInputs(); });
+});
 function hSetValue(key, raw, rerender) {
   var el = document.getElementById('h_' + key);
   var v = parseFloat(raw);
@@ -2566,36 +3107,26 @@ document.getElementById('hearInputs').addEventListener('change', function(e) {
 });
 
 function saveHearing() {
-  if (!currentShop) return;
+  if (!calcShop) { // お店をまだ選んでいない → 選んだらそのまま残す
+    openPickShop(function(shop) { calcShop = shop; renderCalcShop(); renderHearingResult(); saveHearing(); });
+    return;
+  }
   var btn = document.getElementById('btnHearSave');
   var orig = btn.textContent;
   btn.disabled = true; btn.textContent = STR.saving;
-  sendOrQueue({ action: 'saleslog_hearing_create', shopId: currentShop.shopId, mode: hMode,
-        inputs: JSON.parse(JSON.stringify(hIn[hMode])), note: document.getElementById('hearNote').value.trim(), gps: hereGps || currentGps || null })
+  var shopId = calcShop.shopId;
+  sendOrQueue({ action: 'saleslog_hearing_create', shopId: shopId, mode: hMode,
+        inputs: JSON.parse(JSON.stringify(hIn[hMode])), note: document.getElementById('hearNote').value.trim(), gps: freshGps() })
     .then(function(d) {
       btn.disabled = false; btn.textContent = orig;
       if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
-      toast(d.queued ? '📶 ' + STR.offQueued : STR.saved, 'ok');
-      openShop(currentShop.shopId);
+      toast(d.queued ? '📶 ' + pickLang(STR.todayPend) : STR.saved, 'ok');
+      document.getElementById('hearNote').value = '';
+      if (calcFrom === 'shop') openShop(shopId); else refreshShopsSoon();
     })
     .catch(function() { btn.disabled = false; btn.textContent = orig; toast('⚠️ ' + STR.netError, 'err'); });
 }
-function renderHearings() {
-  var list = document.getElementById('hearList');
-  if (!currentHearings.length) { list.innerHTML = '<div class="empty">' + esc(STR.hearEmpty) + '</div>'; return; }
-  list.innerHTML = currentHearings.map(function(h) {
-    var how = h.mode === 'facility'
-      ? 'WASH ' + h.wash + '・GLASS ' + h.glass3 + '・HEADLIGHT ' + h.headlight + '・MAGIC ' + h.magic + ' 件/月' +
-        (h.spaces ? ' ／ 駐車場 ' + h.spaces + '台・埋まり ' + h.occ + '%' : '') + (h.stayLabel ? '・' + h.stayLabel : '') + (h.peakLabel ? '・混むのは' + h.peakLabel : '')
-      : h.mode === 'dealer'
-      ? '在庫 ' + h.stock + '台（軽い黄ばみ ' + h.light + '・ひどい黄ばみ ' + h.heavy + '・ガラス ' + h.glass + '）→ 提携価格 ' + hMoney(h.partner || 0) + '$ ／ 来店 ' + h.buyers + '人・' + h.oneIn + '人に1人'
-      : '1日 ' + h.carsDay + '台 × ' + h.days + '日・' + h.oneIn + '台に1台・平均 ' + h.avg + '$ → 月 ' + h.jobs + '件';
-    return '<div class="hear-item"><div class="hh"><span class="d">' + esc(h.datetime) + (h.staff ? ' · ' + esc(h.staff) : '') +
-      '</span>' + (h.potential ? '<span class="pot ' + esc(h.potential) + '">⭐' + esc(h.potential) + '</span>' : '') +
-      '<span class="m">' + hMoney(h.mine || 0) + '$/月</span></div><div>' + esc(how) + '</div>' +
-      (h.note ? '<div style="color:#cfc6b0">' + esc(h.note) + '</div>' : '') + '</div>';
-  }).join('');
-}
+function renderHearings() { renderTimeline(); }
 
 // ═══════════════════════════════════════════
 //  ヒアリングメモ（2026-10-20）— 聞いたこと・気づいたことを何件でも。まとめは 3日ごとの AI（自己改善タスク）
@@ -2616,7 +3147,7 @@ function renderTips() {
   var rows = document.querySelectorAll('[data-tips]');
   for (var i = 0; i < rows.length; i++) {
     rows[i].innerHTML = STR.tips.map(function(t) {
-      return '<button type="button" data-tip="' + esc(t[0]) + '">+ ' + esc(t[0]) + ' <span style="color:var(--text-dim)">' + esc(t[1]) + '</span></button>';
+      return '<button type="button" data-tip="' + esc(t[0]) + '" data-tip-ja="' + esc(t[1]) + '">+ ' + esc(t[0] + ' / ' + t[1]) + '</button>';
     }).join('');
   }
 }
@@ -2630,18 +3161,11 @@ document.addEventListener('click', function(e) {
   } else {
     ta = document.getElementById(target);
   }
-  var head = b.getAttribute('data-tip') + '៖ ';
+  var head = LANG === 'ja' ? b.getAttribute('data-tip-ja') + '：' : b.getAttribute('data-tip') + '៖ ';
   if (ta.value.indexOf(head) !== 0) ta.value = head + ta.value;
   ta.focus();
 });
-function renderNotes() {
-  var list = document.getElementById('noteList');
-  if (!currentNotes.length) { list.innerHTML = '<div class="empty" style="padding:12px 0">' + esc(STR.notesEmpty) + '</div>'; return; }
-  list.innerHTML = currentNotes.map(function(n) {
-    return '<div class="note-item"><div class="nm">' + esc(n.datetime) + (n.staff ? ' · ' + esc(n.staff) : '') +
-      (n.pending ? '<span class="pend">' + esc(STR.offBadge.split(' / ')[0]) + '</span>' : '') + '</div>' + esc(n.text) + '</div>';
-  }).join('');
-}
+function renderNotes() { renderTimeline(); }
 function saveShopNote() {
   if (!currentShop) return;
   var ta = document.getElementById('sNoteText');
@@ -2672,6 +3196,22 @@ document.getElementById('sNoteText').placeholder = STR.notesPh;
 document.getElementById('btnNoteAdd').textContent = STR.notesAdd;
 document.getElementById('btnNoteAdd').addEventListener('click', saveShopNote);
 document.getElementById('lblFormNotes').textContent = STR.notesHead;
+// 2026-10-20 作り直し分の文言
+document.getElementById('navMapL').textContent = STR.navMap;
+document.getElementById('navListL').textContent = STR.navList;
+document.getElementById('navNewL').textContent = STR.navNew;
+document.getElementById('navCalcL').textContent = STR.navCalc;
+document.getElementById('actCallL').textContent = STR.actCall;
+document.getElementById('actMapL').textContent = STR.actMap;
+document.getElementById('actCalcL').textContent = STR.navCalc;
+document.getElementById('btnJustVisit').textContent = STR.justVisit;
+document.getElementById('nextHead').textContent = STR.nextHead;
+document.getElementById('dueHead').textContent = STR.dueHead;
+document.getElementById('btnNextText').textContent = STR.saveShort;
+document.getElementById('nextText').placeholder = STR.nextAction;
+document.getElementById('infoHead').textContent = STR.infoHead;
+document.getElementById('btnHearSave').textContent = STR.calcSave;
+document.getElementById('hearNote').placeholder = STR.calcNotePh;
 document.getElementById('formNotesHint').textContent = STR.notesHint;
 document.getElementById('btnNoteMore').textContent = STR.notesMore;
 document.getElementById('btnNoteMore').addEventListener('click', function() { addFormNote().focus(); });
@@ -2688,7 +3228,7 @@ document.getElementById('filterRow').addEventListener('click', function(e) {
   for (var i = 0; i < bs.length; i++) bs[i].className = bs[i] === b ? 'on' : '';
   renderShopList();
 });
-document.getElementById('btnUnv').textContent = '○ ' + STR.mapUnv.split(' / ')[0];
+document.getElementById('btnUnv').textContent = '○ ' + STR.mapUnv;
 document.getElementById('btnUnv').addEventListener('click', function() {
   showUnvisited = !showUnvisited;
   this.className = 'unv-toggle' + (showUnvisited ? '' : ' off');
@@ -2709,12 +3249,9 @@ document.querySelector('.due-row').addEventListener('click', function(e) {
 document.getElementById('shopSearch').placeholder = STR.search;
 document.getElementById('btnNear').textContent = STR.nearBtn;
 document.getElementById('btnHere').textContent = STR.hereBtn;
-document.getElementById('btnHear').textContent = STR.hearBtn;
-document.getElementById('hearHead').textContent = STR.hearHead;
-document.getElementById('hearNoteLabel').textContent = STR.hearNote;
 document.getElementById('hearHint').textContent = STR.hearHint;
-document.getElementById('hmGarage').innerHTML = esc(HS.garage[0]) + '<br>' + esc(HS.garage[1]);
-document.getElementById('hmDealer').innerHTML = esc(HS.dealer[0]) + '<br>' + esc(HS.dealer[1]);
+document.getElementById('hmGarage').textContent = hs('garage');
+document.getElementById('hmDealer').textContent = hs('dealer');
 document.getElementById('hmGarage').addEventListener('click', function() { hMode = 'garage'; renderHearingInputs(); });
 document.getElementById('hmDealer').addEventListener('click', function() { hMode = 'dealer'; renderHearingInputs(); });
 document.getElementById('hmFacility').addEventListener('click', function() { hMode = 'facility'; renderHearingInputs(); });
@@ -2722,7 +3259,7 @@ document.getElementById('hmFacility').addEventListener('click', function() { hMo
 Object.keys(FAC_KM).forEach(function(k) { if (HS[k]) HS[k][0] = FAC_KM[k]; });
 SHOP_TYPES.forEach(function(t) { if (t.kmKey && FAC_KM[t.kmKey]) t.km = FAC_KM[t.kmKey]; else if (t.kmKey) t.km = t.jp; });
 // ボタンは Panha 確定文の1行目（កន្លែងអាជីវកម្ម）＋「施設」だけ。括弧の例示（2行目）はボタンに入らないので省く
-document.getElementById('hmFacility').innerHTML = esc((HS.facility[0] || '').split(' (')[0]) + '<br>施設';
+document.getElementById('hmFacility').textContent = (HS.facility[0] || '').split(' (')[0] + ' / 施設';
 document.getElementById('btnPot').addEventListener('click', function() {
   potMode = !potMode;
   this.className = 'near-btn' + (potMode ? ' on' : '');
@@ -2730,7 +3267,7 @@ document.getElementById('btnPot').addEventListener('click', function() {
   renderShopList();
 });
 document.getElementById('btnHear').addEventListener('click', openHearing);
-document.getElementById('btnHearBack').addEventListener('click', function() { showView('shop'); });
+document.getElementById('btnHearBack').addEventListener('click', function() { if (currentShop) openShop(currentShop.shopId); else showView('home'); });
 document.getElementById('btnHearSave').addEventListener('click', saveHearing);
 document.getElementById('shopSearch').addEventListener('input', renderShopList);
 document.getElementById('btnNear').addEventListener('click', function() {
@@ -2743,6 +3280,158 @@ document.getElementById('btnNear').addEventListener('click', function() {
 document.getElementById('btnHere').addEventListener('click', function() {
   hereThen(function() { if (map) map.setView([hereGps.lat, hereGps.lng], 16); renderShopList(); });
 });
+
+
+// ═══════════════════════════════════════════
+//  1画面に1つの言語（2026-10-20）
+//  文言は従来どおり「ខ្មែរ / 日本語」で持ち、画面に出す時に選んだ方だけにする（右上の ខ្មែរ / 日本 で切替）
+//  ・文字は元の形を覚えておくので、切り替えるとその場で全部入れ替わる
+//  ・保存する値（次にやること 等）も同じ形で入れておくと、見る人の言語で出る
+// ═══════════════════════════════════════════
+var RE_KM = /[\u1780-\u17FF]/, RE_JA = /[\u3040-\u30FF\u3400-\u9FFF]/;
+function pickLang(str) {
+  if (!str || !RE_KM.test(str)) return str;
+  if (str.indexOf(' / ') >= 0) {
+    var parts = str.split(' / ');
+    for (var k = 1; k < parts.length; k++) {
+      var L = parts.slice(0, k).join(' / '), R = parts.slice(k).join(' / ');
+      if (RE_KM.test(L) && !RE_JA.test(L) && RE_JA.test(R) && !RE_KM.test(R)) {
+        if (LANG === 'km') return L;
+        return (L.match(/^[^\u1780-\u17FF0-9A-Za-z]*/) || [''])[0] + R; // 先頭の絵文字は残す（例: 「📍 ទីតាំងខ្ញុំ / 現在地」→「📍 現在地」）
+      }
+    }
+  }
+  if (str.indexOf('\n') >= 0) { // 「クメール語の行\n日本語の行」の形
+    var km = [], ja = [];
+    str.split('\n').forEach(function(l) { (RE_JA.test(l) && !RE_KM.test(l) ? ja : km).push(l); });
+    if (km.length && ja.length) return (LANG === 'ja' ? ja : km).join('\n');
+  }
+  return str;
+}
+var LANG_ATTRS = ['placeholder', 'aria-label', 'title'];
+function applyLang(root) {
+  if (!root) return;
+  if (root.nodeType === 3) { langText(root); return; }
+  if (root.nodeType !== 1) return;
+  var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false), n;
+  while ((n = w.nextNode())) langText(n);
+  var els = [root].concat(Array.prototype.slice.call(root.querySelectorAll('[placeholder],[aria-label],[title]')));
+  els.forEach(function(el) {
+    if (!el.getAttribute) return;
+    LANG_ATTRS.forEach(function(a) {
+      var cur = el.getAttribute(a); if (cur === null) return;
+      el.__la = el.__la || {};
+      if (el.__la[a] === undefined || (el.__la[a + '_v'] !== cur)) el.__la[a] = cur; // JS で入れ直された時は新しい方を元にする
+      var v = pickLang(el.__la[a]);
+      el.__la[a + '_v'] = v;
+      if (v !== cur) el.setAttribute(a, v);
+    });
+  });
+}
+function langText(n) {
+  var p = n.parentNode;
+  if (p && (p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE' || p.nodeName === 'TEXTAREA')) return;
+  if (n.__lo === undefined || n.__lv !== n.nodeValue) n.__lo = n.nodeValue; // 書き換えられていたら新しい方を元にする
+  var v = pickLang(n.__lo);
+  n.__lv = v;
+  if (v !== n.nodeValue) n.nodeValue = v;
+}
+function setLang(l) {
+  LANG = l === 'ja' ? 'ja' : 'km';
+  try { localStorage.setItem('sl_lang_v1', LANG); } catch (e) {}
+  document.body.classList.remove('L-km', 'L-ja');
+  document.body.classList.add('L-' + LANG);
+  document.documentElement.lang = LANG === 'ja' ? 'ja' : 'km';
+  var bs = document.querySelectorAll('#langSeg [data-lang]');
+  for (var i = 0; i < bs.length; i++) bs[i].setAttribute('aria-pressed', bs[i].getAttribute('data-lang') === LANG ? 'true' : 'false');
+  applyLang(document.body);
+  // 数を後ろに足している所は描き直す
+  if (shopsCache.length) renderFollow();
+  if (currentShop && document.getElementById('viewShop').className === '') { renderShopDetail(); }
+  if (document.getElementById('viewHearing').className === '') renderHearingInputs();
+}
+document.getElementById('langSeg').addEventListener('click', function(e) {
+  var b = e.target.closest('[data-lang]'); if (b) setLang(b.getAttribute('data-lang'));
+});
+if (window.MutationObserver) {
+  new MutationObserver(function(muts) {
+    muts.forEach(function(m) {
+      if (m.type === 'childList') for (var i = 0; i < m.addedNodes.length; i++) applyLang(m.addedNodes[i]);
+      else if (m.type === 'attributes') applyLang(m.target);
+    });
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: LANG_ATTRS });
+}
+
+// ═══════════════════════════════════════════
+//  下から出る画面（新しいお店・お店を選ぶ）
+// ═══════════════════════════════════════════
+function openSheet(html) {
+  var sh = document.getElementById('sheet');
+  document.getElementById('sheetIn').innerHTML = html;
+  sh.className = 'sheet';
+  var cs = sh.querySelectorAll('[data-close]');
+  for (var i = 0; i < cs.length; i++) cs[i].addEventListener('click', closeSheet);
+}
+function closeSheet() { document.getElementById('sheet').className = 'sheet hidden'; document.getElementById('sheetIn').innerHTML = ''; }
+document.getElementById('sheet').addEventListener('click', function(e) { if (e.target === this) closeSheet(); });
+
+// ── 新しいお店: 店名だけで保存できる（位置は自動・反応は押してもいい）。保存したらその店の画面へ ──
+function openNewShop() {
+  var react = '';
+  openSheet('<h3>' + esc(STR.newShopTitle) + '</h3>' +
+    '<div class="lbl">' + esc(STR.newShopName) + '</div><input type="text" id="nsName" maxlength="100" autocomplete="off" placeholder="ឧ. ABC Auto">' +
+    '<div id="nsNear"></div>' +
+    '<div class="lbl">' + esc(STR.newShopReact) + '</div><div class="big-react" id="nsReact">' +
+    ['A', 'B', 'C', 'D'].map(function(r) { return '<button type="button" data-qr="' + r + '"><span class="L">' + r + '</span><span>' + esc(REACT_LABELS[r]) + '</span></button>'; }).join('') +
+    '</div><div class="row2"><button type="button" class="ghost" data-close>' + esc(STR.close) + '</button>' +
+    '<button type="button" class="primary" id="nsSave">💾 ' + esc(STR.saveShort) + '</button></div>');
+  var near = function() {
+    var q = (document.getElementById('nsName') || {}).value || '';
+    q = q.trim().toLowerCase();
+    var hits = shopsCache.filter(function(x) {
+      var nameHit = q.length >= 2 && x.shopName.toLowerCase().indexOf(q) >= 0;
+      var gpsHit = hereGps && x.lat !== null && x.lng !== null && distMeters(hereGps.lat, hereGps.lng, x.lat, x.lng) <= 150;
+      return nameHit || gpsHit;
+    }).slice(0, 4);
+    var box = document.getElementById('nsNear'); if (!box) return;
+    box.innerHTML = hits.length ? '<div class="lbl">' + esc(STR.suggestHead) + '</div>' + hits.map(function(x) {
+      var dd = (hereGps && x.lat !== null && x.lng !== null) ? fmtDist(distMeters(hereGps.lat, hereGps.lng, x.lat, x.lng)) : '';
+      return '<button type="button" class="pick" data-ns="' + esc(x.shopId) + '"><b>🏪 ' + esc(x.shopName) + '</b><small>' + esc(dd) + '</small></button>';
+    }).join('') : '';
+  };
+  near();
+  if (!hereGps || Date.now() - hereGpsAt > 120000) locateHere(function(ok) { if (ok) near(); });
+  document.getElementById('nsName').addEventListener('input', near);
+  document.getElementById('nsNear').addEventListener('click', function(e) {
+    var b = e.target.closest('[data-ns]'); if (!b) return;
+    closeSheet(); openShop(b.getAttribute('data-ns'));
+  });
+  document.getElementById('nsReact').addEventListener('click', function(e) {
+    var b = e.target.closest('[data-qr]'); if (!b) return;
+    react = react === b.getAttribute('data-qr') ? '' : b.getAttribute('data-qr');
+    var bs = this.querySelectorAll('[data-qr]');
+    for (var i = 0; i < bs.length; i++) bs[i].className = bs[i].getAttribute('data-qr') === react ? 'sel' : '';
+  });
+  document.getElementById('nsSave').addEventListener('click', function() {
+    var name = document.getElementById('nsName').value.trim();
+    if (!name) { toast(STR.needShop, 'err'); document.getElementById('nsName').focus(); return; }
+    var btn = this; btn.disabled = true;
+    var tv = { clientId: newClientId(), time: nowHM(), reaction: react, nextAction: '', nextDue: '' };
+    sendOrQueue({ action: 'saleslog_create', shopName: name, reaction: react, gps: freshGps(), clientId: tv.clientId })
+      .then(function(d) {
+        btn.disabled = false;
+        if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
+        closeSheet();
+        if (d.queued) { toast('📶 ' + STR.offQueued, 'ok'); return; } // まだ店の番号が無いので、電波が戻って送れたら一覧に出る
+        toast(STR.saved, 'ok');
+        tv.visitId = d.visitId;
+        if (d.shopId) persistToday(d.shopId, tv);
+        loadShops().then(function() { if (d.shopId) openShop(d.shopId); });
+      })
+      .catch(function() { btn.disabled = false; toast('⚠️ ' + STR.netError, 'err'); });
+  });
+  setTimeout(function() { var el = document.getElementById('nsName'); if (el) el.focus(); }, 120);
+}
 
 // ═══════════════════════════════════════════
 //  Toast / esc
@@ -2770,7 +3459,16 @@ function esc(s) {
 document.getElementById('btnOffSend').textContent = STR.offSend;
 document.getElementById('btnOffSend').addEventListener('click', function() { flushOutbox(true); });
 renderOffBars();
-loadWho().then(loadShops).then(function() { flushOutbox(); });
+setLang(LANG);
+loadWho().then(loadShops).then(function() {
+  flushOutbox();
+  // 現場では「いまいる所から近い順」が一番使う。位置が取れたら自動で近い順にする（もう一度押せば解除）
+  locateHere(function(ok) {
+    if (!ok || potMode || nearMode) return;
+    nearMode = true; document.getElementById('btnNear').className = 'near-btn on';
+    renderShopList(); refreshMapMarkers();
+  });
+});
 
 // アプリ本体をスマホに保存（電波が弱い所でも開きやすくする）。Telegram の端末によっては使えないので失敗しても何もしない
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
