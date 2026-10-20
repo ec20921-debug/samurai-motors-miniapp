@@ -146,6 +146,123 @@ body {
 }
 .map-hint { font-size:11px; color:var(--text-dim); text-align:center; margin-top:8px; }
 
+/* ── 2026-10-20 訪問支援: 検索・近い順・現在地・前回メモ ── */
+.find-row { display:flex; gap:8px; margin-bottom:10px; }
+.find-row input { flex:1; min-width:0; background:var(--card); border:1.5px solid var(--border); border-radius:12px;
+  color:var(--text); padding:10px 12px; font-size:14px; font-family:inherit; }
+.near-btn { flex:none; border:1.5px solid var(--border); background:var(--card); color:var(--text); border-radius:12px;
+  padding:0 12px; font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; }
+.near-btn.on { border-color:var(--gold); color:var(--gold); }
+.shop-last { font-size:12.5px; color:#cfc6b0; margin-top:6px; line-height:1.5; display:-webkit-box; -webkit-line-clamp:2;
+  -webkit-box-orient:vertical; overflow:hidden; }
+.shop-last b { color:var(--gold); font-weight:700; }
+.dist { flex-shrink:0; font-size:12px; font-weight:700; color:var(--gold); }
+.map-tools { position:relative; }
+.here-btn { position:absolute; right:10px; top:10px; z-index:500; border:none; border-radius:10px; padding:9px 12px;
+  background:var(--gold); color:#1a1a1a; font-weight:700; font-size:13px; font-family:inherit; cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,.4); }
+.pin { width:30px; height:30px; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid #fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; }
+.pin span { transform:rotate(45deg); color:#fff; font-weight:700; font-size:13px; font-family:'Noto Sans JP',sans-serif; }
+.me-dot { width:18px; height:18px; border-radius:50%; background:#2f80ff; border:3px solid #fff; box-shadow:0 0 0 6px rgba(47,128,255,.25); }
+.popup-last { margin-top:6px; padding-top:6px; border-top:1px solid var(--border); font-size:12.5px; line-height:1.5; max-width:230px; }
+.popup-btns { display:flex; gap:6px; }
+.popup-btns .popup-open-btn { flex:1; }
+.popup-open-btn.alt { background:#2a2a2a; color:var(--gold); border:1px solid var(--gold); }
+
+/* ── 商談計算（ヒアリング） ── */
+.hear-btn { display:block; width:100%; margin:0 0 14px; padding:13px; border:1.5px solid var(--gold); border-radius:var(--radius);
+  background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(201,168,76,.06)); color:var(--gold); font-weight:700; font-size:15px;
+  font-family:inherit; cursor:pointer; }
+.hres { position:sticky; top:0; z-index:5; background:linear-gradient(160deg,#2a2412,#15130d 70%); border:1.5px solid var(--gold);
+  border-radius:16px; padding:12px 14px; margin-bottom:12px; }
+.hres .l { font-size:12.5px; color:#e8d5a3; font-weight:700; }
+.hres .big { font-size:46px; font-weight:700; color:#fff; line-height:1.1; font-variant-numeric:tabular-nums; }
+.hres .big small { font-size:16px; color:var(--gold); margin-left:4px; }
+.hres .cells { display:flex; gap:6px; margin-top:8px; }
+.hres .cells div { flex:1; min-width:0; background:rgba(0,0,0,.3); border-radius:10px; padding:6px 8px; }
+.hres .cells span { display:block; font-size:10.5px; color:var(--text-dim); line-height:1.35; }
+.hres .cells b { font-size:17px; font-variant-numeric:tabular-nums; }
+.hres .n { font-size:11px; color:var(--text-dim); margin-top:6px; line-height:1.45; }
+.hmode { display:flex; gap:6px; margin-bottom:12px; }
+.hmode button { flex:1; padding:10px 6px; border:1.5px solid var(--border); background:var(--card); color:var(--text-dim);
+  border-radius:12px; font-weight:700; font-size:13px; font-family:inherit; line-height:1.35; cursor:pointer; }
+.hmode button.sel { border-color:var(--gold); color:#1a1a1a; background:var(--gold); }
+.hrow { display:flex; align-items:center; gap:10px; padding:10px 0; border-top:1px solid var(--border); }
+.hrow:first-child { border-top:0; }
+.hrow label { flex:1; min-width:0; font-size:13.5px; line-height:1.4; }
+.hrow label small { display:block; font-size:11px; color:var(--text-dim); }
+.hstep { flex:none; display:flex; align-items:center; background:#222; border:1.5px solid var(--border); border-radius:12px; overflow:hidden; }
+.hstep button { width:40px; height:42px; border:0; background:none; color:var(--gold); font-size:22px; cursor:pointer; font-family:inherit; }
+.hstep input { width:58px; height:42px; border:0; background:none; color:var(--text); text-align:center; font-size:20px; font-weight:700;
+  font-family:inherit; -moz-appearance:textfield; }
+.hstep input::-webkit-outer-spin-button,.hstep input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+.hcard { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); padding:4px 12px; margin-bottom:12px; }
+.hcard h4 { font-size:12.5px; color:var(--gold); margin:10px 0 2px; }
+.hchips { display:flex; flex-wrap:wrap; gap:6px; padding:2px 0 10px; }
+.hchip { border:1.5px solid var(--border); background:#222; color:var(--text); border-radius:999px; padding:5px 10px; font-size:12px;
+  font-weight:700; font-family:inherit; cursor:pointer; }
+.hchip.sel { border-color:var(--gold); background:rgba(201,168,76,.18); }
+.hsum { display:grid; grid-template-columns:1fr auto; gap:4px 10px; padding:4px 0 10px; font-size:13px; align-items:baseline; }
+.hsum b { text-align:right; font-size:16px; font-variant-numeric:tabular-nums; }
+.hsum .strike { color:var(--text-dim); text-decoration:line-through; }
+.hsum .hi { color:var(--gold); font-size:20px; }
+.hear-item { background:var(--card); border:1.5px solid var(--border); border-radius:12px; padding:10px 12px; margin-bottom:8px; font-size:12.5px; line-height:1.55; }
+.hear-item .hh { display:flex; gap:8px; align-items:baseline; }
+.hear-item .hh .d { flex:1; color:var(--text-dim); }
+.hear-item .hh .m { color:var(--gold); font-weight:700; font-size:16px; }
+.hmode button { font-size:12px; }
+.hparked { display:flex; justify-content:space-between; align-items:baseline; padding:8px 0 10px; border-top:1px solid var(--border); font-size:13px; }
+.hparked b { color:var(--gold); font-size:20px; }
+.hrow.off label { color:var(--text-dim); }
+.hrow .offnote { flex:none; font-size:11px; color:var(--text-dim); max-width:46%; text-align:right; line-height:1.4; }
+.pot { flex-shrink:0; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; border:1px solid var(--gold); color:var(--gold); }
+.pot.S { background:var(--gold); color:#1a1a1a; }
+
+/* ── 2026-10-20 一本化: 未訪問の店（白いピン）・絞り込み・フォロー ── */
+.badge.unv { background:#f2f2f2; color:#333; }
+.filter-row { display:flex; gap:6px; margin-bottom:10px; }
+.filter-row button { flex:1; padding:8px 4px; border:1.5px solid var(--border); background:var(--card); color:var(--text-dim);
+  border-radius:10px; font-size:12px; font-weight:700; font-family:inherit; cursor:pointer; line-height:1.3; }
+.filter-row button.on { border-color:var(--gold); color:var(--gold); }
+.pin.unv { background:#fff !important; border-color:#555; }
+.pin.unv span { color:#333; font-size:11px; }
+.unv-toggle { position:absolute; left:10px; bottom:24px; z-index:500; border:1.5px solid #555; border-radius:10px; padding:8px 10px;
+  background:#fff; color:#222; font-weight:700; font-size:12px; font-family:inherit; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.4); }
+.unv-toggle.off { background:#2a2a2a; color:#aaa; border-color:#444; }
+.follow-box { background:var(--card); border:1.5px solid var(--amber); border-radius:var(--radius); padding:10px 12px; margin-bottom:12px; }
+.follow-box .fh { font-size:13px; font-weight:700; color:var(--amber); margin-bottom:6px; }
+.follow-item { display:flex; gap:8px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--border); cursor:pointer; }
+.follow-item:first-of-type { border-top:0; }
+.follow-item .fb { flex-shrink:0; font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; color:#fff; background:var(--amber); }
+.follow-item .fb.late { background:var(--red); }
+.follow-item .ft { flex:1; min-width:0; font-size:13px; line-height:1.45; }
+.follow-item .ft b { display:block; font-size:14px; }
+.follow-none { font-size:12px; color:var(--text-dim); }
+.due-row { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+.due-row button { border:1.5px solid var(--border); background:#222; color:var(--text); border-radius:999px; padding:5px 11px; font-size:12px;
+  font-weight:700; font-family:inherit; cursor:pointer; }
+.due-row input { background:var(--card); border:1.5px solid var(--border); color:var(--text); border-radius:10px; padding:6px 8px;
+  font-family:inherit; font-size:13px; color-scheme:dark; }
+.vnext { font-size:12px; color:var(--amber); margin-top:4px; }
+.shop-src { font-size:12px; color:var(--text-dim); margin:-4px 0 12px; line-height:1.5; }
+
+/* ── 2026-10-20 ヒアリングメモ（何件でも） ── */
+.notes-hint { font-size:12px; color:var(--text-dim); line-height:1.5; margin:-2px 0 8px; }
+.tip-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+.tip-row button { border:1.5px dashed var(--border); background:transparent; color:var(--text); border-radius:999px; padding:4px 10px;
+  font-size:12px; font-family:inherit; cursor:pointer; }
+.note-input { width:100%; min-height:56px; background:var(--card); border:1.5px solid var(--border); border-radius:12px; color:var(--text);
+  padding:10px 12px; font-size:14px; font-family:inherit; resize:vertical; margin-bottom:8px; }
+.note-add-row { display:flex; gap:8px; }
+.note-add-row .note-input { flex:1; margin-bottom:0; }
+.note-add-btn { flex:none; border:none; border-radius:12px; padding:0 16px; background:var(--gold); color:#1a1a1a; font-weight:700;
+  font-size:14px; font-family:inherit; cursor:pointer; }
+.note-more { border:1.5px dashed var(--gold); background:transparent; color:var(--gold); border-radius:12px; padding:8px 12px;
+  font-size:13px; font-weight:700; font-family:inherit; cursor:pointer; width:100%; }
+.note-item { background:var(--card); border:1.5px solid var(--border); border-radius:12px; padding:9px 12px; margin-top:8px; font-size:13.5px; line-height:1.55; }
+.note-item .nm { font-size:11px; color:var(--text-dim); margin-bottom:2px; }
+
 /* ── フォーム共通 ── */
 .back-btn {
   background:none; border:none; color:var(--text-dim);
@@ -420,6 +537,23 @@ input[type="date"] { color-scheme: dark; }
 
     <button class="new-btn" id="btnNew">➕ កត់ត្រាថ្មី / 新規訪問</button>
 
+    <div class="find-row">
+      <input type="search" id="shopSearch" autocomplete="off">
+      <button type="button" class="near-btn" id="btnNear"></button>
+      <button type="button" class="near-btn" id="btnPot">⭐</button>
+    </div>
+
+    <div class="follow-box hidden" id="followBox">
+      <div class="fh" id="followHead"></div>
+      <div id="followList"></div>
+    </div>
+
+    <div class="filter-row" id="filterRow">
+      <button type="button" data-f="all" class="on"></button>
+      <button type="button" data-f="visited"></button>
+      <button type="button" data-f="unvisited"></button>
+    </div>
+
     <div id="listWrap">
       <div class="list-label" id="listLabel">បញ្ជីហាង / 店一覧</div>
       <div id="listBody">
@@ -428,7 +562,7 @@ input[type="date"] { color-scheme: dark; }
     </div>
 
     <div id="mapWrap">
-      <div id="map"></div>
+      <div class="map-tools"><div id="map"></div><button type="button" class="here-btn" id="btnHere"></button><button type="button" class="unv-toggle" id="btnUnv"></button></div>
       <div class="map-hint" id="mapHint">—</div>
     </div>
   </div>
@@ -437,6 +571,8 @@ input[type="date"] { color-scheme: dark; }
   <div id="viewShop" class="hidden">
     <button class="back-btn" id="btnShopBack">← ត្រឡប់ / 戻る</button>
     <div class="form-title" id="shopTitle">ព័ត៌មានហាង / 店の情報</div>
+    <div class="shop-src hidden" id="shopSrc"></div>
+    <button type="button" class="hear-btn" id="btnHear"></button>
 
     <div class="field">
       <label>ឈ្មោះហាង / 店名 <span class="req">*</span></label>
@@ -477,10 +613,26 @@ input[type="date"] { color-scheme: dark; }
     <button class="save-btn" id="btnShopSave">💾 រក្សាទុក / 保存</button>
 
     <div class="section-head">
+      <span class="h" id="notesHead"></span>
+    </div>
+    <div class="notes-hint" id="notesHint"></div>
+    <div class="tip-row" data-tips="sNoteText"></div>
+    <div class="note-add-row">
+      <textarea class="note-input" id="sNoteText" maxlength="1000"></textarea>
+      <button type="button" class="note-add-btn" id="btnNoteAdd"></button>
+    </div>
+    <div id="noteList"></div>
+
+    <div class="section-head">
       <span class="h" id="historyHead">ប្រវត្តិការចុះជួប / 訪問履歴</span>
       <button class="add-visit-btn" id="btnAddVisit">➕ បន្ថែមការចុះជួប / 追記</button>
     </div>
     <div id="visitList"></div>
+
+    <div class="section-head">
+      <span class="h" id="hearHead"></span>
+    </div>
+    <div id="hearList"></div>
 
     <div class="section-head">
       <span class="h" id="commissionHead">💰 កម្រៃជើងសារ / コミッション</span>
@@ -546,12 +698,55 @@ input[type="date"] { color-scheme: dark; }
       <textarea id="fMemo" maxlength="2000" placeholder="អាចបំពេញពេលក្រោយបាន"></textarea>
     </div>
 
+    <div class="field" id="formNotesField">
+      <label id="lblFormNotes"></label>
+      <div class="notes-hint" id="formNotesHint"></div>
+      <div class="tip-row" data-tips="formNotes"></div>
+      <div id="formNotes"></div>
+      <button type="button" class="note-more" id="btnNoteMore"></button>
+    </div>
+
+    <div class="field">
+      <label id="lblNext"></label>
+      <input type="text" id="fNext" maxlength="300">
+      <div class="due-row">
+        <input type="date" id="fDue" aria-label="due">
+        <button type="button" data-due="1" id="dueT"></button>
+        <button type="button" data-due="3" id="due3"></button>
+        <button type="button" data-due="7" id="due7"></button>
+      </div>
+    </div>
+
     <button class="save-btn" id="btnSave">💾 រក្សាទុក / 保存</button>
 
     <div class="hint" id="formHint">
       ※ GPS មិនមាន ក៏អាចរក្សាទុកបាន<br>
       ※ GPS なしでも保存できます
     </div>
+  </div>
+
+  <!-- ═══════ 商談計算（ヒアリング）— 2026-10-20 ═══════ -->
+  <div id="viewHearing" class="hidden">
+    <button class="back-btn" id="btnHearBack">← ត្រឡប់ / 戻る</button>
+    <div class="form-title" id="hearTitle"></div>
+    <div class="hres" aria-live="polite">
+      <div class="l" id="hrLab"></div>
+      <div class="big"><span id="hrBig">0</span><small>$ <span id="hrUnit"></span></small></div>
+      <div class="cells" id="hrCells"></div>
+      <div class="n" id="hrNote"></div>
+    </div>
+    <div class="hmode">
+      <button type="button" id="hmGarage"></button>
+      <button type="button" id="hmDealer"></button>
+      <button type="button" id="hmFacility"></button>
+    </div>
+    <div id="hearInputs"></div>
+    <div class="field">
+      <label id="hearNoteLabel"></label>
+      <textarea id="hearNote" maxlength="2000"></textarea>
+    </div>
+    <button class="save-btn" id="btnHearSave">💾 រក្សាទុក / 保存</button>
+    <div class="hint" id="hearHint"></div>
   </div>
 
   <!-- ═══════ コミッション記帳フォーム（新規 / 編集 共用） ═══════ -->
@@ -658,12 +853,96 @@ var STR = {
   dirToShop:   'យើងបង់ឱ្យហាង / 店へ支払う分',
   dirFromShop: 'ហាងបង់មកយើង / 店から受け取る分',
   introLabel:  'អ្នកណែនាំ / 紹介者',
-  introNote:   'ក្រុមហ៊ុនបង់ថ្ងៃទី១០ ខែបន្ទាប់ / 本部から翌月10日払い'
+  introNote:   'ក្រុមហ៊ុនបង់ថ្ងៃទី១០ ខែបន្ទាប់ / 本部から翌月10日払い',
+  // ↓ 2026-10-20 訪問支援（検索・近い順・現在地・商談計算）。Panha 校閲済み（Ron の native check 前・provisional）
+  search:      'ស្វែងរកឈ្មោះហាង / 店名で検索',
+  nearBtn:     '🧭 ជិតបំផុត / 近い順',
+  hereBtn:     '📍 ទីតាំងខ្ញុំ / 現在地',
+  hereFail:    'មិនអាចយកទីតាំងបានទេ / 現在地を取得できません',
+  noMatch:     'រកមិនឃើញហាងទេ / 店が見つかりません',
+  lastLabel:   'លើកមុន / 前回',
+  hearBtn:     '🧮 គណនាចំណូលបន្ថែមសម្រាប់ហាងនេះ / この店の追加収入を計算（商談計算）',
+  hearTitle:   '🧮 គណនាចំណូលបន្ថែម / 商談計算',
+  hearHead:    '🧮 ប្រវត្តិការគណនា / 商談計算の履歴',
+  hearEmpty:   'មិនទាន់មានការគណនាទេ / まだ計算の記録がありません',
+  hearNote:    'អ្វីដែលម្ចាស់ហាងនិយាយ និងកំណត់ចំណាំរថយន្តស្តុក / 言われたこと・在庫車のメモ',
+  hearHint:    '※ រក្សាទុកក្នុង Google Sheet ផ្ទាំង «商談ヒアリング» / GSS の「商談ヒアリング」タブに保存されます',
+  priceErr:    'មិនអាចអានតម្លៃសេវាបានទេ / サービス料金（メニュー）を読めません',
+  // ↓ 2026-10-20 一本化（未訪問の店・フォロー）。Panha 校閲済み（provisional・Ron の確認待ち）
+  unvisited:   'មិនទាន់ចុះជួប / 未訪問',
+  fAll:        'ទាំងអស់ / すべて',
+  fVisited:    'បានចុះជួប / 訪問済み',
+  fUnvisited:  'មិនទាន់ចុះជួប / 未訪問',
+  mapUnv:      'បង្ហាញហាងមិនទាន់ចុះជួប / 未訪問の店を表示',
+  nextAction:  'អ្វីដែលត្រូវធ្វើបន្ទាប់ / 次にやること',
+  nextDue:     'ថ្ងៃកំណត់ / 期日',
+  dueTomorrow: 'ស្អែក / 明日',
+  due3d:       '3 ថ្ងៃទៀត / 3日後',
+  due1w:       '1 សប្តាហ៍ទៀត / 1週間後',
+  followHead:  '⏰ ត្រូវតាមដានថ្ងៃនេះ / 今日やるフォロー',
+  overdue:     'ហួសកំណត់ / 期限切れ',
+  dueToday:    'ថ្ងៃនេះ / 今日',
+  followNone:  'ថ្ងៃនេះគ្មានអ្វីត្រូវតាមដានទេ / 今日やるフォローはありません',
+  address:     'អាសយដ្ឋាន / 住所',
+  fromList:    'មកពីបញ្ជីហាងគោលដៅ / 見込みリストから登録',
+  // ↓ 2026-10-20 ヒアリングメモ。Panha 校閲済み（provisional・Ron の確認待ち）
+  notesHead:   '🗒 កំណត់ចំណាំអ្វីដែលបានស្តាប់ / ヒアリングメモ',
+  notesHint:   'អ្វីដែលបានស្តាប់ ឬសង្កេតឃើញ សរសេរបានច្រើនតាមចិត្ត។ AI នឹងសង្ខេបឱ្យ។ / 聞いたこと・気づいたことを、いくつでも書けます。まとめは AI がします',
+  notesPh:     'ឧទាហរណ៍៖ ម្ចាស់ហាងគិតពីពេលវេលា ច្រើនជាងតម្លៃសេវា',
+  notesAdd:    'បន្ថែម / 追加',
+  notesMore:   '+ សរសេរមួយទៀត / もう1つ書く',
+  notesEmpty:  'មិនទាន់មានកំណត់ចំណាំទេ / まだメモはありません',
+  notesSaved:  'បានរក្សាទុកកំណត់ចំណាំហើយ ✅',
+  notesNeed:   'សូមសរសេរកំណត់ចំណាំសិន / メモを書いてください',
+  // ヒントのチップ [km, ja]。押すと「km៖ 」を欄の先頭に入れる（Panha 指定の区切り）
+  tips:        [['បញ្ហាដែលកំពុងជួប', '困っていること'], ['ស្ថានភាពរថយន្តរបស់ភ្ញៀវ', 'お客さんの車の状態'],
+                ['ប្រតិកម្មចំពោះតម្លៃសេវា', '料金への反応'], ['អ្នកសម្រេចចិត្តគឺនរណា', '決める人は誰か']]
 };
+// 商談計算の画面文言。km は Panha 校閲済み（2026-10-19 提携電卓アプリ UI と同一の確定文）
+var HS = {
+  garage:      ['ហាងជួសជុលរថយន្ត', '整備工場'],
+  dealer:      ['ហាងលក់រថយន្តជើងទី២', '中古車屋'],
+  cars_day:    ['ចំនួនរថយន្តដែលជួសជុលក្នុងមួយថ្ងៃ', '1日に整備する台数'],
+  days_month:  ['ចំនួនថ្ងៃបើកហាងក្នុងមួយខែ', '月の営業日数'],
+  take_rate:   ['ភ្ញៀវ 1 ក្នុងប៉ុន្មាននាក់ ប្រើសេវា', '何人に1人が頼むか'],
+  one_in:      ['1 ក្នុង {n} នាក់', '{n}人に1人'],
+  avg_price:   ['តម្លៃសេវាជាមធ្យមក្នុងមួយដង', '1件の平均料金'],
+  jobs_month:  ['ចំនួនដងធ្វើសេវាក្នុងមួយខែ', '月の件数'],
+  sales_month: ['ភ្ញៀវបង់សរុបក្នុងមួយខែ', 'お客さんの支払い（月）'],
+  your_month:  ['កម្រៃជើងសាររបស់អ្នកក្នុងមួយខែ', '御社の紹介料（月）'],
+  your_year:   ['ក្នុងមួយឆ្នាំ', '年間'],
+  rate_note:   ['កម្រៃជើងសារ {r}% នៃទឹកប្រាក់ដែលភ្ញៀវបង់ — រាល់ដង', 'お客さんの支払額に対して紹介料{r}%・毎回'],
+  stock_total: ['ចំនួនរថយន្តស្តុក', '在庫台数'],
+  hl_light:    ['ចង្កៀងមុខលឿងបន្តិច', 'ヘッドライトの軽い黄ばみ'],
+  hl_heavy:    ['ចង្កៀងមុខលឿងខ្លាំង', 'ヘッドライトのひどい黄ばみ'],
+  glass_dirty: ['កញ្ចក់ត្រូវការថែទាំ', 'ガラスの手入れが必要'],
+  price_regular: ['តម្លៃធម្មតា', '定価'],
+  price_partner: ['តម្លៃសេវាដៃគូ សម្រាប់រថយន្តស្តុករបស់អ្នក (បញ្ចុះ 30%)', '在庫車の提携価格（30%オフ）'],
+  price_partner_short: ['តម្លៃដៃគូ (បញ្ចុះ 30%)', '提携価格（30%オフ）'],
+  you_save:    ['អ្នកសន្សំបាន', '割引額'],
+  buyers_month: ['ចំនួនភ្ញៀវមកហាងក្នុងមួយខែ', '月のお客さん数'],
+  refresh_title: ['ធ្វើឱ្យរថយន្តស្តុកមើលទៅថ្មីឡើងវិញ', '在庫車をきれいに'],
+  referral_title: ['ណែនាំភ្ញៀវមកយើង', 'お客さんを紹介'],
+  example_note: ['ជាការប៉ាន់ស្មានប៉ុណ្ណោះ។ លទ្ធផលពិតអាស្រ័យលើចំនួនភ្ញៀវរបស់អ្នក។', '試算です。実際はお客さんの数によって変わります。'],
+  cars_unit:   ['គ្រឿង', '台'], days_unit: ['ថ្ងៃ', '日'], jobs_unit: ['ដង', '件'], month_unit: ['/ខែ', '／月'],
+  // ↓ 2026-10-20 施設モード（km は FAC_KM で流し込む）
+  facility: ['', '施設（ゴルフ場・レストラン・ホテル・モール・レジデンス）'], spaces: ['', '駐車場の台数'], occ: ['', '混む時間の埋まり具合'],
+  occ30: ['', '3割くらい'], occ50: ['', '半分くらい'], occ80: ['', '8割くらい'], stay: ['', '1台あたりの駐車時間'],
+  stay_lt1: ['', '1時間未満'], stay_1to3: ['', '1〜3時間'], stay_gt3: ['', '3時間以上'], peak: ['', '混む時間帯'],
+  peak_day: ['', '昼'], peak_night: ['', '夜'], peak_both: ['', '両方'], visitors: ['', '1日のお客さん数'],
+  parked: ['', '毎日停まっている車'], orders_title: ['', '月の見込み件数'], not_fit: ['', '駐車時間が足りないため不可'],
+  potential: ['', '見込み評価']
+};
+// Panha 校閲済みの施設モード km（2026-10-20・全行 provisional / Ron の確認待ち）。下で HS / SHOP_TYPES に流し込む
+var FAC_KM = {"t_golf": "ទីលានវាយកូនហ្គោល", "t_rest": "ភោជនីយដ្ឋាន", "t_hotel": "សណ្ឋាគារ", "t_mall": "ផ្សារទំនើប", "facility": "កន្លែងអាជីវកម្ម (ហ្គោល ភោជនីយដ្ឋាន សណ្ឋាគារ ផ្សារទំនើប)", "spaces": "ចំនួនកន្លែងចតរថយន្ត", "occ": "ម៉ោងមមាញឹក កន្លែងចតពេញប៉ុនណា", "occ30": "ប្រហែល 30%", "occ50": "ប្រហែលពាក់កណ្ដាល", "occ80": "ប្រហែល 80%", "stay": "រយៈពេលចតរថយន្ត ក្នុងមួយគ្រឿង", "stay_lt1": "តិចជាង 1 ម៉ោង", "stay_1to3": "1 ដល់ 3 ម៉ោង", "stay_gt3": "ច្រើនជាង 3 ម៉ោង", "peak": "ម៉ោងមមាញឹក", "peak_day": "ពេលថ្ងៃ", "peak_night": "ពេលយប់", "peak_both": "ទាំងពីរ", "visitors": "ចំនួនភ្ញៀវក្នុងមួយថ្ងៃ", "parked": "ចំនួនរថយន្តដែលចតក្នុងមួយថ្ងៃ", "orders_title": "ចំនួនដងធ្វើសេវាក្នុងមួយខែ (ប៉ាន់ស្មាន)", "not_fit": "ពេលចតខ្លីពេក មិនអាចធ្វើសេវាបានទេ", "potential": "សក្តានុពល"};
+function hs(k, sep) { var v = HS[k]; return v[0] ? v[0] + (sep || ' / ') + v[1] : v[1]; }
+function hsKm(k) { return HS[k][0] || HS[k][1]; }
+function hsJp(k) { return HS[k][0] ? HS[k][1] : ''; }
 var STATUS_LABELS = {
   '営業中': 'កំពុងចរចា / 営業中',
   '提携済': 'ជាដៃគូ / 提携済',
-  '見送り': 'បោះបង់ / 見送り'
+  '見送り': 'បោះបង់ / 見送り',
+  '未訪問': 'មិនទាន់ចុះជួប / 未訪問'
 };
 // 車屋の業種（複数選択・保存値は日本語ラベル。バックエンド SALESLOG_SHOP_TYPES と一致必須）
 // ※ 暫定セット — ロン君ヒアリング後に見直す
@@ -675,6 +954,11 @@ var SHOP_TYPES = [
   { v: 'タイヤ',     km: 'កង់រថយន្ត',                        jp: 'タイヤ' },
   { v: '板金・塗装', km: 'ជួសជុលខ្លួនរថយន្ត និងបាញ់ថ្នាំ', jp: '板金・塗装' },
   { v: 'レジデンス', km: 'ខុនដូ/អាផាតមិន',                  jp: 'レジデンス' },
+  // ↓ 2026-10-20 施設モード向け（km は FAC_KM で流し込む）
+  { v: 'ゴルフ場',   km: '', jp: 'ゴルフ場',   kmKey: 't_golf' },
+  { v: 'レストラン', km: '', jp: 'レストラン', kmKey: 't_rest' },
+  { v: 'ホテル',     km: '', jp: 'ホテル',     kmKey: 't_hotel' },
+  { v: '商業施設',   km: '', jp: '商業施設',   kmKey: 't_mall' },
   { v: 'その他',     km: 'ផ្សេងៗ',                           jp: 'その他' }
 ];
 
@@ -693,6 +977,12 @@ var editingVisitId = null;    // edit 時の対象訪問
 var selectedReaction = '';
 var selectedStatus = '';
 var map = null, mapMarkers = [];
+var hereGps = null, meMarker = null, nearMode = false, potMode = false;
+var listFilter = 'all', showUnvisited = true; // 一覧の絞り込み・地図の白いピン（未訪問の店）
+function isUnvisited(s) { return s.status === '未訪問'; } // 現在地（一覧の近い順・地図の青い点）
+var menuPrices = [];                                    // 商談計算の料金（メニュータブ）
+var currentHearings = [];
+var currentNotes = [];
 
 if (window.Telegram && Telegram.WebApp) {
   Telegram.WebApp.ready();
@@ -802,6 +1092,7 @@ function loadShops() {
         return;
       }
       shopsCache = d.shops || [];
+      menuPrices = d.prices || [];
       renderShopList();
       refreshMapMarkers();
     })
@@ -818,9 +1109,33 @@ function renderListError(msg) {
 }
 
 function badgeFor(shop) {
+  if (isUnvisited(shop)) return '<span class="badge unv">' + esc(STR.unvisited.split(' / ')[0]) + '</span>';
   if (shop.status === '提携済') return '<span class="badge partner">⭐ ' + esc(shop.lastReaction || 'A') + '</span>';
   var cls = shop.lastReaction ? 'r' + shop.lastReaction : 'rNone';
   return '<span class="badge ' + cls + '">' + esc(shop.lastReaction || '—') + '</span>';
+}
+
+// ホームの「今日やるフォロー」: 直近の訪問で決めた期日が今日以前の店（期限切れが先）
+function renderFollow() {
+  var box = document.getElementById('followBox');
+  var today = ppTodayStr();
+  var due = shopsCache.filter(function(s) { return s.nextDue && s.nextDue <= today; })
+    .sort(function(a, b) { return a.nextDue.localeCompare(b.nextDue); });
+  if (!shopsCache.length) { box.className = 'follow-box hidden'; return; }
+  box.className = 'follow-box';
+  document.getElementById('followHead').textContent = STR.followHead + (due.length ? ' · ' + due.length : '');
+  var list = document.getElementById('followList');
+  if (!due.length) { list.innerHTML = '<div class="follow-none">' + esc(STR.followNone) + '</div>'; return; }
+  list.innerHTML = '';
+  due.forEach(function(s) {
+    var late = s.nextDue < today;
+    var item = document.createElement('div');
+    item.className = 'follow-item';
+    item.innerHTML = '<span class="fb' + (late ? ' late' : '') + '">' + esc((late ? STR.overdue : STR.dueToday).split(' / ')[0]) +
+      '<br>' + esc(s.nextDue.substring(5)) + '</span><div class="ft"><b>' + esc(s.shopName) + '</b>' + esc(s.nextAction || '') + '</div>';
+    item.addEventListener('click', function() { openShop(s.shopId); });
+    list.appendChild(item);
+  });
 }
 
 function renderShopList() {
@@ -830,7 +1145,26 @@ function renderShopList() {
     renderListError(STR.emptyList);
     return;
   }
-  shopsCache.forEach(function(s) {
+  var q = (document.getElementById('shopSearch').value || '').trim().toLowerCase();
+  renderFollow();
+  var rows = shopsCache.filter(function(s) {
+    if (listFilter === 'visited' && isUnvisited(s)) return false;
+    if (listFilter === 'unvisited' && !isUnvisited(s)) return false;
+    return !q || (s.shopName + ' ' + (s.phone || '') + ' ' + (s.ownerName || '') + ' ' + (s.address || '')).toLowerCase().indexOf(q) >= 0;
+  });
+  if (potMode) {
+    var rank = { S: 0, A: 1, B: 2, C: 3 };
+    rows = rows.slice().sort(function(a, b) {
+      var ra = rank[a.potential] === undefined ? 9 : rank[a.potential], rb = rank[b.potential] === undefined ? 9 : rank[b.potential];
+      return ra - rb || (Number(b.potentialMine) || 0) - (Number(a.potentialMine) || 0);
+    });
+  } else if (nearMode && hereGps) {
+    rows = rows.map(function(s) {
+      return { s: s, d: (s.lat === null || s.lng === null) ? Infinity : distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng) };
+    }).sort(function(a, b) { return a.d - b.d; }).map(function(x) { return x.s; });
+  }
+  if (!rows.length) { renderListError(STR.noMatch); return; }
+  rows.forEach(function(s) {
     var card = document.createElement('div');
     card.className = 'shop-card';
     var meta = [];
@@ -839,15 +1173,27 @@ function renderShopList() {
     if (s.phone)     meta.push('☎ ' + s.phone);
     if (s.facebook)  meta.push('🔗FB');
     if (s.lat === null || s.lng === null) meta.push(STR.noLocation);
+    if (isUnvisited(s)) {
+      meta = [];
+      if (s.tier) meta.push('Tier ' + s.tier);
+      if (s.address) meta.push(s.address);
+      if (s.phone) meta.push('☎ ' + s.phone);
+      if (s.lat === null || s.lng === null) meta.push(STR.noLocation);
+    }
     var typesLine = (s.shopTypes && s.shopTypes.length)
       ? '<div class="shop-meta">🔧 ' + esc(s.shopTypes.join(' / ')) + '</div>' : '';
+    var dist = (hereGps && s.lat !== null && s.lng !== null) ? fmtDist(distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng)) : '';
     card.innerHTML =
       '<div class="shop-head">' +
         '<div class="shop-name">' + esc(s.shopName) + '</div>' +
+        (dist ? '<span class="dist">' + esc(dist) + '</span>' : '') +
+        (s.potential ? '<span class="pot ' + esc(s.potential) + '">⭐' + esc(s.potential) + '</span>' : '') +
         badgeFor(s) +
       '</div>' +
       typesLine +
-      '<div class="shop-meta">' + esc(meta.join(' · ')) + '</div>';
+      '<div class="shop-meta">' + esc(meta.join(' · ')) + '</div>' +
+      (s.lastMemo ? '<div class="shop-last"><b>' + esc(STR.lastLabel) + '</b> ' + esc(s.lastMemo) + '</div>' : '') +
+      (s.nextAction || s.nextDue ? '<div class="vnext">⏰ ' + esc((s.nextDue ? s.nextDue + ' ' : '') + (s.nextAction || '')) + '</div>' : '');
     card.addEventListener('click', function() { openShop(s.shopId); });
     body.appendChild(card);
   });
@@ -880,7 +1226,9 @@ function refreshMapMarkers() {
   mapMarkers.forEach(function(m) { map.removeLayer(m); });
   mapMarkers = [];
 
-  var located = shopsCache.filter(function(s) { return s.lat !== null && s.lng !== null; });
+  var located = shopsCache.filter(function(s) {
+    return s.lat !== null && s.lng !== null && (showUnvisited || !isUnvisited(s));
+  });
   document.getElementById('mapHint').textContent =
     located.length ? ('📍 ' + located.length) : STR.mapEmpty;
   if (!located.length) return;
@@ -888,31 +1236,100 @@ function refreshMapMarkers() {
   var bounds = [];
   located.forEach(function(s) {
     var color = s.status === '提携済' ? '#c9a84c' : (REACTION_COLORS[s.lastReaction] || '#888');
-    var marker = L.circleMarker([s.lat, s.lng], {
-      radius: 10, color: color, weight: 2,
-      fillColor: color, fillOpacity: 0.55
+    var unv = isUnvisited(s);
+    var letter = unv ? (s.tier || '○') : (s.status === '提携済' ? '★' : (s.lastReaction || '·'));
+    var marker = L.marker([s.lat, s.lng], {
+      icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28],
+        html: '<div class="pin' + (unv ? ' unv' : '') + '" style="background:' + color + '"><span>' + esc(letter) + '</span></div>' }),
+      zIndexOffset: unv ? -100 : 0
     }).addTo(map);
 
     var div = document.createElement('div');
     div.innerHTML =
       '<b>' + esc(s.shopName) + '</b><br>' +
       ((s.shopTypes && s.shopTypes.length) ? '🔧 ' + esc(s.shopTypes.join(' / ')) + '<br>' : '') +
-      esc((s.lastReaction || '—') + ' · 🔁 ' + s.visitCount + (s.lastVisit ? ' · ' + s.lastVisit : ''));
+      esc((s.lastReaction || '—') + ' · 🔁 ' + s.visitCount + (s.lastVisit ? ' · ' + s.lastVisit : '')) +
+      (hereGps ? ' · ' + esc(fmtDist(distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng))) : '') +
+      (s.potential ? ' · ⭐' + esc(s.potential) + (s.potentialMine !== null ? ' (' + esc(hMoney(s.potentialMine)) + '$/月)' : '') : '') +
+      (s.lastMemo ? '<div class="popup-last"><b>' + esc(STR.lastLabel) + '</b><br>' + esc(s.lastMemo) + '</div>' : '') +
+      (unv ? '<div class="popup-last">' + esc(STR.unvisited) + (s.tier ? ' · Tier ' + esc(s.tier) : '') + (s.address ? '<br>' + esc(s.address) : '') + '</div>' : '') +
+      (s.nextAction || s.nextDue ? '<div class="popup-last">⏰ ' + esc((s.nextDue ? s.nextDue + ' ' : '') + (s.nextAction || '')) + '</div>' : '');
+    var btns = document.createElement('div');
+    btns.className = 'popup-btns';
     var btn = document.createElement('button');
     btn.className = 'popup-open-btn';
     btn.textContent = STR.open;
     btn.addEventListener('click', function() { openShop(s.shopId); });
-    div.appendChild(btn);
+    var btn2 = document.createElement('button');
+    btn2.className = 'popup-open-btn alt';
+    btn2.textContent = '🧮';
+    btn2.setAttribute('aria-label', STR.hearTitle);
+    btn2.addEventListener('click', function() { openShop(s.shopId, true); });
+    btns.appendChild(btn); btns.appendChild(btn2);
+    div.appendChild(btns);
     marker.bindPopup(div);
 
     mapMarkers.push(marker);
     bounds.push([s.lat, s.lng]);
   });
-  if (bounds.length === 1) {
+  if (hereGps) {
+    map.setView([hereGps.lat, hereGps.lng], 16);   // 現場では「自分の周り」を最初に見せる
+  } else if (bounds.length === 1) {
     map.setView(bounds[0], 15);
   } else {
     map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
   }
+}
+
+// ── 現在地（一覧の近い順・地図の青い点）。訪問フォームの GPS 表示には触らない ──
+function fmtDist(m) {
+  if (!isFinite(m)) return '';
+  return m < 1000 ? Math.round(m / 10) * 10 + 'm' : (m / 1000).toFixed(1) + 'km';
+}
+function locateHere(cb) {
+  var done = false;
+  var finish = function(lat, lng) {
+    if (done) return; done = true;
+    hereGps = { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) };
+    showMeOnMap();
+    cb(true);
+  };
+  var fallback = function() {
+    if (done) return;
+    if (!navigator.geolocation) { done = true; cb(false); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(pos) { finish(pos.coords.latitude, pos.coords.longitude); },
+      function() { if (!done) { done = true; cb(false); } },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+  };
+  var lm = locationManager();
+  if (lm && lm.isInited && lm.isLocationAvailable) {
+    var t = setTimeout(fallback, 10000);
+    try {
+      lm.getLocation(function(data) {
+        clearTimeout(t);
+        if (data && typeof data.latitude === 'number') finish(data.latitude, data.longitude);
+        else fallback();
+      });
+    } catch (e) { clearTimeout(t); fallback(); }
+  } else {
+    fallback();
+  }
+}
+function showMeOnMap() {
+  if (!map || !hereGps) return;
+  if (meMarker) map.removeLayer(meMarker);
+  meMarker = L.marker([hereGps.lat, hereGps.lng], {
+    icon: L.divIcon({ className: '', iconSize: [18, 18], iconAnchor: [9, 9], html: '<div class="me-dot"></div>' }),
+    zIndexOffset: 1000, interactive: false
+  }).addTo(map);
+}
+function hereThen(after) {
+  toast(STR.gpsGetting);
+  locateHere(function(ok) {
+    if (!ok) { toast('⚠️ ' + STR.hereFail, 'err'); return; }
+    after();
+  });
 }
 
 function switchTab(tab) {
@@ -921,9 +1338,13 @@ function switchTab(tab) {
   document.getElementById('tabMap').className  = 'tab-btn' + (isMap ? ' active' : '');
   document.getElementById('listWrap').style.display = isMap ? 'none' : '';
   document.getElementById('mapWrap').style.display  = isMap ? 'block' : 'none';
+  // 地図では「今日のフォロー」と一覧の絞り込みを隠して地図を広く（フォローは一覧タブで見る）
+  document.getElementById('filterRow').style.display = isMap ? 'none' : '';
+  document.getElementById('followBox').style.display = isMap ? 'none' : '';
   if (isMap) {
     ensureMap();
     if (map) setTimeout(function() { map.invalidateSize(); }, 100);
+    if (!hereGps) locateHere(function(ok) { if (ok && map) { map.setView([hereGps.lat, hereGps.lng], 16); renderShopList(); } });
   }
 }
 
@@ -935,6 +1356,7 @@ function showView(name) {
   document.getElementById('viewShop').className = name === 'shop' ? '' : 'hidden';
   document.getElementById('viewForm').className = name === 'form' ? '' : 'hidden';
   document.getElementById('viewCommission').className = name === 'commission' ? '' : 'hidden';
+  document.getElementById('viewHearing').className = name === 'hearing' ? '' : 'hidden';
   window.scrollTo(0, 0);
 }
 
@@ -949,7 +1371,7 @@ function ppTodayStr() {
 // ═══════════════════════════════════════════
 //  店詳細
 // ═══════════════════════════════════════════
-function openShop(shopId) {
+function openShop(shopId, toHearing) {
   showView('shop');
   document.getElementById('visitList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
   document.getElementById('commissionList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
@@ -959,8 +1381,13 @@ function openShop(shopId) {
       if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return; }
       currentShop = d.shop;
       currentVisits = d.visits || [];
+      currentHearings = d.hearings || [];
+      currentNotes = d.notes || [];
       renderShopDetail();
+      renderHearings();
+      renderNotes();
       loadCommissions(shopId);
+      if (toHearing) openHearing();
     })
     .catch(function() { toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
 }
@@ -1211,6 +1638,13 @@ function saveCommission() {
 
 function renderShopDetail() {
   var s = currentShop;
+  var src = document.getElementById('shopSrc');
+  var srcParts = [];
+  if (isUnvisited(s)) srcParts.push(STR.unvisited);
+  if (s.source) srcParts.push(STR.fromList + (s.tier ? ' · Tier ' + s.tier : ''));
+  if (s.address) srcParts.push(STR.address + ': ' + s.address);
+  src.className = 'shop-src' + (srcParts.length ? '' : ' hidden');
+  src.textContent = srcParts.join(' ／ ');
   document.getElementById('sShop').value  = s.shopName;
   document.getElementById('sOwner').value = s.ownerName;
   document.getElementById('sPhone').value = s.phone;
@@ -1252,7 +1686,8 @@ function renderShopDetail() {
         '<span class="vdate">' + esc(v.datetime) + (v.lat !== null && v.lng !== null ? ' 📍' : '') + '</span>' +
         '<span class="badge ' + cls + '">' + esc(v.reaction || '—') + '</span>' +
       '</div>' +
-      (v.memo ? '<div class="vmemo">' + esc(v.memo) + '</div>' : '');
+      (v.memo ? '<div class="vmemo">' + esc(v.memo) + '</div>' : '') +
+      (v.nextAction || v.nextDue ? '<div class="vnext">⏰ ' + esc((v.nextDue ? v.nextDue + ' ' : '') + (v.nextAction || '')) + '</div>' : '');
     item.addEventListener('click', function() { openVisitEdit(v); });
     list.appendChild(item);
   });
@@ -1384,6 +1819,12 @@ function openForm(mode, opts) {
   document.getElementById('fPhone').value = '';
   document.getElementById('fFb').value    = '';
   document.getElementById('fMemo').value  = (mode === 'edit' && opts.visit) ? opts.visit.memo : '';
+  document.getElementById('fNext').value  = (mode === 'edit' && opts.visit) ? (opts.visit.nextAction || '') : '';
+  // ヒアリングメモ（新規・追記のときだけ。編集のときは店の画面の「ヒアリングメモ」から足す）
+  document.getElementById('formNotesField').className = 'field' + (mode === 'edit' ? ' hidden' : '');
+  document.getElementById('formNotes').innerHTML = '';
+  addFormNote();
+  document.getElementById('fDue').value   = (mode === 'edit' && opts.visit) ? (opts.visit.nextDue || '') : '';
   setReaction((mode === 'edit' && opts.visit) ? opts.visit.reaction : '');
   clearSuggest();
 
@@ -1638,7 +2079,9 @@ function saveVisit() {
       action:   'saleslog_update',
       visitId:  editingVisitId,
       reaction: selectedReaction,
-      memo:     document.getElementById('fMemo').value
+      memo:     document.getElementById('fMemo').value,
+      nextAction: document.getElementById('fNext').value.trim(),
+      nextDue:  document.getElementById('fDue').value
     };
   } else if (formMode === 'append') {
     payload = {
@@ -1646,7 +2089,10 @@ function saveVisit() {
       shopId:   formShopId,
       reaction: selectedReaction,
       memo:     document.getElementById('fMemo').value,
-      gps:      currentGps
+      gps:      currentGps,
+      nextAction: document.getElementById('fNext').value.trim(),
+      nextDue:  document.getElementById('fDue').value,
+      notes:    formNoteTexts()
     };
   } else {
     var shopName = document.getElementById('fShop').value.trim();
@@ -1660,7 +2106,10 @@ function saveVisit() {
       facebook:  document.getElementById('fFb').value.trim(),
       reaction:  selectedReaction,
       memo:      document.getElementById('fMemo').value,
-      gps:       currentGps
+      gps:       currentGps,
+      nextAction: document.getElementById('fNext').value.trim(),
+      nextDue:   document.getElementById('fDue').value,
+      notes:     formNoteTexts()
     };
   }
 
@@ -1725,6 +2174,409 @@ document.getElementById('btnGpsSettings').addEventListener('click', function() {
   // イベントが来ないクライアント向けに「GPSを取得」ボタンも残してある
 });
 document.getElementById('btnSave').addEventListener('click', saveVisit);
+
+// ═══════════════════════════════════════════
+//  商談計算（ヒアリング）— 2026-10-20
+//  車屋さんと話しながら台数・在庫を入れ、紹介料をその場で見せる。保存先は GSS「商談ヒアリング」
+//  ⚠️ 計算式は v7-operations/SalesHearingManager.gs の hearingCalc_ と同じ（変更時は両方を合わせる）
+// ═══════════════════════════════════════════
+var hMode = 'garage';
+var hIn = {
+  garage: { carsDay: 5, days: 30, oneIn: 10, avg: 20 },
+  dealer: { stock: 30, light: 8, heavy: 4, glass: 10, glassPrice: 0, buyers: 20, oneIn: 5, avg: 20 },
+  // 施設: 件数を直接入れる（2026-10-20 Daisuke「駐車場の計算にこだわりすぎない・まずは開拓」）。
+  // 初期値は小さめの施設の例。駐車場の質問は記録用（答えなくても計算できる。駐車時間を選んだ時だけ不可のサービスを外す）
+  facility: { spaces: 0, occ: 50, stay: '', peak: '', visitors: 0, days: 30,
+              wash: 8, glass3: 3, headlight: 3, magic: 1 }
+};
+// 駐車時間ごとに、その場でできるサービス（⚠️ SalesHearingManager.gs の HEARING_STAY_SERVICES と同じ）
+var H_STAY_SERVICES = { '': ['WASH', 'HEADLIGHT', 'GLASS_3', 'HEADLIGHT_MAGIC'], lt1: ['WASH', 'HEADLIGHT'], '1to3': ['WASH', 'HEADLIGHT', 'GLASS_3'], gt3: ['WASH', 'HEADLIGHT', 'GLASS_3', 'HEADLIGHT_MAGIC'] };
+var H_COUNT_KEYS = { WASH: 'wash', GLASS_3: 'glass3', HEADLIGHT: 'headlight', HEADLIGHT_MAGIC: 'magic' };
+var H_POTENTIAL = [['S', 150], ['A', 60], ['B', 20]];                    // ⚠️ サーバーと同じしきい値
+function hPotential(mine) { for (var i = 0; i < H_POTENTIAL.length; i++) if (mine >= H_POTENTIAL[i][1]) return H_POTENTIAL[i][0]; return 'C'; }
+// 駐車時間を選んだら、その時間ではできないサービスの件数を 0 にする（件数の自動提案はしない）
+function facilitySuggest() {
+  var f = hIn.facility, allowed = H_STAY_SERVICES[f.stay] || H_STAY_SERVICES[''];
+  Object.keys(H_COUNT_KEYS).forEach(function(code) { if (allowed.indexOf(code) < 0) f[H_COUNT_KEYS[code]] = 0; });
+}
+var H_STOCK_DISCOUNT = 30; // 在庫車は定価の30%オフ（2026-08-10 プライスリスト v2）
+
+function priceOf(code, suv) {
+  for (var i = 0; i < menuPrices.length; i++) {
+    if (menuPrices[i].code === code) return suv ? menuPrices[i].suv : menuPrices[i].sedan;
+  }
+  return 0;
+}
+function hMoney(v) {
+  var r = Math.round(v * 10) / 10;
+  return Math.abs(r) >= 100 ? Math.round(r).toLocaleString('en-US') : (r % 1 === 0 ? String(r) : r.toFixed(1));
+}
+function hearingCalc_(mode, inp, rate) {
+  var n = function(v, max) { var x = Number(v); return isFinite(x) && x > 0 ? Math.min(x, max) : 0; };
+  var money = function(v) { return Math.round(v * 100) / 100; };
+  var oneIn = Math.max(1, Math.round(n(inp.oneIn, 100)) || 1);
+  var avg = n(inp.avg, 1000);
+  var o = { oneIn: oneIn, avg: avg };
+  if (mode === 'garage') {
+    o.carsDay = n(inp.carsDay, 1000);
+    o.days = Math.min(31, n(inp.days, 31));
+    o.jobs = Math.round(o.carsDay * o.days / oneIn);
+  } else if (mode === 'facility') {
+    o.days = Math.min(31, n(inp.days, 31));
+    o.spaces = Math.round(n(inp.spaces, 10000));
+    o.occ = [30, 50, 80].indexOf(Number(inp.occ)) >= 0 ? Number(inp.occ) : 50;
+    o.stay = H_STAY_SERVICES[inp.stay] ? inp.stay : '';
+    o.parked = Math.round(o.spaces * o.occ / 100);
+    var allowed = H_STAY_SERVICES[o.stay], sales = 0, jobs = 0;
+    Object.keys(H_COUNT_KEYS).forEach(function(code) {
+      var k = H_COUNT_KEYS[code];
+      var c = allowed.indexOf(code) >= 0 ? Math.round(n(inp[k], 10000)) : 0;
+      o[k] = c; jobs += c; sales += c * priceOf(code);
+    });
+    o.jobs = jobs;
+    o.sales = money(sales);
+    o.mine = money(o.sales * rate / 100);
+    o.year = money(o.mine * 12);
+    o.potential = hPotential(o.mine);
+    return o;
+  } else {
+    o.buyers = n(inp.buyers, 10000);
+    o.light = Math.round(n(inp.light, 5000));
+    o.heavy = Math.round(n(inp.heavy, 5000));
+    o.glass = Math.round(n(inp.glass, 5000));
+    o.glassPrice = n(inp.glassPrice, 1000);
+    o.regular = money(o.light * priceOf('HEADLIGHT') + o.heavy * priceOf('HEADLIGHT_MAGIC') + o.glass * o.glassPrice);
+    o.partner = money(o.regular * (100 - H_STOCK_DISCOUNT) / 100);
+    o.save = money(o.regular - o.partner);
+    o.jobs = Math.round(o.buyers / oneIn);
+  }
+  o.sales = money(o.jobs * avg);
+  o.mine = money(o.sales * rate / 100);
+  o.year = money(o.mine * 12);
+  o.potential = hPotential(o.mine);
+  return o;
+}
+function hRate() { return (currentShop && Number(currentShop.commissionRate)) || 30; }
+
+function hStep(key, val, min, max) {
+  return '<div class="hstep"><button type="button" data-hs="' + key + '" data-d="-1" aria-label="−">−</button>' +
+    '<input type="number" inputmode="numeric" id="h_' + key + '" data-hk="' + key + '" min="' + min + '" max="' + max + '" value="' + val + '">' +
+    '<button type="button" data-hs="' + key + '" data-d="1" aria-label="+">＋</button></div>';
+}
+function hRow(labelKey, sub, key, val, min, max) {
+  var jp = hsJp(labelKey);
+  return '<div class="hrow"><label>' + esc(hsKm(labelKey)) + '<small>' + esc(jp + (jp && sub ? ' · ' : '') + (sub || '')) + '</small></label>' +
+    hStep(key, val, min, max) + '</div>';
+}
+function hAvgChips(cur) {
+  var list = [['HEADLIGHT', 'HEADLIGHT'], ['HEADLIGHT_MAGIC', 'MAGIC'], ['GLASS_3', 'GLASS 3'], ['GLASS_ALL', 'GLASS ALL']];
+  var out = list.map(function(x) {
+    var p = priceOf(x[0]); if (!p) return '';
+    return '<button type="button" class="hchip' + (cur === p ? ' sel' : '') + '" data-avg="' + p + '">' + esc(x[1]) + ' ' + p + '$</button>';
+  }).join('');
+  return '<div class="hchips">' + out + '</div>';
+}
+function renderHearingInputs() {
+  var g = hIn.garage, d = hIn.dealer, el = document.getElementById('hearInputs');
+  document.getElementById('hmGarage').className = hMode === 'garage' ? 'sel' : '';
+  document.getElementById('hmDealer').className = hMode === 'dealer' ? 'sel' : '';
+  document.getElementById('hmFacility').className = hMode === 'facility' ? 'sel' : '';
+  if (hMode === 'facility') {
+    var f = hIn.facility, allowed = H_STAY_SERVICES[f.stay] || H_STAY_SERVICES[''];
+    var chipSet = function(field, opts) {
+      return '<div class="hchips">' + opts.map(function(o) {
+        return '<button type="button" class="hchip' + (String(f[field]) === String(o[0]) ? ' sel' : '') + '" data-fac="' + field + '" data-v="' + o[0] + '">' + esc(hs(o[1])) + '</button>';
+      }).join('') + '</div>';
+    };
+    var lbl = function(k) { var jp = hsJp(k); return '<h4>' + esc(hsKm(k)) + (jp ? ' <small style="color:var(--text-dim);font-weight:400">' + esc(jp) + '</small>' : '') + '</h4>'; };
+    var svc = [['WASH', 'wash', 'SAMURAI WASH'], ['GLASS_3', 'glass3', 'SAMURAI GLASS'], ['HEADLIGHT', 'headlight', 'SAMURAI HEADLIGHT'], ['HEADLIGHT_MAGIC', 'magic', 'SAMURAI MAGIC']];
+    var rows = svc.map(function(x) {
+      var price = priceOf(x[0]);
+      if (allowed.indexOf(x[0]) < 0) {
+        return '<div class="hrow off"><label>' + esc(x[2]) + '<small>' + price + '$</small></label><span class="offnote">' + esc(hs('not_fit')) + '</span></div>';
+      }
+      return '<div class="hrow"><label>' + esc(x[2]) + '<small>' + price + '$ × ' + esc(hsKm('jobs_unit')) + '</small></label>' + hStep(x[1], f[x[1]], 0, 10000) + '</div>';
+    }).join('');
+    el.innerHTML = '<div class="hcard">' + lbl('orders_title') + rows + '</div>' +
+      '<div class="hcard">' +
+      hRow('spaces', HS.cars_unit[1], 'spaces', f.spaces, 0, 10000) +
+      lbl('occ') + chipSet('occ', [[30, 'occ30'], [50, 'occ50'], [80, 'occ80']]) +
+      lbl('stay') + chipSet('stay', [['lt1', 'stay_lt1'], ['1to3', 'stay_1to3'], ['gt3', 'stay_gt3']]) +
+      lbl('peak') + chipSet('peak', [['day', 'peak_day'], ['night', 'peak_night'], ['both', 'peak_both']]) +
+      hRow('visitors', '', 'visitors', f.visitors, 0, 100000) + '</div>';
+    renderHearingResult();
+    return;
+  }
+  if (hMode === 'garage') {
+    el.innerHTML = '<div class="hcard">' +
+      hRow('cars_day', HS.cars_unit[1], 'carsDay', g.carsDay, 0, 1000) +
+      hRow('days_month', HS.days_unit[1], 'days', g.days, 1, 31) +
+      hRow('take_rate', HS.one_in[1].replace('{n}', g.oneIn), 'oneIn', g.oneIn, 1, 100) +
+      hRow('avg_price', '$', 'avg', g.avg, 1, 1000) + hAvgChips(g.avg) + '</div>';
+  } else {
+    var glassOpts = [['GLASS_3', false, 'GLASS 3 Sedan'], ['GLASS_3', true, 'GLASS 3 SUV'], ['GLASS_ALL', false, 'GLASS ALL Sedan'], ['GLASS_ALL', true, 'GLASS ALL SUV']];
+    var chips = glassOpts.map(function(x) {
+      var p = priceOf(x[0], x[1]); if (!p) return '';
+      return '<button type="button" class="hchip' + (d.glassPrice === p ? ' sel' : '') + '" data-glass="' + p + '">' + esc(x[2]) + ' ' + p + '$</button>';
+    }).join('');
+    el.innerHTML = '<div class="hcard"><h4>' + esc(hs('refresh_title')) + '</h4>' +
+      hRow('stock_total', HS.cars_unit[1], 'stock', d.stock, 0, 5000) +
+      hRow('hl_light', 'HEADLIGHT ' + priceOf('HEADLIGHT') + '$', 'light', d.light, 0, 5000) +
+      hRow('hl_heavy', 'SAMURAI MAGIC ' + priceOf('HEADLIGHT_MAGIC') + '$', 'heavy', d.heavy, 0, 5000) +
+      hRow('glass_dirty', '', 'glass', d.glass, 0, 5000) +
+      '<div class="hchips">' + chips + '</div><div class="hsum" id="hSum"></div></div>' +
+      '<div class="hcard"><h4>' + esc(hs('referral_title')) + '</h4>' +
+      hRow('buyers_month', '', 'buyers', d.buyers, 0, 10000) +
+      hRow('take_rate', HS.one_in[1].replace('{n}', d.oneIn), 'oneIn', d.oneIn, 1, 100) +
+      hRow('avg_price', '$', 'avg', d.avg, 1, 1000) + hAvgChips(d.avg) + '</div>';
+  }
+  renderHearingResult();
+}
+function renderHearingResult() {
+  var r = hearingCalc_(hMode, hIn[hMode], hRate());
+  document.getElementById('hrLab').textContent = hs('your_month');
+  document.getElementById('hrBig').textContent = hMoney(r.mine);
+  document.getElementById('hrUnit').textContent = HS.month_unit[0] + ' ' + HS.month_unit[1];
+  var cells = hMode !== 'dealer'
+    ? [['jobs_month', r.jobs + ' ' + HS.jobs_unit[0]], ['sales_month', hMoney(r.sales) + '$'], ['your_year', hMoney(r.year) + '$']]
+    : [['price_partner_short', hMoney(r.partner) + '$'], ['jobs_month', r.jobs + ' ' + HS.jobs_unit[0]], ['your_year', hMoney(r.year) + '$']];
+  document.getElementById('hrCells').innerHTML = cells.map(function(c) {
+    return '<div><span>' + esc(HS[c[0]][0]) + '<br>' + esc(HS[c[0]][1]) + '</span><b>' + esc(c[1]) + '</b></div>';
+  }).join('');
+  document.getElementById('hrNote').textContent =
+    HS.rate_note[0].replace('{r}', hRate()) + ' / ' + HS.rate_note[1].replace('{r}', hRate()) + ' · ' + HS.example_note[0];
+  var sum = document.getElementById('hSum');
+  if (sum) {
+    sum.innerHTML = '<span>' + esc(hs('price_regular')) + '</span><b class="strike">' + hMoney(r.regular) + '$</b>' +
+      '<span>' + esc(hs('price_partner')) + '</span><b class="hi">' + hMoney(r.partner) + '$</b>' +
+      '<span>' + esc(hs('you_save')) + '</span><b>' + hMoney(r.save) + '$</b>';
+  }
+}
+function openHearing() {
+  if (!currentShop) return;
+  if (!menuPrices.length) { toast('⚠️ ' + STR.priceErr, 'err'); }
+  if (!hIn.dealer.glassPrice) hIn.dealer.glassPrice = priceOf('GLASS_3') || 0;
+  var types = currentShop.shopTypes || [];
+  var FAC_TYPES = ['レジデンス', 'ゴルフ場', 'レストラン', 'ホテル', '商業施設'];
+  hMode = types.indexOf('中古車販売') >= 0 ? 'dealer'
+        : types.some(function(t) { return FAC_TYPES.indexOf(t) >= 0; }) ? 'facility' : 'garage';
+  document.getElementById('hearTitle').textContent = STR.hearTitle + ' — ' + currentShop.shopName;
+  document.getElementById('hearNote').value = '';
+  showView('hearing');
+  renderHearingInputs();
+}
+function hSetValue(key, raw, rerender) {
+  var el = document.getElementById('h_' + key);
+  var v = parseFloat(raw);
+  if (!isFinite(v)) return;
+  v = Math.max(Number(el.min), Math.min(Number(el.max), v));
+  hIn[hMode][key] = v;
+  if (rerender) renderHearingInputs(); else renderHearingResult();
+}
+document.getElementById('hearInputs').addEventListener('click', function(e) {
+  var b = e.target.closest('[data-hs]');
+  if (b) {
+    var key = b.getAttribute('data-hs');
+    var el = document.getElementById('h_' + key);
+    el.value = (parseFloat(el.value) || 0) + Number(b.getAttribute('data-d'));
+    var structural = key === 'oneIn';
+    hSetValue(key, el.value, structural);
+    if (!structural) el.value = hIn[hMode][key];
+    return;
+  }
+  var fc = e.target.closest('[data-fac]');
+  if (fc) {
+    var field = fc.getAttribute('data-fac'), val = fc.getAttribute('data-v');
+    var cur = String(hIn.facility[field]);
+    // 選択中のチップをもう一度押すと「未回答」に戻す（記録用の質問なので答えなくてよい）
+    hIn.facility[field] = cur === val && field !== 'occ' ? '' : (field === 'occ' ? Number(val) : val);
+    if (field === 'stay') facilitySuggest();
+    renderHearingInputs();
+    return;
+  }
+  var a = e.target.closest('[data-avg]');
+  if (a) { hIn[hMode].avg = Number(a.getAttribute('data-avg')); renderHearingInputs(); return; }
+  var gl = e.target.closest('[data-glass]');
+  if (gl) { hIn.dealer.glassPrice = Number(gl.getAttribute('data-glass')); renderHearingInputs(); }
+});
+document.getElementById('hearInputs').addEventListener('input', function(e) {
+  if (e.target.getAttribute('data-hk')) hSetValue(e.target.getAttribute('data-hk'), e.target.value, false);
+});
+document.getElementById('hearInputs').addEventListener('change', function(e) {
+  if (e.target.getAttribute('data-hk')) hSetValue(e.target.getAttribute('data-hk'), e.target.value, true);
+});
+
+function saveHearing() {
+  if (!currentShop) return;
+  var btn = document.getElementById('btnHearSave');
+  var orig = btn.textContent;
+  btn.disabled = true; btn.textContent = STR.saving;
+  api({ action: 'saleslog_hearing_create', shopId: currentShop.shopId, mode: hMode,
+        inputs: hIn[hMode], note: document.getElementById('hearNote').value.trim(), gps: hereGps || currentGps || null })
+    .then(function(d) {
+      btn.disabled = false; btn.textContent = orig;
+      if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
+      toast(STR.saved, 'ok');
+      openShop(currentShop.shopId);
+    })
+    .catch(function() { btn.disabled = false; btn.textContent = orig; toast('⚠️ ' + STR.netError, 'err'); });
+}
+function renderHearings() {
+  var list = document.getElementById('hearList');
+  if (!currentHearings.length) { list.innerHTML = '<div class="empty">' + esc(STR.hearEmpty) + '</div>'; return; }
+  list.innerHTML = currentHearings.map(function(h) {
+    var how = h.mode === 'facility'
+      ? 'WASH ' + h.wash + '・GLASS ' + h.glass3 + '・HEADLIGHT ' + h.headlight + '・MAGIC ' + h.magic + ' 件/月' +
+        (h.spaces ? ' ／ 駐車場 ' + h.spaces + '台・埋まり ' + h.occ + '%' : '') + (h.stayLabel ? '・' + h.stayLabel : '') + (h.peakLabel ? '・混むのは' + h.peakLabel : '')
+      : h.mode === 'dealer'
+      ? '在庫 ' + h.stock + '台（軽い黄ばみ ' + h.light + '・ひどい黄ばみ ' + h.heavy + '・ガラス ' + h.glass + '）→ 提携価格 ' + hMoney(h.partner || 0) + '$ ／ 来店 ' + h.buyers + '人・' + h.oneIn + '人に1人'
+      : '1日 ' + h.carsDay + '台 × ' + h.days + '日・' + h.oneIn + '台に1台・平均 ' + h.avg + '$ → 月 ' + h.jobs + '件';
+    return '<div class="hear-item"><div class="hh"><span class="d">' + esc(h.datetime) + (h.staff ? ' · ' + esc(h.staff) : '') +
+      '</span>' + (h.potential ? '<span class="pot ' + esc(h.potential) + '">⭐' + esc(h.potential) + '</span>' : '') +
+      '<span class="m">' + hMoney(h.mine || 0) + '$/月</span></div><div>' + esc(how) + '</div>' +
+      (h.note ? '<div style="color:#cfc6b0">' + esc(h.note) + '</div>' : '') + '</div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+//  ヒアリングメモ（2026-10-20）— 聞いたこと・気づいたことを何件でも。まとめは 3日ごとの AI（自己改善タスク）
+// ═══════════════════════════════════════════
+function addFormNote() {
+  var box = document.getElementById('formNotes');
+  var ta = document.createElement('textarea');
+  ta.className = 'note-input'; ta.maxLength = 1000; ta.placeholder = STR.notesPh;
+  box.appendChild(ta);
+  return ta;
+}
+function formNoteTexts() {
+  var out = [], tas = document.querySelectorAll('#formNotes textarea');
+  for (var i = 0; i < tas.length; i++) { var t = tas[i].value.trim(); if (t) out.push(t); }
+  return out;
+}
+function renderTips() {
+  var rows = document.querySelectorAll('[data-tips]');
+  for (var i = 0; i < rows.length; i++) {
+    rows[i].innerHTML = STR.tips.map(function(t) {
+      return '<button type="button" data-tip="' + esc(t[0]) + '">+ ' + esc(t[0]) + ' <span style="color:var(--text-dim)">' + esc(t[1]) + '</span></button>';
+    }).join('');
+  }
+}
+// ヒントのチップ: 押すと、その欄（訪問記録では最後の空欄、無ければ新しい欄）の先頭に「◯◯：」を入れる
+document.addEventListener('click', function(e) {
+  var b = e.target.closest('[data-tip]'); if (!b) return;
+  var target = b.parentNode.getAttribute('data-tips'), ta;
+  if (target === 'formNotes') {
+    var tas = document.querySelectorAll('#formNotes textarea');
+    ta = tas.length && !tas[tas.length - 1].value.trim() ? tas[tas.length - 1] : addFormNote();
+  } else {
+    ta = document.getElementById(target);
+  }
+  var head = b.getAttribute('data-tip') + '៖ ';
+  if (ta.value.indexOf(head) !== 0) ta.value = head + ta.value;
+  ta.focus();
+});
+function renderNotes() {
+  var list = document.getElementById('noteList');
+  if (!currentNotes.length) { list.innerHTML = '<div class="empty" style="padding:12px 0">' + esc(STR.notesEmpty) + '</div>'; return; }
+  list.innerHTML = currentNotes.map(function(n) {
+    return '<div class="note-item"><div class="nm">' + esc(n.datetime) + (n.staff ? ' · ' + esc(n.staff) : '') + '</div>' + esc(n.text) + '</div>';
+  }).join('');
+}
+function saveShopNote() {
+  if (!currentShop) return;
+  var ta = document.getElementById('sNoteText');
+  var text = ta.value.trim();
+  if (!text) { toast(STR.notesNeed, 'err'); return; }
+  var btn = document.getElementById('btnNoteAdd');
+  btn.disabled = true;
+  api({ action: 'saleslog_note_create', shopId: currentShop.shopId, texts: [text], gps: hereGps || null })
+    .then(function(d) {
+      btn.disabled = false;
+      if (!d.ok) { toast('⚠️ ' + (d.error || STR.netError), 'err'); return; }
+      ta.value = '';
+      currentNotes = d.notes || currentNotes;
+      renderNotes();
+      toast(STR.notesSaved, 'ok');
+    })
+    .catch(function() { btn.disabled = false; toast('⚠️ ' + STR.netError, 'err'); });
+}
+document.getElementById('notesHead').textContent = STR.notesHead;
+document.getElementById('notesHint').textContent = STR.notesHint;
+document.getElementById('sNoteText').placeholder = STR.notesPh;
+document.getElementById('btnNoteAdd').textContent = STR.notesAdd;
+document.getElementById('btnNoteAdd').addEventListener('click', saveShopNote);
+document.getElementById('lblFormNotes').textContent = STR.notesHead;
+document.getElementById('formNotesHint').textContent = STR.notesHint;
+document.getElementById('btnNoteMore').textContent = STR.notesMore;
+document.getElementById('btnNoteMore').addEventListener('click', function() { addFormNote().focus(); });
+renderTips();
+
+// 文言の流し込み（2026-10-20 一本化: 未訪問・フォロー）
+document.querySelector('#filterRow [data-f="all"]').textContent = STR.fAll;
+document.querySelector('#filterRow [data-f="visited"]').textContent = STR.fVisited;
+document.querySelector('#filterRow [data-f="unvisited"]').textContent = STR.fUnvisited;
+document.getElementById('filterRow').addEventListener('click', function(e) {
+  var b = e.target.closest('[data-f]'); if (!b) return;
+  listFilter = b.getAttribute('data-f');
+  var bs = this.querySelectorAll('[data-f]');
+  for (var i = 0; i < bs.length; i++) bs[i].className = bs[i] === b ? 'on' : '';
+  renderShopList();
+});
+document.getElementById('btnUnv').textContent = '○ ' + STR.mapUnv.split(' / ')[0];
+document.getElementById('btnUnv').addEventListener('click', function() {
+  showUnvisited = !showUnvisited;
+  this.className = 'unv-toggle' + (showUnvisited ? '' : ' off');
+  refreshMapMarkers();
+});
+document.getElementById('lblNext').textContent = STR.nextAction + ' · ' + STR.nextDue;
+document.getElementById('dueT').textContent = STR.dueTomorrow;
+document.getElementById('due3').textContent = STR.due3d;
+document.getElementById('due7').textContent = STR.due1w;
+document.querySelector('.due-row').addEventListener('click', function(e) {
+  var b = e.target.closest('[data-due]'); if (!b) return;
+  var t = ppTodayStr().split('-').map(Number);
+  var d = new Date(Date.UTC(t[0], t[1] - 1, t[2] + Number(b.getAttribute('data-due'))));
+  document.getElementById('fDue').value = d.toISOString().substring(0, 10);
+});
+
+// 文言の流し込み（2026-10-20 追加分）
+document.getElementById('shopSearch').placeholder = STR.search;
+document.getElementById('btnNear').textContent = STR.nearBtn;
+document.getElementById('btnHere').textContent = STR.hereBtn;
+document.getElementById('btnHear').textContent = STR.hearBtn;
+document.getElementById('hearHead').textContent = STR.hearHead;
+document.getElementById('hearNoteLabel').textContent = STR.hearNote;
+document.getElementById('hearHint').textContent = STR.hearHint;
+document.getElementById('hmGarage').innerHTML = esc(HS.garage[0]) + '<br>' + esc(HS.garage[1]);
+document.getElementById('hmDealer').innerHTML = esc(HS.dealer[0]) + '<br>' + esc(HS.dealer[1]);
+document.getElementById('hmGarage').addEventListener('click', function() { hMode = 'garage'; renderHearingInputs(); });
+document.getElementById('hmDealer').addEventListener('click', function() { hMode = 'dealer'; renderHearingInputs(); });
+document.getElementById('hmFacility').addEventListener('click', function() { hMode = 'facility'; renderHearingInputs(); });
+// 施設モードの km を流し込む（Panha 未確定の間は日本語だけを表示）
+Object.keys(FAC_KM).forEach(function(k) { if (HS[k]) HS[k][0] = FAC_KM[k]; });
+SHOP_TYPES.forEach(function(t) { if (t.kmKey && FAC_KM[t.kmKey]) t.km = FAC_KM[t.kmKey]; else if (t.kmKey) t.km = t.jp; });
+// ボタンは Panha 確定文の1行目（កន្លែងអាជីវកម្ម）＋「施設」だけ。括弧の例示（2行目）はボタンに入らないので省く
+document.getElementById('hmFacility').innerHTML = esc((HS.facility[0] || '').split(' (')[0]) + '<br>施設';
+document.getElementById('btnPot').addEventListener('click', function() {
+  potMode = !potMode;
+  this.className = 'near-btn' + (potMode ? ' on' : '');
+  if (potMode) { nearMode = false; document.getElementById('btnNear').className = 'near-btn'; }
+  renderShopList();
+});
+document.getElementById('btnHear').addEventListener('click', openHearing);
+document.getElementById('btnHearBack').addEventListener('click', function() { showView('shop'); });
+document.getElementById('btnHearSave').addEventListener('click', saveHearing);
+document.getElementById('shopSearch').addEventListener('input', renderShopList);
+document.getElementById('btnNear').addEventListener('click', function() {
+  if (nearMode) { nearMode = false; this.className = 'near-btn'; renderShopList(); return; }
+  potMode = false; document.getElementById('btnPot').className = 'near-btn';
+  var b = this;
+  var on = function() { nearMode = true; b.className = 'near-btn on'; renderShopList(); refreshMapMarkers(); };
+  if (hereGps) on(); else hereThen(on);
+});
+document.getElementById('btnHere').addEventListener('click', function() {
+  hereThen(function() { if (map) map.setView([hereGps.lat, hereGps.lng], 16); renderShopList(); });
+});
 
 // ═══════════════════════════════════════════
 //  Toast / esc
