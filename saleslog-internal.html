@@ -789,6 +789,23 @@ input[type="date"], .due-row input { color-scheme:light; }
 .need-link .nl-ic { font-size:52px; margin-bottom:10px; }
 .admin-link { word-break:break-all; background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px; font-size:13px; margin-top:8px; }
 .badge.unv { background:#fff; border:1.5px solid #8a8576; color:#3a362e; }
+
+/* ── 2026-10-21 下のメニューと「新しいお店」の整え（Daisuke「新しいお店のボタンとかもっと最適化して」） ──
+   ・メニューは透けない白に（下に一覧の文字が透けて見えていた）
+   ・＋ は上に飛び出す丸をやめて、メニューの中の金色のボタンに（最後のお店のカードに重ならない）
+   ・今日のフォローが無い日は1行だけ／新しいお店の「保存」はいつも下に見える */
+nav.tabs { background:#fff; padding-top:8px; }
+nav.tabs > div { align-items:stretch; }
+nav.tabs button { justify-content:flex-end; min-height:52px; }
+nav.tabs button.plus .pc { width:60px; height:36px; margin:0; border:0; border-radius:12px; font-size:28px; line-height:1;
+  box-shadow:0 3px 10px rgba(160,110,20,.30); }
+nav.tabs button.plus:active .pc { transform:scale(.94); }
+body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
+.follow-box.none { padding:10px 14px; border-color:var(--border); background:#fff; box-shadow:none; }
+.follow-box.none .fh { display:none; }
+.follow-box.none .follow-none { font-size:13.5px; }
+.sheet .row2.stick { position:sticky; bottom:calc(-18px - env(safe-area-inset-bottom, 0px)); background:var(--card2);
+  margin:16px -16px 0; padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); border-top:1px solid #eee8db; }
 </style>
 </head>
 <body>
@@ -1582,13 +1599,20 @@ document.addEventListener('visibilitychange', function() { if (!document.hidden 
 // ═══════════════════════════════════════════
 //  店一覧
 // ═══════════════════════════════════════════
+// シートの電話が「+855 …」のまま数式あつかいになり #ERROR! と入っている店がある（2026-10-21・見込みリスト取込分）。
+// エラーの文字は電話として出さない（直すのは GAS の repairShopPhoneErrors）
+function cleanShop(s) {
+  if (s && /^#(ERROR!|N\/A|REF!|VALUE!|NAME\?|DIV\/0!|NUM!|NULL!)$/.test(String(s.phone || '').trim())) s.phone = '';
+  return s;
+}
+
 function loadShops() {
   var empty = document.getElementById('listEmpty');
   if (empty) empty.textContent = STR.loading;
   if (navigator.onLine === false) { // 圏外が分かっている時は、何度も読み直さず控えをすぐ出す
     var c0 = lsGet(SHOPS_KEY, null);
     if (c0 && c0.shops) {
-      shopsCache = c0.shops; menuPrices = c0.prices || [];
+      shopsCache = c0.shops.map(cleanShop); menuPrices = c0.prices || [];
       showCacheBar(c0.at); renderShopList(); refreshMapMarkers();
       return Promise.resolve();
     }
@@ -1599,14 +1623,14 @@ function loadShops() {
         // 電波が無い時は、最後に見た店一覧を出す
         var c = (!d || d.transient) ? lsGet(SHOPS_KEY, null) : null;
         if (c && c.shops) {
-          shopsCache = c.shops; menuPrices = c.prices || [];
+          shopsCache = c.shops.map(cleanShop); menuPrices = c.prices || [];
           showCacheBar(c.at); renderShopList(); refreshMapMarkers();
           return;
         }
         renderListError('⚠️ ' + (d.error || STR.netError));
         return;
       }
-      shopsCache = d.shops || [];
+      shopsCache = (d.shops || []).map(cleanShop);
       menuPrices = d.prices || [];
       lsSet(SHOPS_KEY, { at: Date.now(), shops: shopsCache, prices: menuPrices });
       showCacheBar(null);
@@ -1642,7 +1666,11 @@ function renderFollow() {
   box.className = 'follow-box';
   document.getElementById('followHead').textContent = pickLang(STR.followHead) + (due.length ? ' · ' + due.length : '');
   var list = document.getElementById('followList');
-  if (!due.length) { list.innerHTML = '<div class="follow-none">' + esc(STR.followNone) + '</div>'; return; }
+  if (!due.length) { // 何もない日は1行だけ（お店の一覧を上に詰める）
+    box.className = 'follow-box none';
+    list.innerHTML = '<div class="follow-none">⏰ ' + esc(STR.followNone) + '</div>';
+    return;
+  }
   list.innerHTML = '';
   due.forEach(function(s) {
     var late = s.nextDue < today;
@@ -1929,7 +1957,7 @@ function openShop(shopId, toHearing) {
       }
       var base = null;
       for (var j = 0; j < shopsCache.length; j++) if (shopsCache[j].shopId === shopId) base = shopsCache[j];
-      currentShop = Object.assign({}, base || {}, d.shop);
+      currentShop = cleanShop(Object.assign({}, base || {}, d.shop));
       currentVisits = d.visits || [];
       currentHearings = d.hearings || [];
       currentNotes = d.notes || [];
@@ -3437,11 +3465,11 @@ document.getElementById('sheet').addEventListener('click', function(e) { if (e.t
 function openNewShop() {
   var react = '';
   openSheet('<h3>' + esc(STR.newShopTitle) + '</h3>' +
-    '<div class="lbl">' + esc(STR.newShopName) + '</div><input type="text" id="nsName" maxlength="100" autocomplete="off" placeholder="ឧ. ABC Auto">' +
+    '<div class="lbl">' + esc(STR.newShopName) + '</div><input type="text" id="nsName" maxlength="100" autocomplete="off" enterkeyhint="done" placeholder="ឧ. ABC Auto / 例: ABC Auto">' +
     '<div id="nsNear"></div>' +
     '<div class="lbl">' + esc(STR.newShopReact) + '</div><div class="big-react" id="nsReact">' +
     ['A', 'B', 'C', 'D'].map(function(r) { return '<button type="button" data-qr="' + r + '"><span class="L">' + r + '</span><span>' + esc(REACT_LABELS[r]) + '</span></button>'; }).join('') +
-    '</div><div class="row2"><button type="button" class="ghost" data-close>' + esc(STR.close) + '</button>' +
+    '</div><div class="row2 stick"><button type="button" class="ghost" data-close>' + esc(STR.close) + '</button>' +
     '<button type="button" class="primary" id="nsSave">💾 ' + esc(STR.saveShort) + '</button></div>');
   var near = function() {
     var q = (document.getElementById('nsName') || {}).value || '';
@@ -3460,6 +3488,10 @@ function openNewShop() {
   near();
   if (!hereGps || Date.now() - hereGpsAt > 120000) locateHere(function(ok) { if (ok) near(); });
   document.getElementById('nsName').addEventListener('input', near);
+  // キーボードの「完了」でそのまま保存（保存ボタンがキーボードに隠れても進める）
+  document.getElementById('nsName').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); document.getElementById('nsSave').click(); }
+  });
   document.getElementById('nsNear').addEventListener('click', function(e) {
     var b = e.target.closest('[data-ns]'); if (!b) return;
     closeSheet(); openShop(b.getAttribute('data-ns'));
