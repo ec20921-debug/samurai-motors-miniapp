@@ -806,6 +806,15 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
 .follow-box.none .follow-none { font-size:13.5px; }
 .sheet .row2.stick { position:sticky; bottom:calc(-18px - env(safe-area-inset-bottom, 0px)); background:var(--card2);
   margin:16px -16px 0; padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px)); border-top:1px solid #eee8db; }
+
+/* ── 2026-10-22 🔗 QRシール・お店のグループ（ShopQrSticker.gs）: お店がOK → QRを出す → コピーしてラベル印刷 → 枚数を記録 → グループ ── */
+.qr-box { word-break:break-all; background:#fff; border:1px solid var(--border); border-radius:12px; padding:10px; font-size:13px;
+  margin-top:4px; -webkit-user-select:all; user-select:all; }
+.qr-ghost { display:block; width:100%; border:1.5px solid var(--gold); background:#fff; color:var(--gold2); border-radius:14px; padding:13px;
+  font-weight:700; font-size:15px; font-family:inherit; cursor:pointer; margin-top:8px; }
+.qr-ok { color:#1f8a4c; font-weight:700; }
+.qr-warn { color:#c25e00; font-weight:700; line-height:1.55; }
+.qr-scan { font-size:14px; margin-top:8px; }
 </style>
 </head>
 <body>
@@ -897,6 +906,11 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
       <div class="sub-h" id="dueHead"></div>
       <div class="qchips" id="dueChips"></div>
       <div class="next-now hidden" id="nextNow"></div>
+    </section>
+
+    <section class="card2 hidden" id="qrCard">
+      <div class="ch" id="qrHead"></div>
+      <div id="qrBody"></div>
     </section>
 
     <section class="card2">
@@ -1148,6 +1162,30 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
 // 1画面に1つの言語（2026-10-20）。「ខ្មែរ / 日本語」の形で書いた文字を、選んだ方だけ表示する（下の applyLang）
 var LANG = (function() { try { return localStorage.getItem('sl_lang_v1') === 'ja' ? 'ja' : 'km'; } catch (e) { return 'km'; } })();
 var STR = {
+  // ↓ 2026-10-22 QRシール・お店グループ連携カード。km は Panha 校閲済み（provisional・Run Kosal の確認待ち: ស្ទីគ័រ の綴り / កម្មវិធីបោះពុម្ពស្លាក / សន្លឹក / បង្កើត QR）
+  qrHead:      '🔗 ស្ទីគ័រ QR និងក្រុមរបស់ហាង / QRシール・お店のグループ',
+  qrIssue:     '🔗 បង្កើត QR សម្រាប់ហាងនេះ / このお店のQRを出す',
+  qrIssuing:   'កំពុងបង្កើត QR… / QRを出しています…',
+  qrIssued:    'បានបង្កើត QR ✅ / QRを出しました ✅',
+  qrUrlLabel:  'URL របស់ QR សម្រាប់កក់ / 予約QRのURL',
+  qrCopyUrl:   '📋 ចម្លង URL / URLをコピー',
+  qrCopied:    'បានចម្លង ✅ / コピーしました ✅',
+  qrPasteHint: 'សូមបិទភ្ជាប់ក្នុងកម្មវិធីបោះពុម្ពស្លាក រួចបោះពុម្ពស្ទីគ័រ / ラベル印刷アプリに貼り付けて、シールを印刷してください',
+  qrCheckHint: 'បោះពុម្ពរួច សូមស្កេនម្តងដោយទូរស័ព្ទរបស់អ្នក ដើម្បីពិនិត្យ / 印刷したら、自分のスマホで1回読んで確認してください',
+  qrScans:     'អ្នកស្កេន QR ចំនួន {n} នាក់ / QRを読んだ人 {n}人',
+  grpHead:     'ក្រុម Telegram របស់ហាង / お店の Telegram グループ',
+  grpLinked:   '✅ បានភ្ជាប់ក្រុមហើយ / グループ連携済み',
+  grpWaiting:  '⏳ មិនទាន់ភ្ជាប់ក្រុមទេ / まだ連携していません',
+  grpSteps:    'សូមបង្កើតក្រុម បញ្ចូលអ្នកនៅហាង និង Bot សម្រាប់កក់ ចូលក្នុងក្រុម រួចផ្ញើអត្ថបទខាងក្រោម / グループを作って、お店の人と予約Botを入れ、下の文を送ってください',
+  grpCopyName: '📋 ចម្លងឈ្មោះក្រុម / グループ名をコピー',
+  grpCopyCmd:  '📋 ចម្លងអត្ថបទដែលត្រូវផ្ញើ / 送る文をコピー',
+  stHead:      '🏷 បានប្រគល់ស្ទីគ័រ QR / QRシールを渡した',
+  stCountLabel:'ប៉ុន្មានសន្លឹក? / 何枚？',
+  stSave:      'កត់ត្រា / 記録する',
+  stSaved:     'បានកត់ត្រា ✅ / 記録しました ✅',
+  stTotal:     'រហូតមកដល់ឥឡូវ សរុប {n} សន្លឹក (លើកចុងក្រោយ {d}) / これまで {n}枚（最後 {d}）',
+  stNone:      'មិនទាន់មានកំណត់ត្រាស្ទីគ័រទេ / まだシールの記録はありません',
+  qrMismatch:  'តំណភ្ជាប់ QR សម្រាប់ហាងនេះ ជារបស់ហាងផ្សេង។ សូមប្រាប់អ្នកទទួលបន្ទុកខាងជប៉ុន / このお店のQRリンクが別のお店のものになっています。日本の担当に知らせてください',
   gpsGetting:  'កំពុងស្វែងរកទីតាំង… / GPS取得中…',
   gpsOk:       'ទីតាំង OK',
   gpsFail:     'មិនអាចយកទីតាំងបានទេ (អាចរក្សាទុកបាន) / GPS取得不可（保存は可能）',
@@ -1935,6 +1973,7 @@ function openShop(shopId, toHearing) {
     currentShop = Object.assign({}, pre); currentVisits = []; currentHearings = []; currentNotes = [];
     resolveToday(); renderShopDetail();
   }
+  currentQr = null; stCount = 0; stClientId = ''; renderQrCard(null, true);
   document.getElementById('timeline').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
   if (!hereGps || Date.now() - hereGpsAt > 120000) locateHere(function() {}); // 訪問の記録に付ける位置を先に取っておく
   document.getElementById('commissionList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
@@ -1946,7 +1985,7 @@ function openShop(shopId, toHearing) {
         if (!c) {
           // 電波が無くても、一覧の情報で出したお店の画面はそのまま使う（反応・メモは未送信の箱に入る）
           if (pre && (!d || d.transient) && currentShop && currentShop.shopId === shopId) {
-            showCacheBar(Date.now()); renderTimeline(); if (toHearing) openHearing(); return;
+            showCacheBar(Date.now()); renderTimeline(); renderQrCard(null); if (toHearing) openHearing(); return;
           }
           toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return;
         }
@@ -1963,11 +2002,148 @@ function openShop(shopId, toHearing) {
       currentNotes = d.notes || [];
       resolveToday();
       renderShopDetail();
+      currentQr = d.qr || null; renderQrCard(currentQr);
       loadCommissions(shopId);
       if (toHearing) openHearing();
     })
-    .catch(function() { if (pre) { renderTimeline(); return; } toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
+    .catch(function() { if (pre) { renderTimeline(); renderQrCard(null); return; } toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
 }
+
+// ═══════════════════════════════════════════
+//  🔗 QRシール・お店のグループ（2026-10-22・v7-operations/ShopQrSticker.gs）
+//  お店がOK → 「QRを出す」→ URLをコピーしてラベル印刷アプリへ → 枚数を記録 → グループで /register
+// ═══════════════════════════════════════════
+var currentQr = null;
+var qrBusy = false;
+var stCount = 0;          // 選んだシールの枚数
+var stClientId = '';      // 送り直しても1回だけ記録されるように（成功したら作り直す）
+
+function copyText(text) {
+  var done = function() { toast(STR.qrCopied, 'ok'); };
+  var legacy = function() {   // 古い Android の WebView など clipboard API が使えない時
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.top = '-1000px';
+      document.body.appendChild(ta); ta.select();
+      var ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (ok) { done(); return; }
+    } catch (e) {}
+    window.prompt('', text);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, legacy);
+  else legacy();
+}
+
+function fillTpl(t, o) { return String(t).replace(/\{(\w+)\}/g, function(_, k) { return o[k] === undefined ? '' : o[k]; }); }
+
+function renderQrCard(qr, loading) {
+  var card = document.getElementById('qrCard');
+  var body = document.getElementById('qrBody');
+  document.getElementById('qrHead').textContent = STR.qrHead;
+  if (loading) { card.className = 'card2'; body.innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>'; return; }
+  if (!qr) { card.className = 'card2 hidden'; body.innerHTML = ''; return; }
+  card.className = 'card2';
+  if (qr.mismatch) { body.innerHTML = '<div class="qr-warn">⚠️ ' + esc(STR.qrMismatch) + '</div>'; return; }
+  if (!qr.issued) {
+    body.innerHTML = '<button type="button" class="primary" data-qa="issue">' + esc(STR.qrIssue) + '</button>';
+    return;
+  }
+  var h = '';
+  // ① QR の URL（コピーしてラベル印刷アプリへ）
+  h += '<div class="sub-h">' + esc(STR.qrUrlLabel) + '</div>' +
+       '<div class="qr-box">' + esc(qr.url) + '</div>' +
+       '<button type="button" class="primary" data-qa="copyUrl">' + esc(STR.qrCopyUrl) + '</button>' +
+       '<div class="notes-hint" style="margin-top:8px">' + esc(STR.qrPasteHint) + '<br>' + esc(STR.qrCheckHint) + '</div>' +
+       '<div class="qr-scan">📱 ' + esc(fillTpl(STR.qrScans, { n: qr.scans || 0 })) + '</div>';
+  // ② シールを渡した（枚数）
+  h += '<div class="sub-h">' + esc(STR.stHead) + '</div>' +
+       '<div class="notes-hint">' + esc(qr.stickerTotal ? fillTpl(STR.stTotal, { n: qr.stickerTotal, d: qr.stickerLast || '' }) : STR.stNone) + '</div>' +
+       '<div class="notes-hint" style="margin:0 0 6px">' + esc(STR.stCountLabel) + '</div>' +
+       '<div class="qchips" id="stChips">' + [1, 2, 3, 5, 10].map(function(n) {
+         return '<button type="button" data-st="' + n + '"' + (stCount === n ? ' class="sel"' : '') + '>' + n + '</button>';
+       }).join('') + '</div>' +
+       '<button type="button" class="primary" data-qa="sticker"' + (stCount ? '' : ' disabled') + '>' + esc(STR.stSave) + '</button>';
+  // ③ お店の Telegram グループ
+  h += '<div class="sub-h">' + esc(STR.grpHead) + '</div>';
+  if (qr.linkStatus === '連携済') {
+    h += '<div class="qr-ok">' + esc(STR.grpLinked) + (qr.linkedGroup ? '<br><span style="font-weight:400">' + esc(qr.linkedGroup) + '</span>' : '') + '</div>';
+  } else {
+    h += '<div class="qr-warn">' + esc(STR.grpWaiting) + '</div>' +
+         '<div class="notes-hint" style="margin-top:6px">' + esc(STR.grpSteps) + '</div>' +
+         '<div class="qr-box">' + esc(qr.groupName) + '</div>' +
+         '<button type="button" class="qr-ghost" data-qa="copyName">' + esc(STR.grpCopyName) + '</button>' +
+         (qr.command ? '<div class="qr-box" style="margin-top:12px">' + esc(qr.command) + '</div>' +
+           '<button type="button" class="qr-ghost" data-qa="copyCmd">' + esc(STR.grpCopyCmd) + '</button>' : '');
+  }
+  body.innerHTML = h;
+}
+
+// 店の画面のキャッシュにも新しい QR 情報を入れておく（電波が無い時に前の状態が出ないように）
+function storeQr(shopId, qr) {
+  currentQr = qr;
+  var c = loadDetailCache(shopId);
+  if (c && c.d) { c.d.qr = qr; saveDetailCache(shopId, c.d); }
+}
+
+function qrError(r) {
+  if (r && r.error === 'QR_MISMATCH') return STR.qrMismatch;
+  return (r && r.error) || STR.netError;
+}
+
+document.getElementById('qrBody').addEventListener('click', function(e) {
+  var chip = e.target.closest('[data-st]');
+  if (chip) {
+    var n = Number(chip.getAttribute('data-st'));
+    stCount = stCount === n ? 0 : n;
+    stClientId = '';
+    renderQrCard(currentQr);
+    return;
+  }
+  var b = e.target.closest('[data-qa]'); if (!b || !currentShop) return;
+  var qa = b.getAttribute('data-qa');
+  var qr = currentQr || {};
+  if (qa === 'copyUrl') { copyText(qr.url); return; }
+  if (qa === 'copyName') { copyText(qr.groupName); return; }
+  if (qa === 'copyCmd') { copyText(qr.command); return; }
+  if (qrBusy) return;
+  var shopId = currentShop.shopId;
+  if (qa === 'issue') {
+    qrBusy = true; b.disabled = true; b.textContent = STR.qrIssuing;
+    api({ action: 'shop_qr_issue', shopId: shopId }).then(function(r) {
+      qrBusy = false;
+      if (!r || !r.ok) {
+        toast('⚠️ ' + qrError(r), 'err');
+        if (r && r.qr && currentShop && currentShop.shopId === shopId) { storeQr(shopId, r.qr); }
+        if (currentShop && currentShop.shopId === shopId) renderQrCard(currentQr);
+        return;
+      }
+      storeQr(shopId, r.qr);
+      if (currentShop && currentShop.shopId === shopId) renderQrCard(currentQr);
+      toast(STR.qrIssued, 'ok');
+    }).catch(function() {
+      qrBusy = false; toast('⚠️ ' + STR.netError, 'err');
+      if (currentShop && currentShop.shopId === shopId) renderQrCard(currentQr);
+    });
+    return;
+  }
+  if (qa === 'sticker' && stCount) {
+    if (!stClientId) stClientId = newClientId();
+    qrBusy = true; b.disabled = true; b.textContent = STR.saving;
+    api({ action: 'shop_qr_sticker', shopId: shopId, count: stCount, clientId: stClientId }).then(function(r) {
+      qrBusy = false;
+      if (!r || !r.ok) { toast('⚠️ ' + qrError(r), 'err'); if (currentShop && currentShop.shopId === shopId) renderQrCard(currentQr); return; }
+      stCount = 0; stClientId = '';
+      storeQr(shopId, r.qr);
+      if (currentShop && currentShop.shopId === shopId) renderQrCard(currentQr);
+      toast(STR.stSaved, 'ok');
+    }).catch(function() {
+      // 届いたか分からない時は同じ番号のまま。もう一度押しても二重に記録されない
+      qrBusy = false; toast('⚠️ ' + STR.netError, 'err');
+      if (currentShop && currentShop.shopId === shopId) renderQrCard(currentQr);
+    });
+  }
+});
 
 // ═══════════════════════════════════════════
 //  コミッション（Phase 4・案件単位の台帳）
