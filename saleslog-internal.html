@@ -1160,7 +1160,14 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
 //  文言（クメール語は Panha 校閲済みテーブル準拠・日本語併記）
 // ═══════════════════════════════════════════
 // 1画面に1つの言語（2026-10-20）。「ខ្មែរ / 日本語」の形で書いた文字を、選んだ方だけ表示する（下の applyLang）
-var LANG = (function() { try { return localStorage.getItem('sl_lang_v1') === 'ja' ? 'ja' : 'km'; } catch (e) { return 'km'; } })();
+var LANG = (function() {
+  // 現場アプリの SCOUT タブから開いた時は、現場アプリの言語（?lang=）に合わせる（2026-10-25）
+  var q = new URLSearchParams(window.location.search).get('lang');
+  if (q === 'ja' || q === 'km') return q;
+  try { return localStorage.getItem('sl_lang_v1') === 'ja' ? 'ja' : 'km'; } catch (e) { return 'km'; }
+})();
+// 現場アプリの中（SCOUT タブ・iframe）で開いている時（2026-10-25）。「ホーム画面に追加」の案内は出さない
+var EMBEDDED = new URLSearchParams(window.location.search).get('embed') === '1';
 var STR = {
   // ↓ 2026-10-22 QRシール・お店グループ連携カード。km は Panha 校閲済み（provisional・Run Kosal の確認待ち: ស្ទីគ័រ の綴り / កម្មវិធីបោះពុម្ពស្លាក / សន្លឹក / បង្កើត QR）
   qrHead:      '🔗 ស្ទីគ័រ QR និងក្រុមរបស់ហាង / QRシール・お店のグループ',
@@ -3713,7 +3720,7 @@ function showNeedLink() {
 (function installTip() {
   var standalone = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   var closed = false; try { closed = localStorage.getItem('sl_install_closed') === '1'; } catch (e) {}
-  if (IN_TELEGRAM || standalone || closed || !currentChatId) return;
+  if (IN_TELEGRAM || standalone || closed || EMBEDDED || !currentChatId) return;
   document.getElementById('installText').textContent = STR.installTip;
   document.getElementById('installBar').className = 'install-bar';
   document.getElementById('btnInstallX').addEventListener('click', function() {

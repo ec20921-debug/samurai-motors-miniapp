@@ -112,6 +112,12 @@ main.flow{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 /* ── 下部タブ（試作と同じ） ── */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(2,1fr)}
 .tabs[hidden]{display:none}
+.tabs.three{grid-template-columns:repeat(3,1fr)}
+.tab[hidden]{display:none}
+/* SCOUT タブ: 営業アプリ（../saleslog-internal.html）を同じ画面の中で開く（2026-10-25・アイコンを1つにするため） */
+.scout-wrap{position:fixed;left:0;right:0;top:0;bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:30;background:#fff;padding-top:env(safe-area-inset-top,0px)}
+.scout-wrap[hidden]{display:none}
+.scout-wrap iframe{width:100%;height:100%;border:0;display:block}
 .tab{height:62px;display:grid;place-items:center;align-content:center;gap:2px;color:#6b7686;position:relative;font-size:12px;font-weight:700;line-height:1.15}
 .tab svg{width:26px;height:26px}
 .tab[aria-selected="true"]{color:var(--blue)}
@@ -266,14 +272,18 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
   <button type="button" class="tab" role="tab" data-tab="expense" aria-selected="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span id="tabExpL"></span>
   </button>
+  <button type="button" class="tab" role="tab" data-tab="scout" aria-selected="false" id="tabScout" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M10 20v-5h4v5"/></svg><span id="tabScoutL"></span>
+  </button>
 </nav>
+<div class="scout-wrap" id="scoutWrap" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261024-103323';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261025-185506';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -290,7 +300,7 @@ var TG_USER = (SURFACE === 'telegram' && TG.initDataUnsafe && TG.initDataUnsafe.
 //  T_KM は Panha 校閲済み（KM-START〜KM-END）。未収録のキーは日本語にフォールバック
 // ═══════════════════════════════════════════════════════════════
 var T_JA = {
-  tab_today:'今日', next_title:'次の予定', btn_map:'地図', no_jobs:'今日の予約はありません', tomorrow:'明日',
+  tab_today:'今日', next_title:'次の予定', btn_map:'地図', no_jobs:'今日の予約はありません', tomorrow:'明日', tab_scout:'営業',
   job_precheck:'作業前チェック', photo_before:'作業前の写真', photo_after:'作業後の写真', btn_start:'作業開始', btn_finish:'作業終了', btn_save:'保存する', btn_next:'次へ', btn_back:'戻る',
   chk_engine:'エンジン始動', chk_lights:'ライト', chk_windows:'パワーウィンドウ', chk_wipers:'ワイパー', chk_ac:'エアコン', chk_ok:'正常', chk_ng:'不良',
   damage_title:'傷・へこみ', damage_tap:'傷のある場所を図の上でタップ', damage_none:'傷なし', damage_photo:'傷を撮る',
@@ -315,7 +325,7 @@ var T_JA = {
   tab_expense:'経費', exp_receipt:'レシートを撮る', exp_recent:'最近の登録', it_fuel:'ガソリン', it_fuel_ex:'例: バイクのガソリン', it_chem:'洗車の薬', it_chem_ex:'例: スプレー・ワックス・シャンプー（車に使って、なくなるもの）', it_tools:'道具', it_tools_ex:'例: クロス・バケツ・手袋（何回も使うもの）', it_bike:'バイクの修理', it_bike_ex:'例: パンク修理・オイル交換', it_parking:'駐車代', it_parking_ex:'例: 駐車場・通行料', it_flyer:'チラシ印刷', it_flyer_ex:'例: チラシ・ポスター・名刺', it_phone:'電話代', it_phone_ex:'例: 電話のチャージ・インターネット', it_util:'店の電気・水道', it_util_ex:'例: 電気代・水道代', it_other:'そのほか', it_other_ex:'例: 上にないもの（何を買ったか書いてください）', memo_required:'何を買ったか書いてください', exp_amount_req:'金額を入れてください', exp_no_receipt_q:'レシートの写真がありません。このまま保存しますか？', exp_saved:'経費を保存しました。電波があれば送ります'
 };
 /*KM-START*/
-var T_KM = {"tab_today": "ថ្ងៃនេះ", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "shop_pick": "ហាងដៃគូណា?", "shop_none": "មិនជ្រើសរើស (មិនដឹង)", "shop_need": "បើជាការងាររបស់ហាងដៃគូ សូមជ្រើសរើសហាង", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត"};
+var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_scout": "ចុះជួបហាង", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "shop_pick": "ហាងដៃគូណា?", "shop_none": "មិនជ្រើសរើស (មិនដឹង)", "shop_need": "បើជាការងាររបស់ហាងដៃគូ សូមជ្រើសរើសហាង", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត"};
 /*KM-END*/
 var LANG = 'km';
 try { LANG = localStorage.getItem('sm_field_lang') || 'km'; } catch (e) {}
@@ -401,6 +411,24 @@ function loadMe() {
   }).catch(function () {});
 }
 function canPunch() { return !!ME.chatId && ME.state !== 'need_link' && ME.state !== 'not_staff' && ME.state !== 'link_bad'; }
+// SCOUT タブ（2026-10-25）: 専用リンク（u・k）で開いたホーム画面アプリだけ。営業アプリも同じ鍵で本人を確かめるのでログインし直し不要
+//   iframe は一度だけ作り、タブを切り替えても入力中の画面を保つ
+function scoutAvailable() { return ME.via === 'link' && !!ME.chatId && !!ME.key && ME.state !== 'not_staff' && ME.state !== 'link_bad'; }
+function ensureScoutFrame() {
+  var wrap = $('scoutWrap'), old = wrap.firstChild;
+  if (old) {
+    // 最初に圏外で開いて読み込めなかった時は、タブを開き直したら読み直す（中身が SCOUT でなければ再読み込み）
+    var ok = false; try { ok = !!(old.contentDocument && old.contentDocument.getElementById('viewHome')); } catch (e) {}
+    if (!ok) old.src = old.src;
+    return;
+  }
+  var f = document.createElement('iframe');
+  f.title = 'SAMURAI SCOUT';
+  f.setAttribute('allow', 'geolocation; clipboard-write');
+  f.src = '../saleslog-internal.html?gas=' + encodeURIComponent(OPS_URL) + '&u=' + encodeURIComponent(ME.chatId) +
+    '&k=' + encodeURIComponent(ME.key) + '&lang=' + encodeURIComponent(LANG) + '&embed=1';
+  wrap.appendChild(f);
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  ユーティリティ
@@ -1148,8 +1176,14 @@ function render() {
   var inFlow = S.view === 'job' || S.view === 'new';
   $('bar').hidden = !inFlow; $('main').className = inFlow ? 'flow' : 'tabbed';
   $('tabs').hidden = inFlow;
-  $('tabTodayL').textContent = t('tab_today'); $('tabExpL').textContent = t('tab_expense');
+  $('tabTodayL').textContent = t('tab_today'); $('tabExpL').textContent = t('tab_expense'); $('tabScoutL').textContent = t('tab_scout');
+  var scoutOk = scoutAvailable();
+  $('tabScout').hidden = !scoutOk; $('tabs').className = scoutOk ? 'tabs three' : 'tabs';
+  if (S.tab === 'scout' && !scoutOk) S.tab = 'today';
   document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === S.tab)); });
+  var inScout = !inFlow && S.tab === 'scout';
+  $('scoutWrap').hidden = !inScout; $('head').hidden = inScout; $('main').hidden = inScout;
+  if (inScout) { ensureScoutFrame(); return; }
   renderHead();
   if (S.view === 'job' && S.cur) renderJob();
   else if (S.view === 'new') renderNew();
@@ -1189,7 +1223,7 @@ function boot() {
         if (histChanged) Outbox.kvSet('exp_hist', S.expHist);
         // 入力中は描き直さない（文字入力が途切れるため）
         var typing = document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
-        if (S.view === 'home' && !typing) { if (S.tab === 'expense') renderExpense(); else renderHome(); }
+        if (S.view === 'home' && !typing && S.tab !== 'scout') { if (S.tab === 'expense') renderExpense(); else renderHome(); }
         renderHead();
       } });
       loadData(false);
