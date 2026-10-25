@@ -2088,8 +2088,9 @@ function applyCampaignBanner_() {
       document.getElementById('sourceLabel').textContent = '★ FOR ' + String(s.placeName || s.label).toUpperCase() + ' RESIDENTS';
       document.getElementById('sourcePerk').textContent = s.perkEn || '';
       document.getElementById('sourcePerkJa').textContent = (s.placeName || s.label) + ' にお住まいの皆さまへ：' + (s.perkJa || '');
-      document.getElementById('sourcePeriod').textContent = (s.periodEn || '') + (s.periodEn ? ' · ' : '') + 'Discounts cannot be combined.';
-      document.getElementById('sourcePeriodJa').textContent = (s.periodJa ? s.periodJa + ' のご予約が対象。' : '') + '割引の併用はできません。';
+      // 2026-10-25: 期間限定の上乗せ（extra・例 SAMURAI MAGIC 半額）は期間の行に添える。終了日を過ぎるとサーバーが空で返す
+      document.getElementById('sourcePeriod').textContent = [s.periodEn, s.extraEn, 'Discounts cannot be combined.'].filter(Boolean).join(' · ');
+      document.getElementById('sourcePeriodJa').textContent = (s.periodJa ? s.periodJa + ' のご予約が対象。' : '') + (s.extraJa ? s.extraJa + '。' : '') + '割引の併用はできません。';
       sb.style.display = 'flex';
       banner.style.display = 'none';
       return;
@@ -2194,16 +2195,21 @@ function srcHasPerk_() {
   return !!(s && (Number(s.servicePct) > 0 || Object.keys(s.itemPct || {}).length > 0));
 }
 function srcFixedPlace_() { return !!(state.source && state.source.placeName); }
-// 品目の割引率(%)。WASH は画面上の code が letter('W') なので 'WASH' として引く
-function srcPctFor_(item) {
+// 品目の割引率(%)。WASH は画面上の code が letter('W') なので 'WASH' として引く（サーバーの sourcePctFor_ と同じ判定）
+//   ymd = 予約日。未選択なら、期間限定の特典がまだ終わっていなければ期間内として見せる（期間はバナーで案内）
+//   個別割引は期間内だけ。サービス割引(%) は期間内、または serviceAlways（2026-10-25 Picasso 住民はいつでも20%）なら期間外も
+function srcPctFor_(item, ymd) {
   if (!srcHasPerk_()) return 0;
+  var s = state.source;
   var code = String(item.kind === 'WASH' ? 'WASH' : item.code).toUpperCase();
-  var ip = state.source.itemPct || {};
-  return Object.prototype.hasOwnProperty.call(ip, code) ? Number(ip[code]) : (Number(state.source.servicePct) || 0);
+  var inPeriod = ymd ? srcInPeriod_(ymd) : s.limitedLive !== false;
+  var ip = s.itemPct || {};
+  if (inPeriod && Object.prototype.hasOwnProperty.call(ip, code)) return Number(ip[code]);
+  return (inPeriod || s.serviceAlways) ? (Number(s.servicePct) || 0) : 0;
 }
-// メニューの価格に特典を出すか: 日付未選択なら出す（期間はバナーで案内）、選択済みなら期間内のときだけ
+// メニューの価格に特典を出すか: 日付未選択なら出す、選択済みなら期間内か serviceAlways のときだけ（品目ごとの率は srcPctFor_）
 function srcPriceActive_() {
-  return srcHasPerk_() && (!state.selectedDate || srcInPeriod_(state.selectedDate));
+  return srcHasPerk_() && (!state.selectedDate || srcInPeriod_(state.selectedDate) || !!state.source.serviceAlways);
 }
 // 空き枠の問い合わせに付ける流入元（期間中の日曜営業の判定用。chatId はサーバー側の紐付け確認用）
 function srcQuery_() {
@@ -2307,7 +2313,7 @@ function priceHtmlFor(item) {
   var price = itemPriceFor(item);
   // 2026-10-15: 流入元の特典（品目別の割引率）。期間はバナーと確認画面で示す。全体キャンペーンとは併用しない
   if (srcPriceActive_()) {
-    var sp = srcPctFor_(item);
+    var sp = srcPctFor_(item, state.selectedDate);
     if (!sp) return fmtUsd(price);
     return '<span class="price-original">' + fmtUsd(price) + '</span><span class="price-discount">' + fmtUsdTrim(price * (1 - sp / 100)) + '</span>'
       + '<span class="price-src-note">-' + sp + '% residents</span>';
@@ -2763,16 +2769,15 @@ function renderSummary() {
   // キャンペーン割引(案a: サービスのみ -X%)
   var serviceSubtotal = items.reduce(function(s, it) { return s + (Number(it.price) || 0); }, 0);
   var camp = state.campaign;
-  // 2026-10-15: 流入元の特典（予約日が期間内のときだけ・品目別の割引率）。効くときは全体キャンペーンを使わない
-  var srcActive = srcHasPerk_() && srcInPeriod_(state.selectedDate);
+  // 2026-10-15: 流入元の特典（予約日で品目ごとの割引率を決める・srcPctFor_）。効くときは全体キャンペーンを使わない
   var srcLines = [];
-  if (srcActive) {
+  if (srcHasPerk_() && state.selectedDate) {
     items.forEach(function(it) {
-      var pct = srcPctFor_(it);
+      var pct = srcPctFor_(it, state.selectedDate);
       if (pct > 0 && Number(it.price) > 0) srcLines.push({ it: it, pct: pct, d: Math.round(Number(it.price) * pct) / 100 });
     });
   }
-  if (!srcLines.length) srcActive = false;   // 対象品目なし＝特典なし（サーバーと同じ判定）
+  var srcActive = srcLines.length > 0;   // 対象品目なし＝特典なし（サーバーと同じ判定）
   var campActive = !srcActive && camp && camp.active && camp.percent > 0;
   var discount = srcActive
     ? Math.round(srcLines.reduce(function(s, l) { return s + l.d; }, 0) * 100) / 100
