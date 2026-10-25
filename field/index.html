@@ -283,7 +283,7 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261025-185506';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261025-213928';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -307,7 +307,8 @@ var T_JA = {
   side_front:'前', side_rear:'後ろ', side_left:'左', side_right:'右', part_windshield:'フロントガラス', part_hl_left:'左ヘッドライト', part_hl_right:'右ヘッドライト', part_seat_front:'前の座席', part_seat_rear:'後ろの座席',
   btn_retake:'撮り直す', btn_ok:'OK', lbl_required:'必須', lbl_optional:'任意', lbl_photos:'写真',
   now_doing:'いま作業中', svc_wash:'洗車', svc_glass:'ガラスコーティング', svc_headlight:'ヘッドライト再生', svc_body:'ボディ磨き', svc_done_q:'やった作業を全部押してください', work_time:'作業時間',
-  pay_title:'支払い', pay_cash:'現金', pay_aba:'ABA', pay_shop:'提携店が払う', pay_free:'無料（デモ）', pay_later:'未収', amount:'金額',
+  pay_title:'支払い', pay_cash:'現金', pay_aba:'ABA', pay_shop:'お店の車（お店が払う）', pay_qr:'ABA QR で受け取った', pay_shopref:'お店の紹介のお客さん',
+  amt_split:'定価 {list}$ → 当社の受け取り {amt}$（お店 {rate}%）', shop_need2:'お店を選んでください（選ぶと金額が自動で入ります）', pay_hint:'お金は QR だけで受け取ります（現金は受け取りません）', pay_free:'無料（デモ）', pay_later:'未収', amount:'金額',
   shop_pick:'どの提携店？', shop_none:'選ばない（わからない）', shop_need:'提携店の作業なら、お店を選んでください',
   src_title:'お客さんはどこから？', src_shop:'提携店の紹介', src_flyer:'チラシ', src_facebook:'Facebook', src_repeat:'リピーター', src_walkin:'飛び込み',
   cust_name:'お客さんの名前', car:'車', plate:'ナンバー', size_sedan:'セダン以下', size_suv:'SUV 以上', place_store:'店舗', place_delivery:'出張', note:'メモ',
@@ -325,7 +326,7 @@ var T_JA = {
   tab_expense:'経費', exp_receipt:'レシートを撮る', exp_recent:'最近の登録', it_fuel:'ガソリン', it_fuel_ex:'例: バイクのガソリン', it_chem:'洗車の薬', it_chem_ex:'例: スプレー・ワックス・シャンプー（車に使って、なくなるもの）', it_tools:'道具', it_tools_ex:'例: クロス・バケツ・手袋（何回も使うもの）', it_bike:'バイクの修理', it_bike_ex:'例: パンク修理・オイル交換', it_parking:'駐車代', it_parking_ex:'例: 駐車場・通行料', it_flyer:'チラシ印刷', it_flyer_ex:'例: チラシ・ポスター・名刺', it_phone:'電話代', it_phone_ex:'例: 電話のチャージ・インターネット', it_util:'店の電気・水道', it_util_ex:'例: 電気代・水道代', it_other:'そのほか', it_other_ex:'例: 上にないもの（何を買ったか書いてください）', memo_required:'何を買ったか書いてください', exp_amount_req:'金額を入れてください', exp_no_receipt_q:'レシートの写真がありません。このまま保存しますか？', exp_saved:'経費を保存しました。電波があれば送ります'
 };
 /*KM-START*/
-var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_scout": "ចុះជួបហាង", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "ហាងបង់", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "shop_pick": "ហាងដៃគូណា?", "shop_none": "មិនជ្រើសរើស (មិនដឹង)", "shop_need": "បើជាការងាររបស់ហាងដៃគូ សូមជ្រើសរើសហាង", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត"};
+var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_scout": "ចុះជួបហាង", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "រថយន្តរបស់ហាង (ហាងបង់)", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "shop_pick": "ហាងដៃគូណា?", "shop_none": "មិនជ្រើសរើស (មិនដឹង)", "shop_need": "បើជាការងាររបស់ហាងដៃគូ សូមជ្រើសរើសហាង", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "pay_qr": "ទទួលលុយតាម ABA QR", "pay_shopref": "ភ្ញៀវដែលហាងបានណែនាំមក", "amt_split": "តម្លៃសេវា {list}$ → យើងទទួល {amt}$ (ហាងទទួលបាន {rate}%)", "shop_need2": "សូមជ្រើសរើសហាងសិន (ទឹកប្រាក់នឹងបំពេញឱ្យដោយស្វ័យប្រវត្តិ)", "pay_hint": "ទទួលលុយតាម QR តែប៉ុណ្ណោះ (មិនទទួលសាច់ប្រាក់ទេ)"};
 /*KM-END*/
 var LANG = 'km';
 try { LANG = localStorage.getItem('sm_field_lang') || 'km'; } catch (e) {}
@@ -622,9 +623,28 @@ function queueStart(c) {
   p.amount = c.job.bookingId ? (c.job.amount || '') : '';
   p.startTime = c.startAt; p.beforePhotos = photos;
   p.v2 = { checks: c.checks, no_damage: !c.dmg.length && !!c.noDamage, photo_slots: slots,
-           damage: c.dmg.map(function (d, i) { return { x: d.x, y: d.y, memo: d.memo || '', photo: d.img ? 'D' + (i + 1) : '' }; }) };
+           damage: c.dmg.map(function (d, i) { return { x: d.x, y: d.y, memo: d.memo || '', photo: d.img ? 'D' + (i + 1) : '' }; }),
+           shop_id: (c.shopAtStart && !c.job.bookingId) ? (c.shop || '') : '' };   // 始める前に選んだ店（2026-10-25）
   return Outbox.enqueue('job_start', p);
 }
+// 2026-10-25 支払いの区分: 提携店の仕事（紹介客 shopref・店の車 shop）は店を選ぶと 当社の受け取り＝定価×(100−店の率)% を入れる（直せる）
+function isShopPay(pt) { return pt === 'shop' || pt === 'shopref'; }
+function listPriceOf(c) { return Number(c.job.amount || priceOf(c.job)) || 0; }
+function shopRateOf(id) {
+  var sp = (S.shops || []).filter(function (x) { return x.id === id; })[0];
+  var r = sp && sp.rate !== undefined && sp.rate !== '' ? Number(sp.rate) : 30;
+  return isNaN(r) ? 30 : r;
+}
+function applyShopAmount(c) {
+  if (c.pay === 'free') return;
+  if (isShopPay(c.pay) && c.shop) {
+    c.list = listPriceOf(c); c.rate = shopRateOf(c.shop);
+    c.amount = Math.round(c.list * (100 - c.rate)) / 100;
+  } else if (c.list) {   // 店の仕事から別の区分に変えた時は定価に戻す
+    c.amount = c.list; c.list = 0; c.rate = null;
+  } else if (!c.amount) c.amount = listPriceOf(c);
+}
+function canSavePay(c) { return !!c.pay && c.pay !== 'cash' && !(isShopPay(c.pay) && !c.shop) && (c.pay === 'free' || (Number(c.amount) > 0 && Number(c.amount) <= 2000)); }   // 無料以外は金額が要る
 function queueEnd(c) {
   var shots = shotsFor(c.job, 'after'), photos = [], slots = [];
   shots.forEach(function (s) { if (c.photos[s.id]) { photos.push(c.photos[s.id]); slots.push(s.id.replace('after_', '')); } });
@@ -634,7 +654,8 @@ function queueEnd(c) {
   p.amount = c.pay === 'free' ? 0 : (Number(c.amount) || 0);
   p.endTime = c.endAt; p.duration = Math.round(workSec(c) / 60); p.afterPhotos = photos;
   p.v2 = { service_times: times, services_done: Object.keys(times), payment_type: c.pay, source: c.src,
-           shop_id: (c.src === 'shop' || c.pay === 'shop') ? (c.shop || '') : '',
+           shop_id: (c.src === 'shop' || isShopPay(c.pay)) ? (c.shop || '') : '',
+           list_price: isShopPay(c.pay) && c.list ? c.list : listPriceOf(c), shop_rate: isShopPay(c.pay) && c.rate != null ? c.rate : '',
            duration_sec: Math.round(workSec(c)), work_start: c.startAt, work_end: c.endAt, photo_slots: slots };
   return Outbox.enqueue('job_end', p);
 }
@@ -983,6 +1004,18 @@ function jobHead() {
     '<div style="grid-column:1/-1"><small>📍</small><b>' + esc(placeText(j.place)) + '</b></div></div></div></div>';
 }
 
+// 始める前の「どの提携店？」（予約なしの作業・2026-10-25）。文言は支払い画面と同じ校閲済みの3つ
+function startShopCard(c) {
+  var shops = S.shops || [], cur = c.shopAtStart ? (c.shop || '') : '';
+  var known = !cur || shops.some(function (sp) { return sp.id === cur; });
+  return '<div class="card"><div class="band">🏪 ' + t('shop_pick') + '</div><div class="body">' +
+    '<select id="shopSelStart" style="width:100%;font-size:18px;padding:12px;border-radius:12px;border:2px solid #d0d5dd;background:#fff">' +
+    '<option value="">' + esc(t('shop_none')) + '</option>' +
+    (known ? '' : '<option value="' + esc(cur) + '" selected>' + esc(cur) + '</option>') +
+    shops.map(function (sp) { return '<option value="' + esc(sp.id) + '"' + (cur === sp.id ? ' selected' : '') + '>' + esc(sp.name) + '</option>'; }).join('') +
+    '</select><div class="note">' + t('shop_need') + '</div></div></div>';
+}
+
 function renderJob() {
   var c = S.cur, j = c.job, html = '';
   if (timerId) { clearInterval(timerId); timerId = null; }
@@ -1005,6 +1038,8 @@ function renderJob() {
         return '<div class="dmg"><span class="no">' + (i + 1) + '</span><span class="ph">' + (d.img ? '<img src="' + d.img + '" alt="">' : '📷') + '<input type="file" accept="image/*" capture="environment" data-dmgph="' + i + '"></span><input class="memo" data-dmgmemo="' + i + '" value="' + esc(d.memo) + '" placeholder="' + esc(t('note')) + '"><button type="button" class="x" data-dmgdel="' + i + '">✕</button></div>';
       }).join('') + '</div>' : '') +
       (c.dmg.length ? '' : '<button type="button" class="btn sm ' + (c.noDamage ? 'green' : 'ghost') + '" id="dmgNone">✓ ' + t('damage_none') + '</button>') + '</div></div>';
+    // 予約なしの作業（店の車など）は始める前に店を選べる。選ぶと Before もその店のグループへ届く（2026-10-25）
+    if (!j.bookingId) html += startShopCard(c);
   }
 
   else if (c.step === 'before' || c.step === 'after') {
@@ -1035,31 +1070,35 @@ function renderJob() {
       '</div><div class="note">⏱ ' + t('work_time') + ': <b class="num">' + fmtDur(dur) + '</b> · 📷 <b class="num">' + Object.keys(c.photos).length + '</b> · 🩹 <b class="num">' + c.dmg.length + '</b></div></div></div>';
     html += '<div class="card"><div class="band">💰 ' + t('pay_title') + '</div><div class="body">' +
       '<div class="big-amt"><input type="number" inputmode="decimal" id="amt" value="' + (c.pay === 'free' ? 0 : c.amount) + '"' + (c.pay === 'free' ? ' disabled' : '') + '><span>$</span></div>' +
-      '<div class="row2">' + [['cash', '💵', 'pay_cash', 'g'], ['aba', '📱', 'pay_aba', 'g'], ['shop', '🏪', 'pay_shop', 'gold'], ['free', '🎁', 'pay_free', 'gold'], ['later', '⏳', 'pay_later', 'r']].map(function (p) {
+      (isShopPay(c.pay) && c.shop && c.list ? '<div class="note">' + esc(t('amt_split', { list: c.list, amt: c.amount, rate: c.rate })) + '</div>' : '') +
+      '<div class="note">💡 ' + t('pay_hint') + '</div>' +
+      '<div class="row2">' + [['aba', '📱', 'pay_qr', 'g'], ['shopref', '🤝', 'pay_shopref', 'gold'], ['shop', '🏪', 'pay_shop', 'gold'], ['free', '🎁', 'pay_free', 'gold'], ['later', '⏳', 'pay_later', 'r']].map(function (p) {
         return '<button type="button" class="opt ' + (c.pay === p[0] ? 'on ' + p[3] : '') + '" data-pay="' + p[0] + '"><span class="ic">' + p[1] + '</span><span>' + t(p[2]) + '</span>' + (c.pay === p[0] ? '<span class="tick">✓</span>' : '') + '</button>';
       }).join('') + '</div></div></div>';
-    html += '<div class="card"><div class="band">📣 ' + t('src_title') + '</div><div class="body"><div class="row2">' +
+    var srcHtml = '<div class="card"><div class="band">📣 ' + t('src_title') + '</div><div class="body"><div class="row2">' +
       [['shop', '🏪', 'src_shop'], ['flyer', '📄', 'src_flyer'], ['facebook', '📘', 'src_facebook'], ['repeat', '🔁', 'src_repeat'], ['walkin', '🤝', 'src_walkin']].map(function (p) {
         return '<button type="button" class="opt center ' + (c.src === p[0] ? 'on' : '') + '" data-src="' + p[0] + '"><span class="ic">' + p[1] + '</span>' + t(p[2]) + '</button>';
       }).join('') + '</div></div></div>';
-    if (c.src === 'shop' || c.pay === 'shop') {
+    var shopHtml = '';
+    if (c.src === 'shop' || isShopPay(c.pay)) {
       var shops = S.shops || [];
       // 前に選んだ店が今の一覧に無い（下書きの復元・一覧の更新）時も、送る値が見えるように残す
       var shopKnown = !c.shop || shops.some(function (sp) { return sp.id === c.shop; });
-      html += '<div class="card"><div class="band">🏪 ' + t('shop_pick') + '</div><div class="body">' +
+      shopHtml = '<div class="card"><div class="band">🏪 ' + t('shop_pick') + '</div><div class="body">' +
         '<select id="shopSel" style="width:100%;font-size:18px;padding:12px;border-radius:12px;border:2px solid #d0d5dd;background:#fff">' +
         '<option value="">' + esc(t('shop_none')) + '</option>' +
         (shopKnown ? '' : '<option value="' + esc(c.shop) + '" selected>' + esc(c.shop) + '</option>') +
         shops.map(function (sp) { return '<option value="' + esc(sp.id) + '"' + (c.shop === sp.id ? ' selected' : '') + '>' + esc(sp.name) + '</option>'; }).join('') +
-        '</select>' + (c.shop ? '' : '<div class="note">' + t('shop_need') + '</div>') + '</div></div>';
+        '</select>' + (c.shop ? '' : '<div class="note">' + t(isShopPay(c.pay) ? 'shop_need2' : 'shop_need') + '</div>') + '</div></div>';
     }
+    html += isShopPay(c.pay) ? shopHtml + srcHtml : srcHtml + shopHtml;
   }
 
   else if (c.step === 'done') {
     html += '<div class="card"><div class="done-screen"><div class="ic">✓</div><div class="h">' + t('btn_finish') + '</div>' +
       '<div class="kv"><span>' + t('work_time') + '</span><b class="num">' + fmtDur(workSec(c)) + '</b>' +
       Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }).map(function (k) { return '<span class="latin">' + menuLabelH(k) + '</span><b class="num">' + fmtDur(svcSec(c.svc[k])) + '</b>'; }).join('') +
-      '<span>' + t('lbl_photos') + '</span><b class="num">' + Object.keys(c.photos).length + '</b><span>' + t('pay_title') + '</span><b class="num">' + (c.pay === 'free' ? '0$' : c.amount + '$') + ' · ' + t('pay_' + (c.pay || 'later')) + '</b></div>' +
+      '<span>' + t('lbl_photos') + '</span><b class="num">' + Object.keys(c.photos).length + '</b><span>' + t('pay_title') + '</span><b class="num">' + (c.pay === 'free' ? '0$' : c.amount + '$') + ' · ' + t(c.pay === 'aba' ? 'pay_qr' : 'pay_' + (c.pay || 'later')) + '</b></div>' +
       '<div class="chip ' + (S.ob.pending ? 'warn' : 'ok') + '">' + (S.ob.pending ? '📥 ' + t('offline_saved') : '✅ ' + t('sent')) + '</div></div></div>';
   }
 
@@ -1093,10 +1132,20 @@ function bindJob() {
     saveDraft(); renderJob();
   }; });
   document.querySelectorAll('[data-tog]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-tog'); c.svc[k].skip = !c.svc[k].skip; saveDraft(); renderJob(); }; });
-  document.querySelectorAll('[data-pay]').forEach(function (b) { b.onclick = function () { c.pay = b.getAttribute('data-pay'); if (c.pay !== 'free' && !c.amount) c.amount = priceOf(c.job); saveDraft(); renderJob(); }; });
+  document.querySelectorAll('[data-pay]').forEach(function (b) { b.onclick = function () {
+    c.pay = b.getAttribute('data-pay');
+    if (c.pay === 'shopref') c.src = 'shop';   // 紹介のお客さん＝流入元もお店
+    applyShopAmount(c); saveDraft(); renderJob();
+  }; });
   document.querySelectorAll('[data-src]').forEach(function (b) { b.onclick = function () { c.src = b.getAttribute('data-src'); saveDraft(); renderJob(); }; });
-  var ss = $('shopSel'); if (ss) ss.onchange = function () { c.shop = ss.value || ''; saveDraft(); renderJob(); };
-  var am = $('amt'); if (am) am.oninput = function () { c.amount = parseFloat(am.value) || 0; saveDraft(); };
+  var ss = $('shopSel'); if (ss) ss.onchange = function () { c.shop = ss.value || ''; applyShopAmount(c); saveDraft(); renderJob(); };
+  var ssStart = $('shopSelStart'); if (ssStart) ssStart.onchange = function () {
+    var id = ssStart.value || '', sp = (S.shops || []).filter(function (x) { return x.id === id; })[0];
+    c.shop = id; c.shopAtStart = !!id;
+    if (sp && sp.rate !== undefined) c.rate = sp.rate; else delete c.rate;   // 支払い画面の自動金額と同じ c.shop / c.rate
+    saveDraft(); renderJob();
+  };
+  var am = $('amt'); if (am) am.oninput = function () { c.amount = parseFloat(am.value) || 0; saveDraft(); renderBar(); };
 
   if (c.step === 'work') {
     timerId = setInterval(function () {
@@ -1139,7 +1188,7 @@ function renderBar() {
     html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + Math.round(got / req.length * 100) + '%"></i></span><span class="num">' + got + '/' + req.length + '</span></div>' +
       '<button type="button" class="btn" id="next" ' + (got < req.length ? 'disabled' : '') + '>' + t('btn_next') + ' › <small>' + t('pay_title') + '</small></button>';
   } else if (c.step === 'close') {
-    html = '<button type="button" class="btn green" id="next" ' + (c.pay ? '' : 'disabled') + '>💾 ' + t('btn_save') + '</button>';
+    html = '<button type="button" class="btn green" id="next" ' + (canSavePay(c) ? '' : 'disabled') + '>💾 ' + t('btn_save') + '</button>';
   } else {
     html = '<button type="button" class="btn" id="next">‹ ' + t('tab_today') + '</button>';
   }
@@ -1208,6 +1257,7 @@ function boot() {
       S.local = (r[4] || []).filter(function (l) { return l.date >= ppDate(-1); });
       if (r[3] && r[3].job) {
         S.cur = r[3];
+        if (S.cur.pay === 'cash') S.cur.pay = '';   // 旧い下書きの現金（2026-10-25 で廃止）は選び直してもらう
         if (S.cur.step !== 'done') { S.view = 'job'; setTimeout(function () { toast('↺ ' + t('draft_restored'), 'ok'); }, 300); }
         else S.cur = null;
       }
