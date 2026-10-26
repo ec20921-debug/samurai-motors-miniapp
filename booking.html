@@ -1977,6 +1977,8 @@ function loadInit() {
       document.body.classList.toggle('lang-enja', srcLangEnJa_());
       writeInitCache_(data);
       state.initFresh = true;
+      // 2026-10-26: 専用QR の /start が Bot に処理される前に開いた新規客は、紐付け前で流入元が付かない → 少しのあいだ確かめ直す
+      if (!data.source && !res.customer) startSourceRecheck_();
       // 単一プラン(WASH のみ)の場合は自動選択(操作削減)
       // Menu v4 (2026-09-22 Daisuke 指示): WASH を自動選択しない(必須ではない・顧客が選ぶ)
       // 新規顧客の場合、自動登録（2026-10-08: 画面は待たせず裏で1回だけ）
@@ -2007,6 +2009,50 @@ function ensureFreshInit_() {
   if (state.initFresh) return Promise.resolve(true);
   var p = initPromise || loadInit();
   return p.catch(function() { return loadInit(); });
+}
+
+// ── 2026-10-26: 専用QR の「開くのが早すぎた」新規客を住民向け画面へ切り替える ──
+// 予約Bot は1分ごとにまとめてメッセージを処理するため、QR → START のあと最大1分ほど流入元の紐付けが無い。
+// その間に左下の Booking（全員共通のボタン・?src= なし）で開くと一般向け画面になり、その回は切り替わらなかった
+// （Picasso のスタッフ2名が 10/26 に遭遇）。流入元も顧客登録も無い起動だけ、約2分のあいだ取り直す。
+// 取り直しは recheck=1 を付ける（ファネルログで起動回数と区別できるように）
+var SRC_RECHECK_AT_MS = [15000, 35000, 60000, 90000, 130000];   // 起動データ取得からの経過
+var srcRecheckStarted = false;
+
+function startSourceRecheck_() {
+  if (srcRecheckStarted) return;
+  srcRecheckStarted = true;
+  var i = 0;
+  function next() {
+    if (i >= SRC_RECHECK_AT_MS.length) return;
+    var wait = SRC_RECHECK_AT_MS[i] - (i > 0 ? SRC_RECHECK_AT_MS[i - 1] : 0);
+    i++;
+    setTimeout(function() {
+      if (state.source || bookingSubmitted) return;
+      recheckSource_().then(function(found) { if (!found) next(); }, next);
+    }, wait);
+  }
+  next();
+}
+
+function recheckSource_() {
+  var url = GAS_URL + '?action=booking_init&recheck=1&chatId=' + encodeURIComponent(state.chatId)
+          + '&name=' + encodeURIComponent(state.customerName)
+          + '&username=' + encodeURIComponent(state.username)
+          + (state.srcParam ? '&src=' + encodeURIComponent(state.srcParam) : '');
+  return fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+      if (res.status !== 'ok' || !res.source || state.source || bookingSubmitted) return false;
+      var data = { plans: res.plans || [], options: res.options || [], campaign: res.campaign || null, dispatchFee: res.dispatchFee || null, source: res.source };
+      applyMenuData_(data);
+      document.body.classList.toggle('lang-enja', srcLangEnJa_());
+      writeInitCache_(data);
+      reconcileAfterRefresh_();   // メニューから選び直してもらう（料金・場所の聞き方が変わるため）
+      showToast('🏢 ' + (state.source.label || '') + ' — residents\' prices applied'
+        + (srcLangEnJa_() ? ' / 住民向けの料金に切り替えました' : ''), false);
+      return true;
+    });
 }
 
 function autoRegister() {
