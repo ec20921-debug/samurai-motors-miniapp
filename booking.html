@@ -2148,26 +2148,26 @@ function updateActionButton() {
 
   switch (state.currentView) {
     case 'view-plan':
-      btn.textContent = L('Next', 'បន្ទាប់', '次へ');
+      btn.textContent = tr_('Next', 'បន្ទាប់', '次へ');
       // Menu v4: WASH / GLASS / HEADLIGHT のいずれか1つ以上 + 車種選択 で next 可
       btn.disabled = !state.selectedSize || (!state.selectedPlan && state.selectedOptions.length === 0);
       btn.classList.add('btn-primary');
       break;
     case 'view-datetime':
-      btn.textContent = L('Next', 'បន្ទាប់', '次へ');
+      btn.textContent = tr_('Next', 'បន្ទាប់', '次へ');
       btn.disabled = !state.selectedDate || !state.selectedSlot;
       btn.classList.add('btn-primary');
       break;
     case 'view-location':
-      btn.textContent = L('Next', 'បន្ទាប់', '次へ');
+      btn.textContent = tr_('Next', 'បន្ទាប់', '次へ');
       btn.classList.add('btn-primary');
       break;
     case 'view-confirm':
-      btn.textContent = '✓ ' + L('Confirm Booking', 'បញ្ជាក់ការកក់', '予約を確定');
+      btn.textContent = '✓ ' + tr_('Confirm Booking', 'បញ្ជាក់ការកក់', '予約を確定');
       btn.classList.add('btn-gold');
       break;
     case 'view-success':
-      btn.textContent = L('Close', 'បិទ', '閉じる');
+      btn.textContent = tr_('Close', 'បិទ', '閉じる');
       btn.classList.add('btn-secondary');
       break;
     default:
@@ -2224,7 +2224,9 @@ function srcInPeriod_(ymd) {
   return true;
 }
 // ボタン等の2言語ラベル: 通常は「英語 / クメール語」、英語＋日本語モードは「英語 / 日本語」
-function L(en, km, ja) { return en + ' / ' + (document.body.classList.contains('lang-enja') ? ja : km); }
+// 2026-10-26: 名前を L から tr_ に変更。グローバルの L は地図ライブラリ（Leaflet）と同名で、
+//   loadLeaflet() が「読み込み済み」と誤判定して地図が出なかった（10/15〜・出張の予約が先へ進めない）。L という名前は使わない
+function tr_(en, km, ja) { return en + ' / ' + (document.body.classList.contains('lang-enja') ? ja : km); }
 
 // カテゴリ定義(表示名・クメール語は Panha 校閲済み 2026-09-22)
 var MENU_CATEGORIES = [
@@ -2378,7 +2380,7 @@ function renderMenu() {
       // ── WASH / HEADLIGHT: 枠そのものがトグル(全メニュー単品受注可) ──
       var item = items[0];
       var feeNote = (item.kind === 'WASH' && feeForCard)
-        ? '<div class="plan-fee-note">+ ' + fmtUsd(feeForCard) + ' ' + L('Delivery fee', fmtUsd(feeForCard) + ' ថ្លៃដឹកជញ្ជូន', '出張料') + '</div>'
+        ? '<div class="plan-fee-note">+ ' + fmtUsd(feeForCard) + ' ' + tr_('Delivery fee', fmtUsd(feeForCard) + ' ថ្លៃដឹកជញ្ជូន', '出張料') + '</div>'
         : '';
       card.innerHTML =
         headHtml(cat)
@@ -2822,9 +2824,9 @@ function renderSummary() {
     if (baseFee > 0) html += '<div class="summary-row" style="color:var(--gold-bright)"><div class="label">🏪 In-store / នៅហាង</div><div class="value" style="color:var(--gold-bright)">0$ (saved ' + fmtUsd2(baseFee) + ')</div></div>';
   } else if (fee > 0) {
     // 2026-10-08: 出張料 0（当面徴収しない）のときは行ごと出さない
-    html += summaryRow('🚚 ' + L('Delivery fee', 'ថ្លៃដឹកជញ្ជូន', '出張料'), srcHasPerk_() ? fmtUsdTrim(fee) : fmtUsd2(fee));
+    html += summaryRow('🚚 ' + tr_('Delivery fee', 'ថ្លៃដឹកជញ្ជូន', '出張料'), srcHasPerk_() ? fmtUsdTrim(fee) : fmtUsd2(fee));
   }
-  html += '<div class="summary-row total"><div class="label">' + L('Total', 'សរុប', '合計') + '</div><div class="value">' + (srcHasPerk_() ? fmtUsdTrim(total) : fmtUsd2(total)) + '</div></div>';
+  html += '<div class="summary-row total"><div class="label">' + tr_('Total', 'សរុប', '合計') + '</div><div class="value">' + (srcHasPerk_() ? fmtUsdTrim(total) : fmtUsd2(total)) + '</div></div>';
 
   document.getElementById('summaryCard').innerHTML = html;
 }
@@ -2987,7 +2989,7 @@ function submitBooking() {
     document.getElementById('successSummary').innerHTML =
       summaryRow('Booking ID', res.bookingId)
       + summaryRow('Date & Time', state.selectedDate + ' ' + state.selectedSlot + ' - ' + res.endTime)
-      + '<div class="summary-row total"><div class="label">' + L('Total', 'សរុប', '合計') + '</div><div class="value">' + (state.source ? fmtUsdTrim(res.amount) : fmtUsd2(res.amount)) + '</div></div>';
+      + '<div class="summary-row total"><div class="label">' + tr_('Total', 'សរុប', '合計') + '</div><div class="value">' + (state.source ? fmtUsdTrim(res.amount) : fmtUsd2(res.amount)) + '</div></div>';
     state.history = [];
     showView('view-success');
   }).catch(function(err) {
@@ -3113,7 +3115,8 @@ function initLocationMap() {
   if (!el) return;
   // 動的ロード後に初期化(初回のみ Leaflet をDL)
   loadLeaflet().then(function() { initLocationMapAfterLoad_(); }).catch(function(err) {
-    Logger.log && Logger.log('Leaflet load error: ' + err);
+    if (window.console) console.log('Leaflet load error:', err);   // 2026-10-26: Logger は GAS 専用（ブラウザで例外になりトーストが出なかった）
+    leafletLoadPromise = null;   // 次に地図を開いた時に読み込みを再試行する
     showToast('Map load failed. Please retry.', true);
   });
 }
