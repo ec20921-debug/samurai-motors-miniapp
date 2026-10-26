@@ -3022,6 +3022,14 @@ function submitBooking() {
     setBtnLoading(false);
     if (res.status !== 'ok') {
       bookingSubmitted = false; // エラー時はリセット
+      // 2026-10-26: 画面は流入元なしでも、サーバーでは流入元が付いていることがある（登録済みの客が QR → START の直後に開いた等。
+      //   部屋番号が必須なのに画面に欄が無く進めない）→ 取り直して付いていれば住民向け画面へ切り替える
+      if (!state.source && !res.slots) {
+        var failMsg = res.message || 'Booking failed';
+        recheckSource_().then(function(found) { if (!found) showToast(failMsg, true); },
+                              function() { showToast(failMsg, true); });
+        return;
+      }
       showToast(res.message || 'Booking failed', true);
       if (res.slots) {
         state.selectedSlot = '';
