@@ -1817,6 +1817,8 @@ var state = {
   selectedLocation: '',
   serviceType: '出張',           // '出張' (default) or '店舗' — 店舗作業は出張料 $0
   srcParam: '',                 // 2026-10-15: URL の ?src=（専用QR の流入元コード）
+  shop: false,                  // 2026-10-26: 提携店QR経由（サーバーが判定。全体キャンペーンは付かない）
+  campaignShown: false,         // 2026-10-26: 確認画面で全体キャンペーンの値引きを見せたか（サーバーの判定と食い違えば取り直す）
   source: null,                 // booking_init の source（{code,label,lang,start,end,servicePct,itemPct,placeName,...}）
   unitNo: '',                   // 流入元の固定場所で使う 部屋番号・車種
   carModel: '',
@@ -1972,13 +1974,15 @@ function loadInit() {
       var data = { plans: res.plans || [], options: res.options || [], campaign: res.campaign || null, dispatchFee: res.dispatchFee || null, source: res.source || null };
       var prevFp = state.menuFp;
       state.customer = res.customer;
+      state.shop = !!res.shop;
       applyMenuData_(data);
       // 最新の init で言語を確定（?src= でも、流入元が無効・別言語ならクメール語の添えに戻す）
       document.body.classList.toggle('lang-enja', srcLangEnJa_());
       writeInitCache_(data);
       state.initFresh = true;
       // 2026-10-26: 専用QR の /start が Bot に処理される前に開いた新規客は、紐付け前で流入元が付かない → 少しのあいだ確かめ直す
-      if (!data.source && !res.customer) startSourceRecheck_();
+      //   （提携店の店QRも同じ。店QRの客には全体キャンペーンが付かないので、付いた時点で料金が変わる）
+      if (!data.source && !res.customer && !res.shop) startSourceRecheck_();
       // 単一プラン(WASH のみ)の場合は自動選択(操作削減)
       // Menu v4 (2026-09-22 Daisuke 指示): WASH を自動選択しない(必須ではない・顧客が選ぶ)
       // 新規顧客の場合、自動登録（2026-10-08: 画面は待たせず裏で1回だけ）
@@ -2028,13 +2032,19 @@ function startSourceRecheck_() {
     var wait = SRC_RECHECK_AT_MS[i] - (i > 0 ? SRC_RECHECK_AT_MS[i - 1] : 0);
     i++;
     setTimeout(function() {
-      if (state.source || bookingSubmitted) return;
-      recheckSource_().then(function(found) { if (!found) next(); }, next);
+      if (state.source || state.shop || bookingSubmitted) return;
+      recheckSource_().then(function() { if (!state.source && !state.shop) next(); }, next);
     }, wait);
   }
   next();
 }
 
+/**
+ * 起動データを取り直し、流入元・提携店の紐付け（＝料金）が変わっていれば画面に反映する。
+ * 変わって反映したら true（呼び元はエラーを出さない）。同じなら false
+ *   - 流入元が付いた → 住民向け画面（英日・特典・部屋番号）
+ *   - 提携店QRの客と分かった → 全体キャンペーンが外れる（2026-10-26。キャンペーンが無い時は見た目は変わらない）
+ */
 function recheckSource_() {
   var url = GAS_URL + '?action=booking_init&recheck=1&chatId=' + encodeURIComponent(state.chatId)
           + '&name=' + encodeURIComponent(state.customerName)
@@ -2043,14 +2053,22 @@ function recheckSource_() {
   return fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(res) {
-      if (res.status !== 'ok' || !res.source || state.source || bookingSubmitted) return false;
-      var data = { plans: res.plans || [], options: res.options || [], campaign: res.campaign || null, dispatchFee: res.dispatchFee || null, source: res.source };
+      if (res.status !== 'ok' || bookingSubmitted) return false;
+      var hadSource = !!state.source;
+      state.shop = !!res.shop;
+      var data = { plans: res.plans || [], options: res.options || [], campaign: res.campaign || null, dispatchFee: res.dispatchFee || null, source: res.source || null };
+      if (menuFingerprint_(data) === state.menuFp) return false;
       applyMenuData_(data);
       document.body.classList.toggle('lang-enja', srcLangEnJa_());
       writeInitCache_(data);
+      var onMenu = state.currentView === 'view-plan';
       reconcileAfterRefresh_();   // メニューから選び直してもらう（料金・場所の聞き方が変わるため）
-      showToast('🏢 ' + (state.source.label || '') + ' — residents\' prices applied'
-        + (srcLangEnJa_() ? ' / 住民向けの料金に切り替えました' : ''), false);
+      if (state.source && !hadSource) {
+        showToast('🏢 ' + (state.source.label || '') + ' — residents\' prices applied'
+          + (srcLangEnJa_() ? ' / 住民向けの料金に切り替えました' : ''), false);
+      } else if (onMenu) {
+        showToast('Menu updated — please check your selection', true);   // メニュー以外では reconcileAfterRefresh_ が同じ文を出す
+      }
       return true;
     });
 }
@@ -2827,6 +2845,7 @@ function renderSummary() {
   }
   var srcActive = srcLines.length > 0;   // 対象品目なし＝特典なし（サーバーと同じ判定）
   var campActive = !srcActive && camp && camp.active && camp.percent > 0;
+  state.campaignShown = !!campActive;   // 送信時にサーバーへ伝える（提携店QRの客で外れる時は予約を作らず取り直し）
   var discount = srcActive
     ? Math.round(srcLines.reduce(function(s, l) { return s + l.d; }, 0) * 100) / 100
     : (campActive ? Math.round(serviceSubtotal * camp.percent) / 100 : 0);
@@ -3012,6 +3031,7 @@ function submitBooking() {
     serviceType: state.serviceType,           // '出張' or '店舗' (2026-05-20)
     // 2026-10-15: 専用QR（流入元）。金額・場所はサーバーが流入元タブから決める（画面の値は表示用）
     src: state.source ? state.source.code : state.srcParam,
+    campaignShown: !!state.campaignShown,
     unitNo: srcFixedPlace_() ? state.unitNo : '',
     carModel: srcFixedPlace_() ? state.carModel : ''
   };
