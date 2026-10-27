@@ -113,6 +113,7 @@ main.flow{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);display:grid;grid-template-columns:repeat(2,1fr)}
 .tabs[hidden]{display:none}
 .tabs.three{grid-template-columns:repeat(3,1fr)}
+.tabs.four{grid-template-columns:repeat(4,1fr)}
 .tab[hidden]{display:none}
 /* SCOUT タブ: 営業アプリ（../saleslog-internal.html）を同じ画面の中で開く（2026-10-25・アイコンを1つにするため） */
 .scout-wrap{position:fixed;left:0;right:0;top:0;bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:30;background:#fff;padding-top:env(safe-area-inset-top,0px)}
@@ -257,6 +258,38 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.ok{background:var(--green)} .toast.warn{background:var(--amber)}
 .diag{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:10px 12px;line-height:1.5}
+/* お店の仕事（2026-10-27） */
+.shopbtn{width:100%;border-radius:16px;background:var(--gold);color:#fff;padding:16px 18px;text-align:left;display:grid;gap:4px}
+.shopbtn b{font-size:21px;line-height:1.3}.shopbtn span{font-size:13px;opacity:.92}
+.hs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}.hs::-webkit-scrollbar{display:none}
+.sc{flex:none;border:2px solid var(--line);border-radius:999px;padding:8px 14px;font-size:15px;font-weight:700;background:#fff;white-space:nowrap;font-family:system-ui,sans-serif}
+.sc.on{border-color:var(--green);background:var(--green-bg);color:var(--green)}
+.sc.gold{border-color:var(--gold);background:var(--gold-bg);color:var(--gold)}
+.srch{width:100%;min-height:54px;border:2px solid var(--line);border-radius:12px;padding:8px 12px;background:#fff;font-size:17px}
+.slist{display:grid}
+.slist button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:12px 2px;border-top:1px solid var(--band);font-size:17px;font-weight:700;width:100%;font-family:system-ui,sans-serif}
+.slist button:first-child{border-top:0}
+.slist small{display:block;font-size:12px;font-weight:500;color:var(--sub)}
+.newshop{width:100%;border:2px dashed var(--gold);border-radius:14px;padding:12px 14px;color:var(--gold);font-weight:700;font-size:16px;background:var(--gold-bg);text-align:left}
+.newshop small{display:block;font-weight:500;font-size:12px;color:var(--sub);margin-top:2px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--line);border-radius:12px;overflow:hidden}
+.seg2.three{grid-template-columns:1fr 1fr 1fr}
+.seg2 button{padding:12px 6px;font-size:15px;font-weight:700;background:#fff}
+.seg2 button.on{background:var(--gold-bg);color:var(--gold)}
+.pstep{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pstep button{border:2px solid var(--line);border-radius:12px;min-height:48px;font-size:18px;font-weight:700;background:#fff;font-family:system-ui,sans-serif}
+.phint{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--sub)}
+.phint .d{border-radius:999px;padding:1px 9px;background:var(--band);font-weight:700;font-family:system-ui,sans-serif}
+.phint .d.warn{background:var(--red-bg);color:var(--red)}
+.vin{display:flex;gap:8px;align-items:center}
+.vin input{flex:1;min-width:0}
+.vin .cambtn{position:relative;flex:none;border:2px solid var(--blue);color:var(--blue);background:var(--blue-bg);border-radius:12px;min-height:54px;padding:0 12px;font-weight:700;display:grid;place-items:center;overflow:hidden}
+.vin .cambtn input{position:absolute;inset:0;opacity:0}
+.vin img{width:54px;height:54px;object-fit:cover;border-radius:10px;flex:none}
+.tgp{background:#e7f3df;border-radius:12px;padding:10px;display:grid;gap:6px}
+.tgp .m{background:#fff;border-radius:10px;padding:8px 10px;font-size:14px;line-height:1.55;display:grid;gap:2px}
+.tgp .bot{color:#2a8bd1;font-weight:700;font-size:13px}
+.askoff{border:2px solid var(--red);background:var(--red-bg);border-radius:14px;padding:12px;display:grid;gap:10px;font-weight:700;color:var(--red)}
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
 </style>
 </head>
@@ -268,6 +301,9 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 <nav class="tabs" id="tabs" role="tablist" hidden>
   <button type="button" class="tab" role="tab" data-tab="today" aria-selected="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span id="tabTodayL"></span>
+  </button>
+  <button type="button" class="tab" role="tab" data-tab="att" aria-selected="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span id="tabAttL"></span>
   </button>
   <button type="button" class="tab" role="tab" data-tab="expense" aria-selected="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span id="tabExpL"></span>
@@ -283,7 +319,7 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261025-213928';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261027-125111';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -300,6 +336,67 @@ var TG_USER = (SURFACE === 'telegram' && TG.initDataUnsafe && TG.initDataUnsafe.
 //  T_KM は Panha 校閲済み（KM-START〜KM-END）。未収録のキーは日本語にフォールバック
 // ═══════════════════════════════════════════════════════════════
 var T_JA = {
+  sj_off_q0:'{v}$ で合っていますか？',
+  // お店の仕事・出退勤タブ（2026-10-27）
+  tab_work:'作業',
+  tab_att:'出退勤',
+  sj_start:'🏪 お店の仕事を始める',
+  sj_start_s:'呼ばれたらここから。お店を選ぶ画面へ',
+  sj_fav:'よく行くお店',
+  sj_bk_none:'📅 今日の予約: なし',
+  sj_pick:'お店を選ぶ',
+  sj_search:'🔍 お店の名前で探す（2〜3文字でOK）',
+  sj_fav_order:'よく行く順',
+  sj_all:'すべてのお店（ABC順）',
+  sj_new:'＋ 新しいお店（一覧にない）<small>名前を入れてすぐ始められる。写真と請求は日本側に届き、グループができたら一覧に出る</small>',
+  sj_mode:'お店の仕事',
+  sj_who_shop:'お店の車',
+  sj_who_ref:'お店の紹介のお客さん',
+  sj_plate:'ナンバー／車台番号（なくてもOK）',
+  sj_shoot:'📷 撮る',
+  sj_svc:'サービス',
+  sj_pay_shop:'お店が払う金額',
+  sj_pay_ref:'お客さんの値段（紹介のお客さん）',
+  sj_later_ok:'あとで直せる',
+  sj_guide_shop:'目安 {v}$（業者価格）',
+  sj_guide_ref:'目安 {v}$',
+  sj_diff:'目安 {s}{v}$',
+  sj_diff_eq:'目安どおり',
+  sj_rp:'再塗装した車？',
+  sj_rp_s:'磨きの時だけ',
+  sj_yes:'はい',
+  sj_no:'いいえ',
+  sj_unk:'わからない',
+  sj_rp_note:'⚠ 作業前にお店へ「塗装がはがれる可能性」を一言。磨きは軽めに',
+  sj_next_photos:'▶ 作業前の写真へ',
+  sj_dmg:'🩹 傷・へこみ・気になる所',
+  sj_dmg_note:'傷がない時は「傷なし」を押す（どちらかを押さないと進めない）',
+  sj_go:'▶ 作業開始<small>お店に写真と「作業前からあった傷」が届く</small>',
+  sj_edit:'💲 値段を直す（いま ',
+  sj_edit_note:'お店と話して値段が変わったら、ここからすぐ直せる',
+  sj_preview:'お店のグループに送る内容',
+  sj_tg_end:'✅ 作業完了（お店のご依頼）',
+  sj_tg_after:'📷 作業後の写真 ↓',
+  sj_tg_req:'🧾 お支払いのお願い',
+  sj_tg_due:'💰 お支払い金額:',
+  sj_tg_scan:'📱 上の QR を読み取って、Samurai Motors へお支払いください。',
+  sj_amt_s:'ここでも直せる',
+  sj_free_q:'🎁 無料のデモにする',
+  sj_free_btn:'切りかえ',
+  sj_send:'📨 お店に送る<small>作業後の写真 ＋ お支払いのお願い（QR）</small>',
+  sj_sent_t:'送りました',
+  sj_sent:'{shop} に送りました',
+  sj_again:'＋ 同じお店でもう1台<small>{shop} が入った状態で始まる</small>',
+  sj_home:'作業タブへ戻る',
+  sj_gps:'📡 位置（GPS）も一緒に記録',
+  sj_new_name:'新しいお店の名前',
+  sj_none:'見つかりません。「新しいお店」から入れてください',
+  sj_price_need:'お店と決めた金額を入れてください',
+  sj_no_guide:'目安なし（お店と決めた金額を入れる）',
+  sj_off_q:'{v}$ で合っていますか？（目安 {g}$）',
+  sj_off_yes:'はい、送る',
+  sj_fix:'✎ 直す',
+  sj_dmg_need_photo:'傷の写真を撮ってください（1か所ずつ）',
   tab_today:'今日', next_title:'次の予定', btn_map:'地図', no_jobs:'今日の予約はありません', tomorrow:'明日', tab_scout:'営業',
   job_precheck:'作業前チェック', photo_before:'作業前の写真', photo_after:'作業後の写真', btn_start:'作業開始', btn_finish:'作業終了', btn_save:'保存する', btn_next:'次へ', btn_back:'戻る',
   chk_engine:'エンジン始動', chk_lights:'ライト', chk_windows:'パワーウィンドウ', chk_wipers:'ワイパー', chk_ac:'エアコン', chk_ok:'正常', chk_ng:'不良',
@@ -326,7 +423,7 @@ var T_JA = {
   tab_expense:'経費', exp_receipt:'レシートを撮る', exp_recent:'最近の登録', it_fuel:'ガソリン', it_fuel_ex:'例: バイクのガソリン', it_chem:'洗車の薬', it_chem_ex:'例: スプレー・ワックス・シャンプー（車に使って、なくなるもの）', it_tools:'道具', it_tools_ex:'例: クロス・バケツ・手袋（何回も使うもの）', it_bike:'バイクの修理', it_bike_ex:'例: パンク修理・オイル交換', it_parking:'駐車代', it_parking_ex:'例: 駐車場・通行料', it_flyer:'チラシ印刷', it_flyer_ex:'例: チラシ・ポスター・名刺', it_phone:'電話代', it_phone_ex:'例: 電話のチャージ・インターネット', it_util:'店の電気・水道', it_util_ex:'例: 電気代・水道代', it_other:'そのほか', it_other_ex:'例: 上にないもの（何を買ったか書いてください）', memo_required:'何を買ったか書いてください', exp_amount_req:'金額を入れてください', exp_no_receipt_q:'レシートの写真がありません。このまま保存しますか？', exp_saved:'経費を保存しました。電波があれば送ります'
 };
 /*KM-START*/
-var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_scout": "ចុះជួបហាង", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "រថយន្តរបស់ហាង (ហាងបង់)", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "shop_pick": "ហាងដៃគូណា?", "shop_none": "មិនជ្រើសរើស (មិនដឹង)", "shop_need": "បើជាការងាររបស់ហាងដៃគូ សូមជ្រើសរើសហាង", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "pay_qr": "ទទួលលុយតាម ABA QR", "pay_shopref": "ភ្ញៀវដែលហាងបានណែនាំមក", "amt_split": "តម្លៃសេវា {list}$ → យើងទទួល {amt}$ (ហាងទទួលបាន {rate}%)", "shop_need2": "សូមជ្រើសរើសហាងសិន (ទឹកប្រាក់នឹងបំពេញឱ្យដោយស្វ័យប្រវត្តិ)", "pay_hint": "ទទួលលុយតាម QR តែប៉ុណ្ណោះ (មិនទទួលសាច់ប្រាក់ទេ)"};
+var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_scout": "ចុះជួបហាង", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "រថយន្តរបស់ហាង (ហាងបង់)", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "shop_pick": "ហាងដៃគូណា?", "shop_none": "មិនជ្រើសរើស (មិនដឹង)", "shop_need": "បើជាការងាររបស់ហាងដៃគូ សូមជ្រើសរើសហាង", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ការងារថ្មី (គ្មានការកក់)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "pay_qr": "ទទួលលុយតាម ABA QR", "pay_shopref": "ភ្ញៀវដែលហាងបានណែនាំមក", "amt_split": "តម្លៃសេវា {list}$ → យើងទទួល {amt}$ (ហាងទទួលបាន {rate}%)", "shop_need2": "សូមជ្រើសរើសហាងសិន (ទឹកប្រាក់នឹងបំពេញឱ្យដោយស្វ័យប្រវត្តិ)", "pay_hint": "ទទួលលុយតាម QR តែប៉ុណ្ណោះ (មិនទទួលសាច់ប្រាក់ទេ)", "tab_work": "ការងារ", "tab_att": "ចុះវត្តមាន", "sj_start": "🏪 ចាប់ផ្ដើមការងាររបស់ហាងដៃគូ", "sj_start_s": "ពេលហាងហៅ ចាប់ផ្ដើមនៅទីនេះ។ ទៅអេក្រង់ជ្រើសហាង", "sj_fav": "ហាងដែលទៅញឹកញាប់", "sj_bk_none": "📅 ការកក់ថ្ងៃនេះ៖ គ្មាន", "sj_pick": "ជ្រើសហាង", "sj_search": "🔍 ស្វែងរកតាមឈ្មោះហាង (វាយ 2-3 អក្សរក៏បាន)", "sj_fav_order": "តាមលំដាប់ហាងដែលទៅញឹកញាប់", "sj_all": "ហាងទាំងអស់ (តាមលំដាប់ ABC)", "sj_new": "+ ហាងថ្មី (មិនទាន់មានក្នុងបញ្ជី)<small>បញ្ចូលឈ្មោះ ហើយចាប់ផ្ដើមភ្លាមបាន។ រូបថត និងការស្នើសុំទូទាត់ប្រាក់ ទៅដល់ខាងជប៉ុន ហើយពេលមានក្រុមរួច ហាងនឹងបង្ហាញក្នុងបញ្ជី</small>", "sj_mode": "ការងាររបស់ហាងដៃគូ", "sj_who_shop": "រថយន្តរបស់ហាង", "sj_who_ref": "ភ្ញៀវដែលហាងបានណែនាំមក", "sj_plate": "ស្លាកលេខ / លេខតួ (គ្មានក៏បាន)", "sj_shoot": "📷 ថត", "sj_svc": "សេវា", "sj_pay_shop": "ទឹកប្រាក់ដែលហាងបង់", "sj_pay_ref": "តម្លៃរបស់ភ្ញៀវដែលហាងបានណែនាំមក", "sj_later_ok": "កែពេលក្រោយបាន", "sj_diff": "ធៀបនឹងតម្លៃប្រហែល {s}{v}$", "sj_diff_eq": "ស្មើតម្លៃប្រហែល", "sj_rp": "រថយន្តធ្លាប់បាញ់ថ្នាំឡើងវិញ?", "sj_rp_s": "តែពេលខាត់ប៉ុណ្ណោះ", "sj_yes": "ធ្លាប់", "sj_no": "មិនធ្លាប់", "sj_unk": "មិនដឹង", "sj_rp_note": "⚠ មុនធ្វើការ សូមប្រាប់ហាងថា «ថ្នាំលាបអាចរបក»។ ខាត់ស្រាលៗ", "sj_next_photos": "▶ ទៅរូបថតមុនធ្វើសេវា", "sj_dmg": "🩹 ស្នាមកោស / ស្នាមជ្រុញ / កន្លែងគួរកត់សម្គាល់", "sj_dmg_note": "បើគ្មានស្នាម សូមចុច «គ្មានស្នាម» (ត្រូវចុចមួយណាមួយ ទើបទៅមុខបាន)", "sj_go": "▶ ចាប់ផ្ដើម<small>រូបថត និង «ស្នាមដែលមានតាំងពីមុនធ្វើសេវា» ផ្ញើទៅហាង</small>", "sj_edit": "💲 កែតម្លៃ (ឥឡូវ ", "sj_edit_note": "បើនិយាយជាមួយហាងហើយតម្លៃប្ដូរ អាចកែពីទីនេះភ្លាម", "sj_preview": "អ្វីដែលនឹងផ្ញើទៅក្រុមរបស់ហាង", "sj_tg_end": "✅ ការងារបញ្ចប់ហើយ (តាមការស្នើសុំ របស់ហាងអ្នក)", "sj_tg_after": "📷 រូបថតក្រោយធ្វើសេវា ↓", "sj_tg_req": "🧾 ការស្នើសុំទូទាត់ប្រាក់", "sj_tg_due": "💰 ទឹកប្រាក់ត្រូវបង់:", "sj_tg_scan": "📱 សូមស្កេន QR ខាងលើ ដើម្បីបង់ប្រាក់ឱ្យ Samurai Motors។", "sj_amt_s": "កែនៅទីនេះក៏បាន", "sj_free_q": "🎁 ប្ដូរជាការសាកល្បងឥតគិតថ្លៃ", "sj_free_btn": "ប្ដូរ", "sj_send": "📨 ផ្ញើទៅហាង<small>រូបថតក្រោយធ្វើសេវា + ការស្នើសុំទូទាត់ប្រាក់ (QR)</small>", "sj_sent_t": "បានផ្ញើហើយ", "sj_home": "ត្រឡប់ទៅផ្ទាំងការងារ", "sj_gps": "📡 កត់ត្រាទីតាំង (GPS) ជាមួយផងដែរ", "sj_fix": "✎ កែ", "sj_sent": "បានផ្ញើទៅ {shop} ហើយ", "sj_again": "+ រថយន្ត 1 គ្រឿងទៀត នៅហាងដដែល<small>ចាប់ផ្ដើមដោយមាន {shop} រួចហើយ</small>", "sj_guide_shop": "តម្លៃប្រហែល {v}$ (តម្លៃសម្រាប់ហាង)", "sj_guide_ref": "តម្លៃប្រហែល {v}$", "sj_new_name": "ឈ្មោះហាងថ្មី", "sj_none": "រកមិនឃើញទេ។ សូមចុច «ហាងថ្មី» ហើយបញ្ចូលឈ្មោះហាង", "sj_price_need": "សូមបញ្ចូលទឹកប្រាក់ដែលបានព្រមព្រៀងជាមួយហាង", "sj_no_guide": "គ្មានតម្លៃប្រហែល (សូមបញ្ចូលទឹកប្រាក់ដែលបានព្រមព្រៀងជាមួយហាង)", "sj_off_q": "{v}$ ត្រឹមត្រូវឬទេ? (តម្លៃប្រហែល {g}$)", "sj_off_yes": "ត្រឹមត្រូវ ផ្ញើ", "sj_dmg_need_photo": "សូមថតរូបស្នាម (ម្ដងមួយកន្លែង)", "sj_off_q0": "{v}$ ត្រឹមត្រូវឬទេ?"};
 /*KM-END*/
 var LANG = 'km';
 try { LANG = localStorage.getItem('sm_field_lang') || 'km'; } catch (e) {}
@@ -354,7 +451,7 @@ function applyMenu(m) {
   MENU = {};
   (m.plans || []).forEach(function (p) { if (p.letter === 'W') MENU.WASH = { kind: 'WASH', sedan: Number(p.priceSedan) || 0, suv: Number(p.priceSuv) || 0 }; });
   (m.options || []).forEach(function (o) { MENU[o.code] = { kind: String(o.kind || 'GLASS').toUpperCase(), sedan: Number(o.priceSedan) || 0, suv: Number(o.priceSuv) || 0 }; });
-  MENU.BODY = { kind: 'BODY', sedan: null, suv: null };
+  if (!MENU.BODY) MENU.BODY = { kind: 'BODY', sedan: null, suv: null };   // シートに BODY の値段があればそれを目安に使う（2026-10-27）
 }
 applyMenu(MENU_FALLBACK);
 function menuLabel(code) { return CODE_NAME[code] || code; }
@@ -372,7 +469,8 @@ function priceOf(job) {
 // ═══════════════════════════════════════════════════════════════
 var S = { view: 'home', shops: [], items: [], tomorrow: [], local: [], done: {}, load: 'loading', cur: null, ob: { pending: 0, review: 0, sending: 0 }, waitingSW: null, diag: false,
           tab: 'today', exp: { item: 'it_fuel', cur: 'USD', memo: '', img: null, amt: '' }, expHist: [], expSent: {},
-          att: { clockIn: '', clockOut: '' }, gps: null, admin: null };
+          att: { clockIn: '', clockOut: '' }, gps: null, admin: null,
+          sj: null, shopQ: '', shopFreq: {} };   // お店の仕事（2026-10-27）: sj = お店・車・値段の入力中
 
 // ═══════════════════════════════════════════════════════════════
 //  本人（誰の打刻か）
@@ -528,6 +626,7 @@ function loadData(manual) {
   }).catch(function () {});
   return Promise.all([p1, p2, p3, p4]).then(function () {
     if (S.view === 'home') render();
+    else if (S.view === 'shoppick' && $('sjList')) { $('sjList').innerHTML = sjListHtml(); bindSjList(); }
     if (manual) toast(S.load === 'ok' ? '✓ ' + t('refresh') : t('load_failed'), S.load === 'ok' ? 'ok' : 'warn');
   });
 }
@@ -549,7 +648,7 @@ var G = {
 };
 var CAR_TOP = '<svg viewBox="0 0 200 100" fill="none" stroke="#5c6675" stroke-width="2"><rect x="22" y="14" width="156" height="72" rx="26" fill="#fff"/><path d="M60 22h80M60 78h80" stroke-dasharray="3 3"/><path d="M62 30q38-8 76 0v40q-38 8-76 0z" fill="#dfe6ee"/><rect x="30" y="8" width="18" height="10" rx="3" fill="#fff"/><rect x="152" y="8" width="18" height="10" rx="3" fill="#fff"/><rect x="30" y="82" width="18" height="10" rx="3" fill="#fff"/><rect x="152" y="82" width="18" height="10" rx="3" fill="#fff"/><text x="18" y="54" font-size="9" fill="#98a2b3" text-anchor="end" font-family="sans-serif">F</text><text x="182" y="54" font-size="9" fill="#98a2b3" font-family="sans-serif">R</text></svg>';
 
-// 撮影枠: 外装4面が必須（D7）。GLASS・ヘッドライト・座席は任意
+// 撮影枠: 外装4面が必須（D7）。GLASS・ヘッドライトは 2026-10-27 からメニューにあれば必須（photoRule 2 の仕事だけ。古い下書きは任意のまま）・座席は任意
 function shotsFor(job, phase) {
   var s = [
     { id: phase + '_F', g: 'front', tk: 'side_front', req: true },
@@ -557,9 +656,9 @@ function shotsFor(job, phase) {
     { id: phase + '_L', g: 'left',  tk: 'side_left',  req: true },
     { id: phase + '_R', g: 'right', tk: 'side_right', req: true }
   ];
-  if (job.menu.some(function (c) { return c.indexOf('GLASS') === 0; })) s.push({ id: phase + '_G', g: 'glass', tk: 'part_windshield', req: false });
-  if (job.menu.some(function (c) { return c.indexOf('HEADLIGHT') === 0; })) { s.push({ id: phase + '_HL', g: 'hlL', tk: 'part_hl_left', req: false }); s.push({ id: phase + '_HR', g: 'hlR', tk: 'part_hl_right', req: false }); }
-  if (phase === 'before') { s.push({ id: 'before_IF', g: 'seatF', tk: 'part_seat_front', req: false }); s.push({ id: 'before_IR', g: 'seatR', tk: 'part_seat_rear', req: false }); }
+  if (job.menu.some(function (c) { return c.indexOf('GLASS') === 0; })) s.push({ id: phase + '_G', g: 'glass', tk: 'part_windshield', req: job.photoRule === 2 });   // 2026-10-27 メニューにあれば必須（新しく始めた仕事だけ）
+  if (job.menu.some(function (c) { return c.indexOf('HEADLIGHT') === 0; })) { s.push({ id: phase + '_HL', g: 'hlL', tk: 'part_hl_left', req: job.photoRule === 2 }); s.push({ id: phase + '_HR', g: 'hlR', tk: 'part_hl_right', req: job.photoRule === 2 }); }
+  if (phase === 'before' && job.mode !== 'shop') { s.push({ id: 'before_IF', g: 'seatF', tk: 'part_seat_front', req: false }); s.push({ id: 'before_IR', g: 'seatR', tk: 'part_seat_rear', req: false }); }
   return s;
 }
 
@@ -592,11 +691,13 @@ function openItem(id) {
   if (S.cur && S.cur.job.id !== item.id && S.cur.startQueued) { toast(t('job_running'), 'warn'); S.view = 'job'; render(); return; }
   if (S.cur && S.cur.job.id === item.id) { S.view = 'job'; render(); return; }
   var job = JSON.parse(JSON.stringify(item));
+  job.photoRule = 2;   // 2026-10-27 の写真ルール（メニューに合わせて必須）で始めた印
   S.cur = {
     jobCid: Outbox.uuid(), job: job, step: 'check', checks: {}, dmg: [], noDamage: false, photos: {}, shotIdx: 0,
     svc: {}, active: null, startAt: null, endAt: null, pay: '', amount: job.amount || priceOf(job), src: '', startQueued: false
   };
   job.menu.forEach(function (c) { S.cur.svc[c] = { acc: 0, since: 0, done: false, skip: false }; });
+  if (job.mode === 'shop') sjInitCur(S.cur, job);   // お店の仕事（2026-10-27）
   saveDraft();
   S.view = 'job'; render(); window.scrollTo(0, 0);
 }
@@ -618,6 +719,7 @@ function queueStart(c) {
   var shots = shotsFor(c.job, 'before'), photos = [], slots = [];
   shots.forEach(function (s) { if (c.photos[s.id]) { photos.push(c.photos[s.id]); slots.push(s.id.replace('before_', '')); } });
   c.dmg.forEach(function (d, i) { if (d.img) { photos.push(d.img); slots.push('D' + (i + 1)); } });
+  if (c.mode === 'shop' && c.vinImg) { photos.push(c.vinImg); slots.push('V'); }   // 車台番号の写真（お店の仕事）
   var p = basePayload(c);
   p.client_id = c.jobCid; p.job_client_id = c.jobCid; p.request_id = c.jobCid;
   p.amount = c.job.bookingId ? (c.job.amount || '') : '';
@@ -625,6 +727,9 @@ function queueStart(c) {
   p.v2 = { checks: c.checks, no_damage: !c.dmg.length && !!c.noDamage, photo_slots: slots,
            damage: c.dmg.map(function (d, i) { return { x: d.x, y: d.y, memo: d.memo || '', photo: d.img ? 'D' + (i + 1) : '' }; }),
            shop_id: (c.shopAtStart && !c.job.bookingId) ? (c.shop || '') : '' };   // 始める前に選んだ店（2026-10-25）
+  if (c.mode === 'shop') {   // お店の仕事（2026-10-27）。サーバーは知らない項目を v2記録(JSON) に残すだけ
+    p.v2.mode = 'shop'; p.v2.who = c.who; p.v2.agreed_price = sjNum(c.price); p.v2.repainted = c.repaint || ''; p.v2.new_shop_name = c.newShop ? c.shopName : '';
+  }
   return Outbox.enqueue('job_start', p);
 }
 // 2026-10-25 支払いの区分: 提携店の仕事（紹介客 shopref・店の車 shop）は店を選ぶと 当社の受け取り＝定価×(100−店の率)% を入れる（直せる）
@@ -648,7 +753,7 @@ function canSavePay(c) { return !!c.pay && c.pay !== 'cash' && !(isShopPay(c.pay
 function queueEnd(c) {
   var shots = shotsFor(c.job, 'after'), photos = [], slots = [];
   shots.forEach(function (s) { if (c.photos[s.id]) { photos.push(c.photos[s.id]); slots.push(s.id.replace('after_', '')); } });
-  var p = basePayload(c), endId = Outbox.uuid(), times = {};
+  var p = basePayload(c), endId = c.endCid || (c.endCid = Outbox.uuid()), times = {};   // 同じ作業の終了は同じ client_id（2026-10-27）
   Object.keys(c.svc).forEach(function (k) { if (!c.svc[k].skip) times[k] = Math.round(svcSec(c.svc[k])); });
   p.client_id = endId; p.job_client_id = c.jobCid; p.request_id = endId;
   p.amount = c.pay === 'free' ? 0 : (Number(c.amount) || 0);
@@ -657,7 +762,9 @@ function queueEnd(c) {
            shop_id: (c.src === 'shop' || isShopPay(c.pay)) ? (c.shop || '') : '',
            list_price: isShopPay(c.pay) && c.list ? c.list : listPriceOf(c), shop_rate: isShopPay(c.pay) && c.rate != null ? c.rate : '',
            duration_sec: Math.round(workSec(c)), work_start: c.startAt, work_end: c.endAt, photo_slots: slots };
-  return Outbox.enqueue('job_end', p);
+  if (c.mode === 'shop') { p.v2.mode = 'shop'; p.v2.price_mode = 'agreed'; p.v2.agreed_price = sjNum(c.price); p.v2.guide_price = sjGuide(c.job, c.who, c.rate); p.v2.new_shop_name = c.newShop ? c.shopName : ''; }
+  // 先に下書きへ endCid を保存（送信待ち箱に入れた後に落ちても、同じ client_id で上書きされるだけ）
+  return Outbox.kvSet('draft', c).then(function () { return Outbox.enqueue('job_end', p); });
 }
 
 function getGps() {
@@ -818,13 +925,17 @@ function obPill() {
 function renderHead() {
   var h = $('head'), q = obPill();
   if (S.view === 'job') {
-    var c = S.cur, order = ['check', 'before', 'work', 'after', 'close'], i = order.indexOf(c.step);
+    var c = S.cur, order = c.mode === 'shop' ? ['before', 'check', 'work', 'after', 'confirm'] : ['check', 'before', 'work', 'after', 'close'], i = order.indexOf(c.step);
     var dots = order.map(function (o, k) { return '<i class="' + (k < i || c.step === 'done' ? 'done' : k === i ? 'now' : '') + '"></i>'; }).join('');
-    h.innerHTML = '<button type="button" class="iconbtn" id="hBack">‹</button><div class="sp"><div class="ttl">' + esc(c.job.name || t('no_name')) + '</div><div class="sub">' + esc(c.job.car) + (c.job.plate ? ' · ' + esc(c.job.plate) : '') + '</div></div>' + q + '<div class="stepdots">' + dots + '</div>';
+    h.innerHTML = '<button type="button" class="iconbtn" id="hBack">‹</button><div class="sp"><div class="ttl">' + esc((c.mode === 'shop' ? c.shopName : c.job.name) || t('no_name')) + '</div><div class="sub">' + esc(c.job.car) + (c.job.plate ? ' · ' + esc(c.job.plate) : '') + '</div></div>' + q + '<div class="stepdots">' + dots + '</div>';
     $('hBack').onclick = function () {
       if (c.step === 'done') { S.cur = null; Outbox.kvDel('draft'); S.view = 'home'; render(); return; }
       if (window.confirm(t('confirm_leave'))) { S.view = 'home'; render(); }
     };
+  } else if (S.view === 'shoppick' || S.view === 'shopnew' || S.view === 'shopjob') {
+    var st = S.view === 'shopjob' ? (S.sj && S.sj.shopName) || t('sj_mode') : (S.view === 'shopnew' ? t('sj_new_name') : t('sj_pick'));
+    h.innerHTML = '<button type="button" class="iconbtn" id="hBack">‹</button><div class="sp"><div class="ttl">' + esc(st) + '</div>' + (S.view === 'shopjob' ? '<div class="sub">' + t('sj_mode') + '</div>' : '') + '</div>' + q;
+    $('hBack').onclick = function () { S.view = (S.view === 'shopnew' || (S.view === 'shopjob' && S.sj && !S.sj.again)) ? 'shoppick' : 'home'; render(); };
   } else if (S.view === 'new') {
     h.innerHTML = '<button type="button" class="iconbtn" id="hBack">‹</button><div class="sp"><div class="ttl">' + t('new_job') + '</div></div>' + q;
     $('hBack').onclick = function () { S.view = 'home'; render(); };
@@ -862,7 +973,7 @@ function bindStrips() {
 // ═══════════════════════════════════════════════════════════════
 function itemChips(i) {
   var chips = i.menu.map(function (c) { return '<span class="chip menu">' + menuLabelH(c) + '</span>'; }).join('');
-  return chips + ' <span class="chip">' + (i.store ? '🏪 ' + t('place_store') : '🛵 ' + t('place_delivery')) + '</span>' +
+  return chips + ' <span class="chip">' + (i.mode === 'shop' ? '🏪 ' + esc(i.place || '') : (i.store ? '🏪 ' + t('place_store') : '🛵 ' + t('place_delivery'))) + '</span>' +
     (i.src ? ' <span class="chip menu">🏢 ' + esc(i.src) + (i.room ? ' #' + esc(i.room) : '') + '</span>' : '');
 }
 function nextItem(list) {
@@ -892,6 +1003,7 @@ function bindHomeExtras() {
 function renderHome() {
   var list = allToday(), html = stripsHtml();
   if (S.load === 'loading' && !list.length) html += '<div class="card"><div class="body note">⏳ ' + t('loading') + '</div></div>';
+  html += sjHomeHtml();   // お店の仕事（2026-10-27）
 
   var nx = nextItem(list);
   if (nx) {
@@ -905,9 +1017,9 @@ function renderHome() {
       '<button type="button" class="act" data-open="' + esc(nx.id) + '"><span class="ic">🔍</span>' + t('job_precheck') + '</button></div>' +
       '<button type="button" class="btn green" data-open="' + esc(nx.id) + '">▶ ' + t('btn_start') + '</button></div></div>';
   } else if (S.load !== 'loading') {
-    html += '<div class="card"><div class="body note">' + t('no_jobs') + '</div></div>';
+    html += '<div class="note">' + t('sj_bk_none') + '</div>';   // 予約がない日は1行だけ（2026-10-27）
   }
-  html += '<button type="button" class="btn gold" id="newJob">＋ ' + t('new_job') + '</button>';
+  html += '<button type="button" class="btn sm ghost" id="newJob">＋ ' + t('new_job') + '</button>';
 
   if (list.length) {
     var done = list.filter(isDone).length;
@@ -922,7 +1034,6 @@ function renderHome() {
       S.tomorrow.map(function (i) { return '<div class="tl-item"><span class="t num">' + esc(i.time) + '</span><span class="ln"><i></i></span><span class="c"><span class="n">' + esc(i.name || t('no_name')) + '</span><span class="s chips">' + itemChips(i) + '</span></span></div>'; }).join('') +
       '</div></div></div>';
   }
-  html += punchHtml();
   html += '<div class="row2"><button type="button" class="btn sm ghost" id="reload2">🔄 ' + t('refresh') + '</button><button type="button" class="btn sm ghost" id="oldApp">' + t('old_app') + '</button></div>';
   if (SURFACE === 'web' && !STANDALONE) {
     var ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -938,6 +1049,16 @@ function renderHome() {
   $('newJob').onclick = function () { S.view = 'new'; S.nj = { name: '', car: '', plate: '', size: 'SEDAN', store: false, menu: ['WASH'] }; render(); };
   $('reload2').onclick = function () { loadData(true); };
   $('oldApp').onclick = function () { location.href = OLD_APP_URL; };
+  bindSjHome();
+}
+
+// 出退勤タブ（2026-10-27 作業タブから分けた）
+function renderAtt() {
+  var html = stripsHtml() + punchHtml();
+  if (canPunch()) html += '<div class="note">' + t('sj_gps') + '</div>';
+  $('main').innerHTML = html;
+  bindStrips();
+  var pb = $('punch'); if (pb && !pb.disabled) pb.onclick = function () { doPunch(S.att.clockIn ? 'out' : 'in'); };
 }
 
 function diagHtml() {
@@ -1021,7 +1142,11 @@ function renderJob() {
   if (timerId) { clearInterval(timerId); timerId = null; }
   html += stripsHtml();
 
-  if (c.step === 'check') {
+  if (c.step === 'check' && c.mode === 'shop') {
+    html += sjDamageHtml(c);
+  }
+
+  else if (c.step === 'check') {
     html += jobHead();
     var items = [['engine', '🔑', 'chk_engine'], ['lights', '💡', 'chk_lights'], ['windows', '🪟', 'chk_windows'], ['wipers', '🌧', 'chk_wipers'], ['ac', '❄️', 'chk_ac']];
     html += '<div class="card"><div class="band">🔍 ' + t('job_precheck') + '<span class="r num">' + Object.keys(c.checks).length + '/5</span></div><div class="body" style="gap:0">' +
@@ -1054,7 +1179,12 @@ function renderJob() {
       '</div></div>';
   }
 
+  else if (c.step === 'confirm') {
+    html += sjConfirmHtml(c);
+  }
+
   else if (c.step === 'work') {
+    if (c.mode === 'shop') html += sjWorkPriceHtml(c);
     html += '<div class="card"><div class="timer"><div class="l">⏱ ' + t('work_time') + '</div><div class="v num" id="tv">' + hms(totalSvcSec(c)) + '</div></div></div>';
     html += '<div class="card"><div class="band">👉 ' + t('now_doing') + '</div><div class="body"><div class="svc">' +
       Object.keys(c.svc).map(function (k) {
@@ -1100,11 +1230,13 @@ function renderJob() {
       Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }).map(function (k) { return '<span class="latin">' + menuLabelH(k) + '</span><b class="num">' + fmtDur(svcSec(c.svc[k])) + '</b>'; }).join('') +
       '<span>' + t('lbl_photos') + '</span><b class="num">' + Object.keys(c.photos).length + '</b><span>' + t('pay_title') + '</span><b class="num">' + (c.pay === 'free' ? '0$' : c.amount + '$') + ' · ' + t(c.pay === 'aba' ? 'pay_qr' : 'pay_' + (c.pay || 'later')) + '</b></div>' +
       '<div class="chip ' + (S.ob.pending ? 'warn' : 'ok') + '">' + (S.ob.pending ? '📥 ' + t('offline_saved') : '✅ ' + t('sent')) + '</div></div></div>';
+    if (c.mode === 'shop') html += sjDoneHtml(c);
   }
 
   $('main').innerHTML = html;
   bindStrips();
   bindJob();
+  if (c.mode === 'shop') bindSjJob(c);
   renderBar();
 }
 
@@ -1166,13 +1298,22 @@ function goStep(s) { S.cur.step = s; S.cur.shotIdx = 0; saveDraft(); renderJob()
 
 function renderBar() {
   var bar = $('bar'), html = '';
+  if (S.view === 'shopjob' || S.view === 'shopnew') { sjBar(bar); return; }
   if (S.view === 'new') {
     var okNew = S.nj.menu.length > 0;
     bar.innerHTML = '<div class="in"><button type="button" class="btn green" id="next" ' + (okNew ? '' : 'disabled') + '>▶ ' + t('btn_next') + '</button></div>';
     bar.hidden = false; $('next').onclick = startNewJob; return;
   }
   var c = S.cur, j = c.job, shots, req, got;
-  if (c.step === 'check') {
+  if (c.step === 'check' && c.mode === 'shop') {
+    html = '<button type="button" class="btn green" id="next" ' + (sjDamageReady(c) ? '' : 'disabled') + '>' + t('sj_go') + '</button>';
+  } else if (c.step === 'before' && c.mode === 'shop') {
+    shots = shotsFor(j, 'before'); req = shots.filter(function (s) { return s.req; }); got = req.filter(function (s) { return c.photos[s.id]; }).length;
+    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + Math.round(got / req.length * 100) + '%"></i></span><span class="num">' + got + '/' + req.length + '</span></div>' +
+      '<button type="button" class="btn" id="next" ' + (got < req.length ? 'disabled' : '') + '>' + t('btn_next') + ' › <small>' + t('damage_title') + '</small></button>';
+  } else if (c.step === 'confirm') {
+    html = '<button type="button" class="btn green" id="next" ' + (sjCanSend(c) ? '' : 'disabled') + '>' + t('sj_send') + '</button>';
+  } else if (c.step === 'check') {
     var n = Object.keys(c.checks).length, ready = n === 5 && (c.dmg.length > 0 || c.noDamage);
     html = '<div class="prog"><span class="num">' + n + '/5</span><span class="b"><i style="width:' + (n * 20) + '%"></i></span><span>🩹 <span class="num">' + c.dmg.length + '</span></span></div>' +
       '<button type="button" class="btn" id="next" ' + (ready ? '' : 'disabled') + '>' + t('btn_next') + ' › <small>' + t('photo_before') + '</small></button>';
@@ -1196,7 +1337,11 @@ function renderBar() {
   bar.hidden = false;
   $('next').onclick = function () {
     var btn = this; btn.disabled = true;
-    if (c.step === 'check') goStep('before');
+    if (c.mode === 'shop' && c.step === 'before') goStep('check');
+    else if (c.mode === 'shop' && c.step === 'check') sjStartWork(c, btn);
+    else if (c.mode === 'shop' && c.step === 'after') goStep('confirm');
+    else if (c.step === 'confirm') sjSend(c, btn);
+    else if (c.step === 'check') goStep('before');
     else if (c.step === 'before') {
       c.startAt = new Date().toISOString();
       setActive(c, j.menu[0]);
@@ -1217,17 +1362,287 @@ function renderBar() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  お店の仕事（2026-10-27 Daisuke 裁可・LUXE Auto の作業から見直し）
+//  お店を選ぶ → 車・サービス・値段（お店と決めた金額）→ 作業前の写真 → 傷・へこみ → 作業 → 作業後の写真 → 送る前の確認
+//  サーバーは今のまま（v7 @95）で動く: 店の車 = payment_type 'shop'、紹介のお客さん = 'shopref'、請求は ShopInvoice.gs
+//  請求が止まらないよう v2.list_price は「定価（メニューの値段）とお店と決めた金額の大きい方」を送る（FieldPayment.gs の確認と合わせる）
+// ═══════════════════════════════════════════════════════════════
+function sjNum(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0; }
+function sjRound(n) { return Math.round(n * 100) / 100; }
+// 目安: 店の車 = 業者価格（定価 ×(100−店の率)%）、紹介のお客さん = 定価。メニューに値段がない（BODY など）時は 0
+function sjGuide(job, who, rate) {
+  var g = priceOf({ menu: job.menu || [], size: job.size });
+  if (!(g > 0)) return 0;
+  return who === 'ref' ? sjRound(g) : sjRound(g * (100 - (rate == null ? 30 : rate)) / 100);
+}
+function sjRunning() { return S.cur && S.cur.startQueued && S.cur.step !== 'done'; }
+function sjFreq(id) { return (S.shopFreq && S.shopFreq[id]) || { n: 0, last: '' }; }
+function sjBumpFreq(id) {
+  if (!id) return;
+  var f = sjFreq(id); S.shopFreq[id] = { n: (f.n || 0) + 1, last: ppDate(0) };
+  Outbox.kvSet('shop_freq', S.shopFreq);
+}
+function sjFavs(max) {
+  return (S.shops || []).filter(function (sp) { return sjFreq(sp.id).n > 0; })
+    .sort(function (a, b) { var fa = sjFreq(a.id), fb = sjFreq(b.id); return (fb.n - fa.n) || (fb.last > fa.last ? 1 : fb.last < fa.last ? -1 : 0); })
+    .slice(0, max || 6);
+}
+function sjShopName(id) { var sp = (S.shops || []).filter(function (x) { return x.id === id; })[0]; return sp ? sp.name : id; }
+function sjChips(list, attr) {
+  return list.map(function (sp) { return '<button type="button" class="sc gold" ' + attr + '="' + esc(sp.id) + '">' + esc(sp.name) + '</button>'; }).join('');
+}
+
+// ── ホーム（作業タブ）の一番上 ──
+function sjHomeHtml() {
+  var h = '<button type="button" class="shopbtn" id="sjStart"><b>' + t('sj_start') + '</b><span>' + t('sj_start_s') + '</span></button>';
+  var fav = sjFavs(6);
+  if (fav.length) h += '<div class="card"><div class="band">' + t('sj_fav') + '</div><div class="body" style="padding:10px 14px"><div class="hs">' + sjChips(fav, 'data-sjshop') + '</div></div></div>';
+  return h;
+}
+function bindSjHome() {
+  var b = $('sjStart'); if (b) b.onclick = function () {
+    if (sjRunning()) { toast(t('job_running'), 'warn'); S.view = 'job'; render(); return; }
+    S.shopQ = ''; S.view = 'shoppick'; render(); window.scrollTo(0, 0);
+  };
+  document.querySelectorAll('[data-sjshop]').forEach(function (x) { x.onclick = function () { var id = x.getAttribute('data-sjshop'); sjOpenShop(id, sjShopName(id), false); }; });
+}
+function sjOpenShop(id, name, isNew) {
+  if (sjRunning()) { toast(t('job_running'), 'warn'); S.view = 'job'; render(); return; }
+  S.sj = { shop: id || '', shopName: name || '', newShop: !!isNew, who: 'shop', car: '', plate: '', size: 'SEDAN', menu: [], price: '', repaint: '', vinImg: null };
+  S.view = 'shopjob'; render(); window.scrollTo(0, 0);
+}
+
+// ── お店を選ぶ ──
+function sjListHtml() {
+  var q = String(S.shopQ || '').trim().toLowerCase();
+  var list = (S.shops || []).filter(function (sp) { return !q || String(sp.name).toLowerCase().indexOf(q) >= 0 || String(sp.id).toLowerCase().indexOf(q) >= 0; })
+    .sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
+  if (!list.length) return '<div class="note" style="padding:10px 0">' + (S.shops && S.shops.length ? t('sj_none') : '⏳ ' + t('loading')) + '</div>';
+  return list.map(function (sp) {
+    var f = sjFreq(sp.id), sub = f.n ? '🕘 ' + f.last.slice(8, 10) + '/' + f.last.slice(5, 7) + ' · ×' + f.n : '';
+    return '<button type="button" data-sjpick="' + esc(sp.id) + '"><span>' + esc(sp.name) + (sub ? '<small class="num">' + sub + '</small>' : '') + '</span><span style="color:var(--blue)">›</span></button>';
+  }).join('');
+}
+function bindSjList() {
+  document.querySelectorAll('[data-sjpick]').forEach(function (x) { x.onclick = function () { var id = x.getAttribute('data-sjpick'); sjOpenShop(id, sjShopName(id), false); }; });
+}
+function renderShopPick() {
+  var fav = sjFavs(8), html = stripsHtml();
+  html += '<input class="srch" id="sjQ" type="search" autocomplete="off" placeholder="' + esc(t('sj_search')) + '" value="' + esc(S.shopQ || '') + '">';
+  if (fav.length) html += '<div class="card"><div class="band">' + t('sj_fav_order') + '</div><div class="body" style="padding:10px 14px"><div class="hs">' + sjChips(fav, 'data-sjpick') + '</div></div></div>';
+  html += '<div class="card"><div class="band">' + t('sj_all') + '<span class="r num">' + (S.shops || []).length + '</span></div><div class="body" style="padding:2px 14px"><div class="slist" id="sjList">' + sjListHtml() + '</div></div></div>';
+  html += '<button type="button" class="newshop" id="sjNew">' + t('sj_new') + '</button>';
+  $('main').innerHTML = html;
+  bindStrips(); bindSjList();
+  $('sjQ').oninput = function () { S.shopQ = this.value; $('sjList').innerHTML = sjListHtml(); bindSjList(); };
+  $('sjNew').onclick = function () { S.sj = { shopName: '' }; S.view = 'shopnew'; render(); };
+  $('bar').hidden = true; $('bar').innerHTML = '';   // お店を選ぶ画面は下のボタンなし
+}
+function renderShopNew() {
+  $('main').innerHTML = '<div class="card"><div class="body"><div class="fld"><label>' + t('sj_new_name') + '</label><input id="sjName" autocomplete="off" value="' + esc((S.sj && S.sj.shopName) || '') + '"></div></div></div>';
+  $('sjName').oninput = function () { S.sj.shopName = this.value; renderBar(); };
+  renderBar();
+}
+
+// ── 車・サービス・値段（1画面） ──
+function sjPriceHtml(o, guide, who) {
+  return '<div class="big-amt"><input type="number" inputmode="decimal" id="pz" min="0" max="2000" placeholder="0" value="' + (o.price === '' || o.price == null ? '' : esc(o.price)) + '"><span>$</span></div>' +
+    '<div class="pstep">' + [-5, -1, 1, 5].map(function (d) { return '<button type="button" data-pd="' + d + '">' + (d > 0 ? '+' : '−') + Math.abs(d) + '</button>'; }).join('') + '</div>' +
+    '<div class="phint" id="pzHint">' + sjHintInner(sjNum(o.price), guide, who) + '</div>';
+}
+function sjOff(p, guide) { return guide > 0 && p > 0 && (p < guide * 0.5 || p > guide * 1.5); }
+function sjHintInner(p, guide, who) {
+  if (!(guide > 0)) return '<span>' + t(p > 0 ? 'sj_later_ok' : 'sj_no_guide') + '</span>';
+  var d = sjRound(p - guide);
+  return '<span>' + t(who === 'ref' ? 'sj_guide_ref' : 'sj_guide_shop', { v: guide }) + '</span>' +
+    (p > 0 ? '<span class="d' + (sjOff(p, guide) ? ' warn' : '') + '">' + (d === 0 ? t('sj_diff_eq') : t('sj_diff', { s: d > 0 ? '+' : '−', v: Math.abs(d) })) + '</span>' : '');
+}
+function bindSjPrice(o, guide, who, onChange) {
+  var inp = $('pz'); if (!inp) return;
+  var upd = function () { $('pzHint').innerHTML = sjHintInner(sjNum(o.price), guide, who); if (onChange) onChange(); };
+  inp.oninput = function () { o.price = inp.value; upd(); };
+  document.querySelectorAll('[data-pd]').forEach(function (b) { b.onclick = function () {
+    var v = Math.max(0, Math.min(2000, sjNum(o.price) + Number(b.getAttribute('data-pd'))));
+    o.price = v ? String(sjRound(v)) : ''; inp.value = o.price; upd();
+  }; });
+}
+function renderShopJob() {
+  var sj = S.sj, rate = shopRateOf(sj.shop), guide = sjGuide(sj, sj.who, rate), html = '';
+  html += '<div class="seg2"><button type="button" data-sjwho="shop" class="' + (sj.who === 'shop' ? 'on' : '') + '">' + t('sj_who_shop') + '</button><button type="button" data-sjwho="ref" class="' + (sj.who === 'ref' ? 'on' : '') + '">' + t('sj_who_ref') + '</button></div>';
+  html += '<div class="card"><div class="body">' +
+    '<div class="fld"><label>' + t('car') + '</label><input id="sjCar" autocomplete="off" value="' + esc(sj.car) + '"></div>' +
+    '<div class="fld"><label>' + t('sj_plate') + '</label><div class="vin"><input id="sjPlate" autocomplete="off" value="' + esc(sj.plate) + '">' +
+      (sj.vinImg ? '<img src="' + sj.vinImg + '" alt="">' : '') +
+      '<span class="cambtn">' + t('sj_shoot') + '<input type="file" accept="image/*" capture="environment" id="sjVin"></span></div></div>' +
+    '<div class="seg2"><button type="button" data-sjsize="SEDAN" class="' + (sj.size === 'SEDAN' ? 'on' : '') + '">🚗 ' + t('size_sedan') + '</button><button type="button" data-sjsize="SUV" class="' + (sj.size === 'SUV' ? 'on' : '') + '">🚙 ' + t('size_suv') + '</button></div>' +
+    '</div></div>';
+  html += '<div class="card"><div class="band">' + t('sj_svc') + '</div><div class="body"><div class="hs" style="flex-wrap:wrap">' +
+    Object.keys(MENU).map(function (k) { return '<button type="button" class="sc' + (sj.menu.indexOf(k) >= 0 ? ' on' : '') + '" data-sjsvc="' + k + '">' + (sj.menu.indexOf(k) >= 0 ? '✓ ' : '') + menuLabelH(k) + '</button>'; }).join('') +
+    '</div></div></div>';
+  html += '<div class="card"><div class="band">' + t(sj.who === 'ref' ? 'sj_pay_ref' : 'sj_pay_shop') + '<span class="r" style="font-weight:500">' + t('sj_later_ok') + '</span></div><div class="body">' + sjPriceHtml(sj, guide, sj.who) + '</div></div>';
+  if (sj.menu.indexOf('BODY') >= 0) {
+    html += '<div class="card"><div class="band">' + t('sj_rp') + '<span class="r" style="font-weight:500">' + t('sj_rp_s') + '</span></div><div class="body">' +
+      '<div class="seg2 three">' + [['1', 'sj_yes'], ['0', 'sj_no'], ['2', 'sj_unk']].map(function (o) { return '<button type="button" data-sjrp="' + o[0] + '" class="' + (sj.repaint === o[0] ? 'on' : '') + '">' + t(o[1]) + '</button>'; }).join('') + '</div>' +
+      (sj.repaint === '1' || sj.repaint === '2' ? '<div class="strip warn"><div class="grow">' + t('sj_rp_note') + '</div></div>' : '') + '</div></div>';
+  }
+  $('main').innerHTML = html;
+  $('sjCar').oninput = function () { sj.car = this.value; renderBar(); };
+  $('sjPlate').oninput = function () { sj.plate = this.value; renderBar(); };
+  $('sjVin').onchange = function () { var f = this.files[0]; if (!f) return; readShrunk(f, function (u) { sj.vinImg = u; renderShopJob(); }); };
+  document.querySelectorAll('[data-sjwho]').forEach(function (b) { b.onclick = function () { sj.who = b.getAttribute('data-sjwho'); renderShopJob(); }; });
+  document.querySelectorAll('[data-sjsize]').forEach(function (b) { b.onclick = function () { sj.size = b.getAttribute('data-sjsize'); renderShopJob(); }; });
+  document.querySelectorAll('[data-sjrp]').forEach(function (b) { b.onclick = function () { sj.repaint = b.getAttribute('data-sjrp'); renderShopJob(); }; });
+  document.querySelectorAll('[data-sjsvc]').forEach(function (b) { b.onclick = function () {
+    var k = b.getAttribute('data-sjsvc'), i = sj.menu.indexOf(k);
+    if (i >= 0) sj.menu.splice(i, 1);
+    else { EXCL.forEach(function (g) { if (g.indexOf(k) >= 0) sj.menu = sj.menu.filter(function (x) { return g.indexOf(x) < 0; }); }); sj.menu.push(k); }
+    renderShopJob();
+  }; });
+  bindSjPrice(sj, guide, sj.who, null);
+  renderBar();
+}
+function sjBar(bar) {
+  var ok, label;
+  if (S.view === 'shopnew') { ok = !!(S.sj && String(S.sj.shopName || '').trim()); label = '▶ ' + t('btn_next'); }
+  else { ok = !!(S.sj && S.sj.menu.length && (String(S.sj.car || '').trim() || String(S.sj.plate || '').trim() || S.sj.vinImg)); label = t('sj_next_photos'); }
+  bar.innerHTML = '<div class="in"><button type="button" class="btn green" id="next" ' + (ok ? '' : 'disabled') + '>' + label + '</button></div>';
+  bar.hidden = false;
+  $('next').onclick = function () {
+    if (S.view === 'shopnew') { sjOpenShop('', String(S.sj.shopName).trim(), true); return; }
+    sjStartJob();
+  };
+}
+// 予約なしの作業と同じ「今日の一覧」に入れて、作業の流れ（S.cur）を始める
+function sjStartJob() {
+  var sj = S.sj; if (!sj || !sj.menu.length) return;
+  if (sjRunning()) { toast(t('job_running'), 'warn'); S.view = 'job'; render(); return; }
+  var item = { id: 'L-' + Outbox.uuid().slice(0, 8), bookingId: '', date: ppDate(0), time: hhmm(ppNow()),
+               name: (sj.newShop ? '🆕 ' : '') + sj.shopName, place: sj.shopName, store: false, car: String(sj.car || '').trim(), plate: String(sj.plate || '').trim(),
+               size: sj.size, menu: sj.menu.slice(), chatId: '', amount: 0, status: 'wait',
+               mode: 'shop', shop: sj.shop || '', newShop: !!sj.newShop, who: sj.who, price: sj.price, repaint: sj.repaint || '' };
+  S.local.push(item); Outbox.kvSet('local', S.local);
+  var vin = sj.vinImg || null;
+  S.sj = null;
+  openItem(item.id);
+  if (S.cur && S.cur.job.id === item.id) { S.cur.vinImg = vin; saveDraft(); }
+}
+// openItem から呼ぶ: 一覧の項目（お店の仕事）から作業の状態を作る
+function sjInitCur(c, job) {
+  c.mode = 'shop'; c.shop = job.shop || ''; c.shopName = job.place || job.name || ''; c.newShop = !!job.newShop;
+  c.shopAtStart = !!c.shop; c.who = job.who === 'ref' ? 'ref' : 'shop'; c.price = job.price == null ? '' : String(job.price);
+  c.repaint = job.repaint || ''; c.rate = shopRateOf(c.shop); c.src = 'shop'; c.step = 'before'; c.amount = 0; c.free = false;
+}
+
+// ── 傷・へこみ（作業前の写真のあと）。1か所ずつ写真＋ひとこと、無ければ「傷なし」 ──
+function sjDamageReady(c) { return c.dmg.length ? c.dmg.every(function (d) { return !!d.img; }) : !!c.noDamage; }
+function sjDamageHtml(c) {
+  var miss = c.dmg.some(function (d) { return !d.img; });
+  return '<div class="card"><div class="band">' + t('sj_dmg') + '<span class="r num">' + c.dmg.length + '</span></div><div class="body">' +
+    '<div class="note">👆 ' + t('damage_tap') + '</div><div class="dmap" id="dmap">' + CAR_TOP +
+    c.dmg.map(function (d, i) { return '<span class="mk" style="left:' + d.x + '%;top:' + d.y + '%">' + (i + 1) + '</span>'; }).join('') + '</div>' +
+    (c.dmg.length ? '<div class="dmg-list">' + c.dmg.map(function (d, i) {
+      return '<div class="dmg"><span class="no">' + (i + 1) + '</span><span class="ph">' + (d.img ? '<img src="' + d.img + '" alt="">' : '📷') + '<input type="file" accept="image/*" capture="environment" data-dmgph="' + i + '"></span><input class="memo" data-dmgmemo="' + i + '" value="' + esc(d.memo) + '" placeholder="' + esc(t('note')) + '"><button type="button" class="x" data-dmgdel="' + i + '">✕</button></div>';
+    }).join('') + '</div>' : '') +
+    (miss ? '<div class="strip err"><div class="grow">📷 ' + t('sj_dmg_need_photo') + '</div></div>' : '') +
+    (c.dmg.length ? '' : '<button type="button" class="btn sm ' + (c.noDamage ? 'green' : 'ghost') + '" id="dmgNone">✓ ' + t('damage_none') + '</button>') +
+    '<div class="note">' + t('sj_dmg_note') + '</div></div></div>';
+}
+function sjStartWork(c, btn) {
+  if (!sjDamageReady(c)) { btn.disabled = false; return; }
+  c.startAt = new Date().toISOString();
+  setActive(c, c.job.menu[0]);
+  queueStart(c).then(function () { c.startQueued = true; sjBumpFreq(c.shop); saveDraft(); toast('📥 ' + t('offline_saved'), 'ok'); goStep('work'); })
+    .catch(function () { btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+}
+
+// ── 作業中: 値段をすぐ直せる ──
+function sjWorkPriceHtml(c) {
+  if (c.editPrice) return '<div class="card"><div class="band">' + t('amount') + '</div><div class="body">' + sjPriceHtml(c, sjGuide(c.job, c.who, c.rate), c.who) + '</div></div>';
+  return '<button type="button" class="btn sm ghost" id="sjEdit">' + t('sj_edit') + '<span class="num">' + (sjNum(c.price) || 0) + '$</span>)</button><div class="note" style="text-align:center">' + t('sj_edit_note') + '</div>';
+}
+
+// ── 送る前の確認（今の支払い画面の代わり）。払い方は選ばせない。無料のデモだけ切りかえ ──
+function sjVals(c) {
+  var rate = c.rate == null ? shopRateOf(c.shop) : c.rate, p = sjNum(c.price), g = sjRound(priceOf(c.job));
+  if (c.free) return { pay: 'free', amount: 0, list: 0, rate: null };
+  if (c.who === 'ref') return { pay: 'shopref', amount: sjRound(p * (100 - rate) / 100), list: p, rate: rate };
+  return { pay: 'shop', amount: p, list: g >= p ? g : p, rate: rate };   // list ≧ 金額 にして請求を止めない（目安との差は管理グループに出る）
+}
+function sjCanSend(c) { if (c.free) return true; var v = sjVals(c); return v.amount > 0 && sjNum(c.price) <= 2000; }
+function sjConfirmHtml(c) {
+  var v = sjVals(c), guide = sjGuide(c.job, c.who, c.rate), svc = c.job.menu.filter(function (k) { return !(c.svc[k] && c.svc[k].skip); }).map(menuLabel).join(' + ');
+  var car = [c.job.car, c.job.plate].filter(Boolean).join(' / ');
+  var h = '<div class="card"><div class="band">' + t('sj_preview') + '</div><div class="body"><div class="tgp">' +
+    '<div class="m"><span class="bot">SAMURAI MOTORS Booking</span><span>' + t('sj_tg_end') + '</span>' + (car || svc ? '<span>🚗 ' + esc(car) + (car && svc ? ' · ' : '') + esc(svc) + '</span>' : '') + '<span>' + t('sj_tg_after') + '</span></div>' +
+    (c.free ? '' : '<div class="m"><span>' + t('sj_tg_req') + '</span><span>' + t('sj_tg_due') + ' <b class="num" id="sjDue">' + v.amount + '$</b></span><span>' + t('sj_tg_scan') + '</span></div>') +
+    '</div></div></div>';
+  if (c.free) {
+    h += '<div class="strip ok"><div class="grow">🎁 ' + t('pay_free') + '</div><button type="button" id="sjFree">' + t('sj_free_btn') + '</button></div>';
+  } else {
+    h += '<div class="card"><div class="band">' + t(c.who === 'ref' ? 'sj_pay_ref' : 'sj_pay_shop') + '<span class="r" style="font-weight:500">' + t('sj_amt_s') + '</span></div><div class="body">' + sjPriceHtml(c, guide, c.who) +
+      (c.who === 'ref' ? '<div class="note" id="sjSplit">' + (v.list > 0 ? esc(t('amt_split', { list: v.list, amt: v.amount, rate: v.rate })) : '') + '</div>' : '') + '</div></div>';
+    if (!(sjNum(c.price) > 0)) h += '<div class="note">' + t('sj_price_need') + '</div>';
+    if (c.askOff) h += '<div class="askoff"><div>' + (guide > 0 ? t('sj_off_q', { v: sjNum(c.price), g: guide }) : t('sj_off_q0', { v: sjNum(c.price) })) + '</div><div class="row2"><button type="button" class="btn sm green" id="sjOffYes">' + t('sj_off_yes') + '</button><button type="button" class="btn sm ghost" id="sjOffNo">' + t('sj_fix') + '</button></div></div>';
+    h += '<div class="row2" style="align-items:center"><div class="note">' + t('sj_free_q') + '</div><button type="button" class="btn sm ghost" id="sjFree">' + t('sj_free_btn') + '</button></div>';
+  }
+  return h;
+}
+function sjSend(c, btn) {
+  if (!sjCanSend(c)) { btn.disabled = false; return; }
+  var guide = sjGuide(c.job, c.who, c.rate);
+  if (c.sending) return;
+  // 打ち間違い防止: 目安が無い（BODY など）時は毎回、目安がある時は外れた時だけ、送る前に1回聞く
+  if (!c.free && (sjOff(sjNum(c.price), guide) || !(guide > 0)) && !c.offOk) { c.askOff = true; saveDraft(); renderJob(); return; }
+  c.sending = true;
+  var v = sjVals(c);
+  c.pay = v.pay; c.amount = v.amount; c.list = v.list; c.rate = v.rate; c.src = 'shop';
+  queueEnd(c).then(function () {
+    S.done[c.job.id] = { pay: c.pay, amountDone: c.amount, menuDone: Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }) };
+    Outbox.kvSet('done:' + ppDate(0), S.done);
+    c.step = 'done'; Outbox.kvDel('draft'); renderJob(); window.scrollTo(0, 0);
+  }).catch(function () { c.sending = false; btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+}
+
+// ── 完了: 同じお店でもう1台 ──
+function sjDoneHtml(c) {
+  return '<div class="card"><div class="body"><div style="font-weight:700;text-align:center">' + esc(t('sj_sent', { shop: c.shopName })) + '</div>' +
+    '<button type="button" class="btn gold" id="sjAgain">' + t('sj_again', { shop: esc(c.shopName) }) + '</button>' +
+    '<button type="button" class="btn sm ghost" id="sjHome">' + t('sj_home') + '</button></div></div>';
+}
+function bindSjJob(c) {
+  var guide = sjGuide(c.job, c.who, c.rate);
+  if (c.step === 'confirm' || (c.step === 'work' && c.editPrice)) {
+    bindSjPrice(c, guide, c.who, function () {
+      c.askOff = false; c.offOk = false; saveDraft();
+      var v = sjVals(c), due = $('sjDue'); if (due) due.textContent = v.amount + '$';
+      var sp = $('sjSplit'); if (sp) sp.textContent = v.list > 0 ? t('amt_split', { list: v.list, amt: v.amount, rate: v.rate }) : '';
+      renderBar();
+    });
+  }
+  var ed = $('sjEdit'); if (ed) ed.onclick = function () { c.editPrice = true; saveDraft(); renderJob(); };
+  var fr = $('sjFree'); if (fr) fr.onclick = function () { c.free = !c.free; c.askOff = false; saveDraft(); renderJob(); };
+  var oy = $('sjOffYes'); if (oy) oy.onclick = function () { oy.disabled = true; c.offOk = true; c.askOff = false; var nb = $('next'); if (nb) { nb.disabled = true; sjSend(c, nb); } };
+  var on = $('sjOffNo'); if (on) on.onclick = function () { c.askOff = false; renderJob(); var pz = $('pz'); if (pz) pz.focus(); };
+  var ag = $('sjAgain'); if (ag) ag.onclick = function () {
+    S.sj = { shop: c.shop, shopName: c.shopName, newShop: c.newShop, who: c.who, car: '', plate: '', size: c.job.size, menu: c.job.menu.slice(), price: c.price, repaint: '', vinImg: null, again: true };
+    S.cur = null; Outbox.kvDel('draft'); S.view = 'shopjob'; render(); window.scrollTo(0, 0);
+  };
+  var hm = $('sjHome'); if (hm) hm.onclick = function () { S.cur = null; Outbox.kvDel('draft'); S.view = 'home'; S.tab = 'today'; render(); };
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  描画の入口
 // ═══════════════════════════════════════════════════════════════
 function render() {
+  if (S.view === 'job' && !S.cur) S.view = 'home';   // 念のため（2026-10-27）
   document.body.setAttribute('data-lang', LANG);
   if (timerId && S.view !== 'job') { clearInterval(timerId); timerId = null; }
-  var inFlow = S.view === 'job' || S.view === 'new';
+  var inFlow = S.view === 'job' || S.view === 'new' || S.view === 'shoppick' || S.view === 'shopnew' || S.view === 'shopjob';
   $('bar').hidden = !inFlow; $('main').className = inFlow ? 'flow' : 'tabbed';
   $('tabs').hidden = inFlow;
-  $('tabTodayL').textContent = t('tab_today'); $('tabExpL').textContent = t('tab_expense'); $('tabScoutL').textContent = t('tab_scout');
+  $('tabTodayL').textContent = t('tab_work'); $('tabAttL').textContent = t('tab_att'); $('tabExpL').textContent = t('tab_expense'); $('tabScoutL').textContent = t('tab_scout');
   var scoutOk = scoutAvailable();
-  $('tabScout').hidden = !scoutOk; $('tabs').className = scoutOk ? 'tabs three' : 'tabs';
+  $('tabScout').hidden = !scoutOk; $('tabs').className = scoutOk ? 'tabs four' : 'tabs three';
   if (S.tab === 'scout' && !scoutOk) S.tab = 'today';
   document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-tab') === S.tab)); });
   var inScout = !inFlow && S.tab === 'scout';
@@ -1236,7 +1651,10 @@ function render() {
   renderHead();
   if (S.view === 'job' && S.cur) renderJob();
   else if (S.view === 'new') renderNew();
-  else { S.view = 'home'; if (S.tab === 'expense') renderExpense(); else renderHome(); }
+  else if (S.view === 'shoppick') renderShopPick();
+  else if (S.view === 'shopnew') renderShopNew();
+  else if (S.view === 'shopjob' && S.sj) renderShopJob();
+  else { S.view = 'home'; if (S.tab === 'expense') renderExpense(); else if (S.tab === 'att') renderAtt(); else renderHome(); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1245,9 +1663,10 @@ function render() {
 function boot() {
   var today = ppDate(0);
   Promise.all([Outbox.kvGet('menu'), Outbox.kvGet('today'), Outbox.kvGet('done:' + today), Outbox.kvGet('draft'), Outbox.kvGet('local'),
-               Outbox.kvGet('att:' + today), Outbox.kvGet('me'), Outbox.kvGet('exp_hist'), Outbox.kvGet('shops')])
+               Outbox.kvGet('att:' + today), Outbox.kvGet('me'), Outbox.kvGet('exp_hist'), Outbox.kvGet('shops'), Outbox.kvGet('shop_freq')])
     .then(function (r) {
       if (Array.isArray(r[8]) && r[8].length) S.shops = r[8];
+      if (r[9] && typeof r[9] === 'object') S.shopFreq = r[9];
       if (r[7]) S.expHist = r[7];
       if (r[5]) S.att = r[5];
       if (r[6] && r[6].chatId === ME.chatId) { ME.staff = r[6].staff; ME.keyOk = r[6].keyOk; ME.state = r[6].state || ME.state; }
@@ -1273,7 +1692,7 @@ function boot() {
         if (histChanged) Outbox.kvSet('exp_hist', S.expHist);
         // 入力中は描き直さない（文字入力が途切れるため）
         var typing = document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
-        if (S.view === 'home' && !typing && S.tab !== 'scout') { if (S.tab === 'expense') renderExpense(); else renderHome(); }
+        if (S.view === 'home' && !typing && S.tab !== 'scout') { if (S.tab === 'expense') renderExpense(); else if (S.tab === 'att') renderAtt(); else renderHome(); }
         renderHead();
       } });
       loadData(false);
