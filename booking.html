@@ -1819,6 +1819,7 @@ var state = {
   srcParam: '',                 // 2026-10-15: URL の ?src=（専用QR の流入元コード）
   shop: false,                  // 2026-10-26: 提携店QR経由（サーバーが判定。全体キャンペーンは付かない）
   campaignShown: false,         // 2026-10-26: 確認画面で全体キャンペーンの値引きを見せたか（サーバーの判定と食い違えば取り直す）
+  campaignShownPct: 0,          // 2026-10-27: そのとき見せた率（全体キャンペーン or 個人提携の紹介割引）
   source: null,                 // booking_init の source（{code,label,lang,start,end,servicePct,itemPct,placeName,...}）
   unitNo: '',                   // 流入元の固定場所で使う 部屋番号・車種
   carModel: '',
@@ -2846,6 +2847,7 @@ function renderSummary() {
   var srcActive = srcLines.length > 0;   // 対象品目なし＝特典なし（サーバーと同じ判定）
   var campActive = !srcActive && camp && camp.active && camp.percent > 0;
   state.campaignShown = !!campActive;   // 送信時にサーバーへ伝える（提携店QRの客で外れる時は予約を作らず取り直し）
+  state.campaignShownPct = campActive ? (Number(camp.percent) || 0) : 0;   // 2026-10-27: 見せた率（紹介割引を含む）も送る
   var discount = srcActive
     ? Math.round(srcLines.reduce(function(s, l) { return s + l.d; }, 0) * 100) / 100
     : (campActive ? Math.round(serviceSubtotal * camp.percent) / 100 : 0);
@@ -3032,6 +3034,8 @@ function submitBooking() {
     // 2026-10-15: 専用QR（流入元）。金額・場所はサーバーが流入元タブから決める（画面の値は表示用）
     src: state.source ? state.source.code : state.srcParam,
     campaignShown: !!state.campaignShown,
+    // 2026-10-27: 確認画面で見せた割引率（全体キャンペーン or 個人提携の紹介割引）。サーバーの率と違えば予約を作らず取り直す
+    campaignPct: state.campaignShown ? (state.campaignShownPct || 0) : 0,
     unitNo: srcFixedPlace_() ? state.unitNo : '',
     carModel: srcFixedPlace_() ? state.carModel : ''
   };
@@ -3044,7 +3048,8 @@ function submitBooking() {
       bookingSubmitted = false; // エラー時はリセット
       // 2026-10-26: 画面は流入元なしでも、サーバーでは流入元が付いていることがある（登録済みの客が QR → START の直後に開いた等。
       //   部屋番号が必須なのに画面に欄が無く進めない）→ 取り直して付いていれば住民向け画面へ切り替える
-      if (!state.source && !res.slots) {
+      //   2026-10-27: 料金が変わった（PRICE_CHANGED・紹介割引やキャンペーンの率が変わった等）時は、流入元つきのお客様も取り直す
+      if (res.code === 'PRICE_CHANGED' || (!state.source && !res.slots)) {
         var failMsg = res.message || 'Booking failed';
         recheckSource_().then(function(found) { if (!found) showToast(failMsg, true); },
                               function() { showToast(failMsg, true); });
