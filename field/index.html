@@ -219,6 +219,8 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 .cam .frame .req.opt{background:rgba(255,255,255,.85);color:var(--sub)}
 .cam .shoot{position:relative;min-height:72px;border-radius:14px;background:var(--blue);color:#fff;font-size:20px;font-weight:700;display:grid;place-items:center}
 .cam .shoot input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
+.cam .retake{position:relative;overflow:hidden;width:100%}
+.cam .retake input{position:absolute;inset:0;opacity:0;width:100%;height:100%}
 .thumbs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .thumbs button{flex:none;width:64px;height:48px;border-radius:8px;overflow:hidden;border:2px solid var(--line);background:#f7f9fb;position:relative;display:grid;place-items:center;font-size:11px;color:var(--sub);font-weight:700}
 .thumbs button img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -319,7 +321,7 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261028-015826';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261028-082348';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -650,17 +652,24 @@ var G = {
 var CAR_TOP = '<svg viewBox="0 0 200 100" fill="none" stroke="#5c6675" stroke-width="2"><rect x="22" y="14" width="156" height="72" rx="26" fill="#fff"/><path d="M60 22h80M60 78h80" stroke-dasharray="3 3"/><path d="M62 30q38-8 76 0v40q-38 8-76 0z" fill="#dfe6ee"/><rect x="30" y="8" width="18" height="10" rx="3" fill="#fff"/><rect x="152" y="8" width="18" height="10" rx="3" fill="#fff"/><rect x="30" y="82" width="18" height="10" rx="3" fill="#fff"/><rect x="152" y="82" width="18" height="10" rx="3" fill="#fff"/><text x="18" y="54" font-size="9" fill="#98a2b3" text-anchor="end" font-family="sans-serif">F</text><text x="182" y="54" font-size="9" fill="#98a2b3" font-family="sans-serif">R</text></svg>';
 
 // 撮影枠: 外装4面が必須（D7）。GLASS・ヘッドライトは 2026-10-27 からメニューにあれば必須（photoRule 2 の仕事だけ。古い下書きは任意のまま）・座席は任意
+// お店の仕事は枠を出すが全部任意（2026-10-28 Daisuke「写真は入れてほしいけど必須でなくていい」。傷の写真は sjDamageReady で今までどおり必須）
 function shotsFor(job, phase) {
+  var must = job.mode !== 'shop';
   var s = [
-    { id: phase + '_F', g: 'front', tk: 'side_front', req: true },
-    { id: phase + '_B', g: 'rear',  tk: 'side_rear',  req: true },
-    { id: phase + '_L', g: 'left',  tk: 'side_left',  req: true },
-    { id: phase + '_R', g: 'right', tk: 'side_right', req: true }
+    { id: phase + '_F', g: 'front', tk: 'side_front', req: must },
+    { id: phase + '_B', g: 'rear',  tk: 'side_rear',  req: must },
+    { id: phase + '_L', g: 'left',  tk: 'side_left',  req: must },
+    { id: phase + '_R', g: 'right', tk: 'side_right', req: must }
   ];
-  if (job.menu.some(function (c) { return c.indexOf('GLASS') === 0; })) s.push({ id: phase + '_G', g: 'glass', tk: 'part_windshield', req: job.photoRule === 2 });   // 2026-10-27 メニューにあれば必須（新しく始めた仕事だけ）
-  if (job.menu.some(function (c) { return c.indexOf('HEADLIGHT') === 0; })) { s.push({ id: phase + '_HL', g: 'hlL', tk: 'part_hl_left', req: job.photoRule === 2 }); s.push({ id: phase + '_HR', g: 'hlR', tk: 'part_hl_right', req: job.photoRule === 2 }); }
+  if (job.menu.some(function (c) { return c.indexOf('GLASS') === 0; })) s.push({ id: phase + '_G', g: 'glass', tk: 'part_windshield', req: must && job.photoRule === 2 });   // 2026-10-27 メニューにあれば必須（新しく始めた仕事だけ）
+  if (job.menu.some(function (c) { return c.indexOf('HEADLIGHT') === 0; })) { s.push({ id: phase + '_HL', g: 'hlL', tk: 'part_hl_left', req: must && job.photoRule === 2 }); s.push({ id: phase + '_HR', g: 'hlR', tk: 'part_hl_right', req: must && job.photoRule === 2 }); }
   if (phase === 'before' && job.mode !== 'shop') { s.push({ id: 'before_IF', g: 'seatF', tk: 'part_seat_front', req: false }); s.push({ id: 'before_IR', g: 'seatR', tk: 'part_seat_rear', req: false }); }
   return s;
+}
+// 撮った枚数: 必須の枠があれば必須の数、全部任意（お店の仕事）なら全部の枠で数える。ok = 必須がそろった
+function shotProg(shots, photos) {
+  var req = shots.filter(function (s) { return s.req; }), base = req.length ? req : shots;
+  return { got: base.filter(function (s) { return photos[s.id]; }).length, n: base.length, ok: req.every(function (s) { return photos[s.id]; }) };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1170,11 +1179,12 @@ function renderJob() {
 
   else if (c.step === 'before' || c.step === 'after') {
     var shots = shotsFor(j, c.step), idx = Math.min(c.shotIdx, shots.length - 1), sh = shots[idx], img = c.photos[sh.id];
-    var reqShots = shots.filter(function (s) { return s.req; }), got = reqShots.filter(function (s) { return c.photos[s.id]; }).length;
+    var pg = shotProg(shots, c.photos);
     if (c.step === 'after') html += '<div class="card"><div class="timer"><div class="l">⏱ ' + t('work_time') + '</div><div class="v num" style="color:var(--text)">' + hms(workSec(c)) + '</div></div></div>';
-    html += '<div class="card"><div class="band">📷 ' + t(c.step === 'before' ? 'photo_before' : 'photo_after') + '<span class="r num">' + got + '/' + reqShots.length + '</span></div><div class="body cam">' +
+    html += '<div class="card"><div class="band">📷 ' + t(c.step === 'before' ? 'photo_before' : 'photo_after') + '<span class="r num">' + pg.got + '/' + pg.n + '</span></div><div class="body cam">' +
       '<div class="frame">' + (img ? '<img src="' + img + '" alt="">' : G[sh.g]) + '<span class="req ' + (sh.req ? '' : 'opt') + '">' + t(sh.req ? 'lbl_required' : 'lbl_optional') + '</span><span class="cnt">' + (idx + 1) + '/' + shots.length + '</span><span class="lbl">' + t(sh.tk) + '</span></div>' +
-      (img ? '<div class="row2"><button type="button" class="btn sm ghost" id="retake">↺ ' + t('btn_retake') + '</button><button type="button" class="btn sm green" id="okNext">' + t('btn_ok') + ' ›</button></div>'
+      // 撮ったらそのまま次の枠へ（OK の確認は 2026-10-28 Daisuke「タップが増えるだけ」で廃止）。撮り直しはサムネから選んでここを押すとすぐカメラ
+      (img ? '<div class="btn sm ghost retake">↺ ' + t('btn_retake') + '<input type="file" accept="image/*" capture="environment" id="shoot"></div>'
            : '<div class="shoot">📷 ' + t(sh.tk) + '<input type="file" accept="image/*" capture="environment" id="shoot"></div>' + (sh.req ? '' : '<button type="button" class="btn sm ghost" id="skipShot">' + t('btn_next') + ' ›</button>')) +
       '<div class="thumbs">' + shots.map(function (s, i) { var p = c.photos[s.id]; return '<button type="button" data-shot="' + i + '" class="' + (i === idx ? 'now' : '') + (p ? ' has' : '') + '">' + (p ? '<img src="' + p + '" alt="">' : t(s.tk)) + (p ? '<span class="k">✓</span>' : '') + '</button>'; }).join('') + '</div>' +
       '</div></div>';
@@ -1253,9 +1263,11 @@ function bindJob() {
   document.querySelectorAll('[data-dmgdel]').forEach(function (b) { b.onclick = function () { c.dmg.splice(+b.getAttribute('data-dmgdel'), 1); saveDraft(); renderJob(); }; });
   var dn = $('dmgNone'); if (dn) dn.onclick = function () { c.noDamage = !c.noDamage; saveDraft(); renderJob(); };
 
-  var sh = $('shoot'); if (sh) sh.onchange = function () { if (!sh.files[0]) return; var shots = shotsFor(c.job, c.step); readShrunk(sh.files[0], function (u) { c.photos[shots[c.shotIdx].id] = u; saveDraft(); renderJob(); }); };
-  var rt = $('retake'); if (rt) rt.onclick = function () { var shots = shotsFor(c.job, c.step); delete c.photos[shots[c.shotIdx].id]; saveDraft(); renderJob(); };
-  var ok = $('okNext'); if (ok) ok.onclick = function () { advanceShot(); };
+  var sh = $('shoot'); if (sh) sh.onchange = function () { if (!sh.files[0]) return; var shots = shotsFor(c.job, c.step); readShrunk(sh.files[0], function (u) {
+    var id = shots[c.shotIdx].id, had = !!c.photos[id];
+    c.photos[id] = u; saveDraft();
+    if (had) renderJob(); else advanceShot();   // 撮り直しはその枠に残る・新しく撮ったら次の枠へ
+  }); };
   var sk = $('skipShot'); if (sk) sk.onclick = function () { advanceShot(); };
   document.querySelectorAll('[data-shot]').forEach(function (b) { b.onclick = function () { c.shotIdx = +b.getAttribute('data-shot'); renderJob(); }; });
 
@@ -1305,13 +1317,13 @@ function renderBar() {
     bar.innerHTML = '<div class="in"><button type="button" class="btn green" id="next" ' + (okNew ? '' : 'disabled') + '>▶ ' + t('btn_next') + '</button></div>';
     bar.hidden = false; $('next').onclick = startNewJob; return;
   }
-  var c = S.cur, j = c.job, shots, req, got;
+  var c = S.cur, j = c.job, pg;
   if (c.step === 'check' && c.mode === 'shop') {
     html = '<button type="button" class="btn green" id="next" ' + (sjDamageReady(c) ? '' : 'disabled') + '>' + t('sj_go') + '</button>';
   } else if (c.step === 'before' && c.mode === 'shop') {
-    shots = shotsFor(j, 'before'); req = shots.filter(function (s) { return s.req; }); got = req.filter(function (s) { return c.photos[s.id]; }).length;
-    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + Math.round(got / req.length * 100) + '%"></i></span><span class="num">' + got + '/' + req.length + '</span></div>' +
-      '<button type="button" class="btn" id="next" ' + (got < req.length ? 'disabled' : '') + '>' + t('btn_next') + ' › <small>' + t('damage_title') + '</small></button>';
+    pg = shotProg(shotsFor(j, 'before'), c.photos);
+    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + (pg.n ? Math.round(pg.got / pg.n * 100) : 0) + '%"></i></span><span class="num">' + pg.got + '/' + pg.n + '</span></div>' +
+      '<button type="button" class="btn" id="next" ' + (pg.ok ? '' : 'disabled') + '>' + t('btn_next') + ' › <small>' + t('damage_title') + '</small></button>';
   } else if (c.step === 'confirm') {
     html = '<button type="button" class="btn green" id="next" ' + (sjCanSend(c) ? '' : 'disabled') + '>' + t('sj_send') + '</button>';
   } else if (c.step === 'check') {
@@ -1319,16 +1331,16 @@ function renderBar() {
     html = '<div class="prog"><span class="num">' + n + '/5</span><span class="b"><i style="width:' + (n * 20) + '%"></i></span><span>🩹 <span class="num">' + c.dmg.length + '</span></span></div>' +
       '<button type="button" class="btn" id="next" ' + (ready ? '' : 'disabled') + '>' + t('btn_next') + ' › <small>' + t('photo_before') + '</small></button>';
   } else if (c.step === 'before') {
-    shots = shotsFor(j, 'before'); req = shots.filter(function (s) { return s.req; }); got = req.filter(function (s) { return c.photos[s.id]; }).length;
-    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + Math.round(got / req.length * 100) + '%"></i></span><span class="num">' + got + '/' + req.length + '</span></div>' +
-      '<button type="button" class="btn green" id="next" ' + (got < req.length ? 'disabled' : '') + '>▶ ' + t('btn_start') + '</button>';
+    pg = shotProg(shotsFor(j, 'before'), c.photos);
+    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + (pg.n ? Math.round(pg.got / pg.n * 100) : 0) + '%"></i></span><span class="num">' + pg.got + '/' + pg.n + '</span></div>' +
+      '<button type="button" class="btn green" id="next" ' + (pg.ok ? '' : 'disabled') + '>▶ ' + t('btn_start') + '</button>';
   } else if (c.step === 'work') {
     var anyTime = Object.keys(c.svc).some(function (k) { return svcSec(c.svc[k]) > 0; });
     html = '<button type="button" class="btn red" id="next" ' + (anyTime ? '' : 'disabled') + '>■ ' + t('btn_finish') + '</button>';
   } else if (c.step === 'after') {
-    shots = shotsFor(j, 'after'); req = shots.filter(function (s) { return s.req; }); got = req.filter(function (s) { return c.photos[s.id]; }).length;
-    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + Math.round(got / req.length * 100) + '%"></i></span><span class="num">' + got + '/' + req.length + '</span></div>' +
-      '<button type="button" class="btn" id="next" ' + (got < req.length ? 'disabled' : '') + '>' + t('btn_next') + ' › <small>' + t('pay_title') + '</small></button>';
+    pg = shotProg(shotsFor(j, 'after'), c.photos);
+    html = '<div class="prog"><span>📷</span><span class="b"><i style="width:' + (pg.n ? Math.round(pg.got / pg.n * 100) : 0) + '%"></i></span><span class="num">' + pg.got + '/' + pg.n + '</span></div>' +
+      '<button type="button" class="btn" id="next" ' + (pg.ok ? '' : 'disabled') + '>' + t('btn_next') + ' › <small>' + t('pay_title') + '</small></button>';
   } else if (c.step === 'close') {
     html = '<button type="button" class="btn green" id="next" ' + (canSavePay(c) ? '' : 'disabled') + '>💾 ' + t('btn_save') + '</button>';
   } else {
@@ -1413,7 +1425,7 @@ function bindSjHome() {
 }
 function sjOpenShop(id, name, isNew) {
   if (sjRunning()) { toast(t('job_running'), 'warn'); S.view = 'job'; render(); return; }
-  S.sj = { shop: id || '', shopName: name || '', newShop: !!isNew, who: 'shop', car: '', plate: '', size: 'SEDAN', menu: [], price: '', repaint: '', vinImg: null };
+  S.sj = { shop: id || '', shopName: name || '', newShop: !!isNew, who: 'shop', car: '', plate: '', size: 'SEDAN', menu: [], price: '', priceAuto: true, repaint: '', vinImg: null };
   S.view = 'shopjob'; render(); window.scrollTo(0, 0);
 }
 
@@ -1488,6 +1500,8 @@ function bindSjPrice(o, guide, who, onChange) {
 }
 function renderShopJob() {
   var sj = S.sj, rate = shopRateOf(sj.shop), guide = sjGuide(sj, sj.who, rate), html = '';
+  // 金額を自分で直すまでは、サービス・車の大きさ・店の車/紹介を変えるたびに目安を入れておく（2026-10-28 Daisuke）
+  if (sj.priceAuto !== false) sj.price = guide > 0 ? String(guide) : '';
   html += '<div class="seg2"><button type="button" data-sjwho="shop" class="' + (sj.who === 'shop' ? 'on' : '') + '">' + t('sj_who_shop') + '</button><button type="button" data-sjwho="ref" class="' + (sj.who === 'ref' ? 'on' : '') + '">' + t('sj_who_ref') + '</button></div>';
   html += '<div class="card"><div class="body">' +
     '<div class="fld"><label>' + t('car') + '</label><input id="sjCar" autocomplete="off" value="' + esc(sj.car) + '"></div>' +
@@ -1518,7 +1532,7 @@ function renderShopJob() {
     else { EXCL.forEach(function (g) { if (g.indexOf(k) >= 0) sj.menu = sj.menu.filter(function (x) { return g.indexOf(x) < 0; }); }); sj.menu.push(k); }
     renderShopJob();
   }; });
-  bindSjPrice(sj, guide, sj.who, null);
+  bindSjPrice(sj, guide, sj.who, function () { sj.priceAuto = !sjNum(sj.price); });   // 空にしたら目安に戻す
   renderBar();
 }
 function sjBar(bar) {
@@ -1644,7 +1658,7 @@ function bindSjJob(c) {
   var oy = $('sjOffYes'); if (oy) oy.onclick = function () { oy.disabled = true; c.offOk = true; c.askOff = false; var nb = $('next'); if (nb) { nb.disabled = true; sjSend(c, nb); } };
   var on = $('sjOffNo'); if (on) on.onclick = function () { c.askOff = false; renderJob(); var pz = $('pz'); if (pz) pz.focus(); };
   var ag = $('sjAgain'); if (ag) ag.onclick = function () {
-    S.sj = { shop: c.shop, shopName: c.shopName, newShop: c.newShop, who: c.who, car: '', plate: '', size: c.job.size, menu: c.job.menu.slice(), price: c.price, repaint: '', vinImg: null, again: true };
+    S.sj = { shop: c.shop, shopName: c.shopName, newShop: c.newShop, who: c.who, car: '', plate: '', size: c.job.size, menu: c.job.menu.slice(), price: c.price, priceAuto: sjNum(c.price) === sjGuide(c.job, c.who, c.rate), repaint: '', vinImg: null, again: true };
     S.cur = null; Outbox.kvDel('draft'); S.view = 'shopjob'; render(); window.scrollTo(0, 0);
   };
   var hm = $('sjHome'); if (hm) hm.onclick = function () { S.cur = null; Outbox.kvDel('draft'); S.view = 'home'; S.tab = 'today'; render(); };
