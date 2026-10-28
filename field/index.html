@@ -319,7 +319,7 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261027-125111';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261028-015826';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -627,6 +627,7 @@ function loadData(manual) {
   return Promise.all([p1, p2, p3, p4]).then(function () {
     if (S.view === 'home') render();
     else if (S.view === 'shoppick' && $('sjList')) { $('sjList').innerHTML = sjListHtml(); bindSjList(); }
+    else if (S.view === 'shopnew' && $('sjSug')) { $('sjSug').innerHTML = sjSugHtml(); bindSjSug(); }
     if (manual) toast(S.load === 'ok' ? '✓ ' + t('refresh') : t('load_failed'), S.load === 'ok' ? 'ok' : 'warn');
   });
 }
@@ -1364,8 +1365,10 @@ function renderBar() {
 // ═══════════════════════════════════════════════════════════════
 //  お店の仕事（2026-10-27 Daisuke 裁可・LUXE Auto の作業から見直し）
 //  お店を選ぶ → 車・サービス・値段（お店と決めた金額）→ 作業前の写真 → 傷・へこみ → 作業 → 作業後の写真 → 送る前の確認
-//  サーバーは今のまま（v7 @95）で動く: 店の車 = payment_type 'shop'、紹介のお客さん = 'shopref'、請求は ShopInvoice.gs
-//  請求が止まらないよう v2.list_price は「定価（メニューの値段）とお店と決めた金額の大きい方」を送る（FieldPayment.gs の確認と合わせる）
+//  店の車 = payment_type 'shop'、紹介のお客さん = 'shopref'、請求は ShopInvoice.gs（v7 @95 のままでも動く）
+//  請求が止まらないよう v2.list_price は「定価（メニューの値段）とお店と決めた金額の大きい方」を送る
+//  2026-10-28 サーバー側 v7/FieldShopMode.gs: price_mode 'agreed' の店の車は定価×率で検算せず、管理グループに「お店と決めた金額」
+//    （目安の 0.5〜1.5倍の外は注意＝ sjOff と同じ）。傷の文章をお店へ（SHOP_DAMAGE_NOTE=on）。お店一覧の linked
 // ═══════════════════════════════════════════════════════════════
 function sjNum(v) { var n = parseFloat(v); return isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : 0; }
 function sjRound(n) { return Math.round(n * 100) / 100; }
@@ -1382,8 +1385,10 @@ function sjBumpFreq(id) {
   var f = sjFreq(id); S.shopFreq[id] = { n: (f.n || 0) + 1, last: ppDate(0) };
   Outbox.kvSet('shop_freq', S.shopFreq);
 }
+// グループと連携済みのお店（2026-10-28 サーバーが linked を返す。古いサーバー＝linked なしは全部を連携済みとみなす）
+function sjLinked() { return (S.shops || []).filter(function (sp) { return sp.linked !== false; }); }
 function sjFavs(max) {
-  return (S.shops || []).filter(function (sp) { return sjFreq(sp.id).n > 0; })
+  return sjLinked().filter(function (sp) { return sjFreq(sp.id).n > 0; })
     .sort(function (a, b) { var fa = sjFreq(a.id), fb = sjFreq(b.id); return (fb.n - fa.n) || (fb.last > fa.last ? 1 : fb.last < fa.last ? -1 : 0); })
     .slice(0, max || 6);
 }
@@ -1415,7 +1420,7 @@ function sjOpenShop(id, name, isNew) {
 // ── お店を選ぶ ──
 function sjListHtml() {
   var q = String(S.shopQ || '').trim().toLowerCase();
-  var list = (S.shops || []).filter(function (sp) { return !q || String(sp.name).toLowerCase().indexOf(q) >= 0 || String(sp.id).toLowerCase().indexOf(q) >= 0; })
+  var list = sjLinked().filter(function (sp) { return !q || String(sp.name).toLowerCase().indexOf(q) >= 0 || String(sp.id).toLowerCase().indexOf(q) >= 0; })
     .sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
   if (!list.length) return '<div class="note" style="padding:10px 0">' + (S.shops && S.shops.length ? t('sj_none') : '⏳ ' + t('loading')) + '</div>';
   return list.map(function (sp) {
@@ -1430,7 +1435,7 @@ function renderShopPick() {
   var fav = sjFavs(8), html = stripsHtml();
   html += '<input class="srch" id="sjQ" type="search" autocomplete="off" placeholder="' + esc(t('sj_search')) + '" value="' + esc(S.shopQ || '') + '">';
   if (fav.length) html += '<div class="card"><div class="band">' + t('sj_fav_order') + '</div><div class="body" style="padding:10px 14px"><div class="hs">' + sjChips(fav, 'data-sjpick') + '</div></div></div>';
-  html += '<div class="card"><div class="band">' + t('sj_all') + '<span class="r num">' + (S.shops || []).length + '</span></div><div class="body" style="padding:2px 14px"><div class="slist" id="sjList">' + sjListHtml() + '</div></div></div>';
+  html += '<div class="card"><div class="band">' + t('sj_all') + '<span class="r num">' + sjLinked().length + '</span></div><div class="body" style="padding:2px 14px"><div class="slist" id="sjList">' + sjListHtml() + '</div></div></div>';
   html += '<button type="button" class="newshop" id="sjNew">' + t('sj_new') + '</button>';
   $('main').innerHTML = html;
   bindStrips(); bindSjList();
@@ -1438,9 +1443,24 @@ function renderShopPick() {
   $('sjNew').onclick = function () { S.sj = { shopName: '' }; S.view = 'shopnew'; render(); };
   $('bar').hidden = true; $('bar').innerHTML = '';   // お店を選ぶ画面は下のボタンなし
 }
+// 新しいお店の名前が、店マスターにあるお店（グループがまだのお店も）と同じなら、そのお店を選べるように（2026-10-28）
+function sjSuggest(name) {
+  var q = String(name || '').trim().toLowerCase();
+  if (q.length < 2) return [];
+  return (S.shops || []).filter(function (sp) { return String(sp.name).toLowerCase().indexOf(q) >= 0 || String(sp.id).toLowerCase().indexOf(q) >= 0; })
+    .sort(function (a, b) { return (a.linked === false) - (b.linked === false) || String(a.name).localeCompare(String(b.name)); }).slice(0, 5);
+}
+function sjSugHtml() {
+  var list = sjSuggest(S.sj && S.sj.shopName);
+  return list.length ? '<div class="card"><div class="band">' + t('sj_pick') + '</div><div class="body" style="padding:10px 14px"><div class="hs" style="flex-wrap:wrap">' + sjChips(list, 'data-sjsug') + '</div></div></div>' : '';
+}
+function bindSjSug() {
+  document.querySelectorAll('[data-sjsug]').forEach(function (x) { x.onclick = function () { var id = x.getAttribute('data-sjsug'); sjOpenShop(id, sjShopName(id), false); }; });
+}
 function renderShopNew() {
-  $('main').innerHTML = '<div class="card"><div class="body"><div class="fld"><label>' + t('sj_new_name') + '</label><input id="sjName" autocomplete="off" value="' + esc((S.sj && S.sj.shopName) || '') + '"></div></div></div>';
-  $('sjName').oninput = function () { S.sj.shopName = this.value; renderBar(); };
+  $('main').innerHTML = '<div class="card"><div class="body"><div class="fld"><label>' + t('sj_new_name') + '</label><input id="sjName" autocomplete="off" value="' + esc((S.sj && S.sj.shopName) || '') + '"></div></div></div><div id="sjSug">' + sjSugHtml() + '</div>';
+  $('sjName').oninput = function () { S.sj.shopName = this.value; $('sjSug').innerHTML = sjSugHtml(); bindSjSug(); renderBar(); };
+  bindSjSug();
   renderBar();
 }
 
