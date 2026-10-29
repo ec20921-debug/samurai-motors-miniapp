@@ -321,7 +321,7 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261028-082348';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261029-020830';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -1626,7 +1626,7 @@ function sjSend(c, btn) {
   var guide = sjGuide(c.job, c.who, c.rate);
   if (c.sending) return;
   // 打ち間違い防止: 目安が無い（BODY など）時は毎回、目安がある時は外れた時だけ、送る前に1回聞く
-  if (!c.free && (sjOff(sjNum(c.price), guide) || !(guide > 0)) && !c.offOk) { c.askOff = true; saveDraft(); renderJob(); return; }
+  if (!c.free && (sjOff(sjNum(c.price), guide) || !(guide > 0)) && !c.offOk) { c.askOff = true; saveDraft(); renderJob(); sjShowAskOff(); return; }
   c.sending = true;
   var v = sjVals(c);
   c.pay = v.pay; c.amount = v.amount; c.list = v.list; c.rate = v.rate; c.src = 'shop';
@@ -1635,6 +1635,12 @@ function sjSend(c, btn) {
     Outbox.kvSet('done:' + ppDate(0), S.done);
     c.step = 'done'; Outbox.kvDel('draft'); renderJob(); window.scrollTo(0, 0);
   }).catch(function () { c.sending = false; btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+}
+
+// 小さい画面だと「この金額でいい？」が下のボタンの裏に隠れて、送るを押しても何も起きないように見える（2026-10-29）→ 見える所まで動かす
+function sjShowAskOff() {
+  var q = document.querySelector('.askoff'); if (!q) return;
+  try { q.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { q.scrollIntoView(); }
 }
 
 // ── 完了: 同じお店でもう1台 ──
@@ -1727,6 +1733,8 @@ function boot() {
         // 入力中は描き直さない（文字入力が途切れるため）
         var typing = document.activeElement && /^(TEXTAREA|INPUT)$/.test(document.activeElement.tagName);
         if (S.view === 'home' && !typing && S.tab !== 'scout') { if (S.tab === 'expense') renderExpense(); else if (S.tab === 'att') renderAtt(); else renderHome(); }
+        // 完了画面の「未送信 N 件」も送れたら消す（入力欄のない画面なので描き直してよい・2026-10-29）
+        else if (S.view === 'job' && S.cur && S.cur.step === 'done') renderJob();
         renderHead();
       } });
       loadData(false);
