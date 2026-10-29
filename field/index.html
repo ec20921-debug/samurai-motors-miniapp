@@ -182,6 +182,10 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 .tl-item .c{border-bottom:1px solid #e7ebf1;padding:10px 4px 10px 0;display:grid;gap:3px}
 .tl-item:last-child .c{border-bottom:0}
 .tl-item .n{font-size:16px;font-weight:700}
+div.tl-item{cursor:pointer}
+.bkd{display:grid;gap:4px;margin-top:6px;font-size:15px;color:var(--sub)}
+.bkd b{color:var(--text)}
+.bkd .acts{margin-top:6px}
 .tl-item.done .n{color:var(--sub);text-decoration:line-through}
 .tl-item .s{font-size:13px;color:var(--sub)}
 
@@ -321,7 +325,7 @@ main.tabbed{padding-bottom:calc(86px + env(safe-area-inset-bottom,0px))}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261029-020830';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261029-065907';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -576,7 +580,7 @@ function mapBooking(b) {
   String(b.options || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (c) { if (menu.indexOf(c) < 0) menu.push(c); });
   var st = String(b.status || '');
   return {
-    id: b.bookingId, bookingId: b.bookingId, date: b.date, time: b.startTime || '', name: b.customerName || '',
+    id: b.bookingId, bookingId: b.bookingId, date: b.date, time: b.startTime || '', end: b.endTime || '', name: b.customerName || '',
     place: b.location || '', store: b.serviceType === '店舗', car: b.carModel || '', plate: b.plate || '',
     size: String(b.vehicleType || '').indexOf('SUV') >= 0 ? 'SUV' : 'SEDAN', menu: menu, chatId: b.chatId || '',
     amount: Number(b.amount) || 0, campaign: !!b.manualCampaign,
@@ -981,6 +985,22 @@ function bindStrips() {
 // ═══════════════════════════════════════════════════════════════
 //  今日
 // ═══════════════════════════════════════════════════════════════
+// 予約を押すと、その行の下に中身を開く（時間・場所と地図・車・料金・部屋番号）。今日の予約はここから開始
+// 2026-10-29 Daisuke「予約押すと詳細みれると現場は嬉しい。どこにいけばいいかわかりやすい」。文言はアプリの確定語だけ
+function bkDetailHtml(i, canStart) {
+  var rows = '<div>🕒 <b class="num">' + esc(i.time || '--:--') + (i.end ? ' – ' + esc(i.end) : '') + '</b></div>' +
+    '<div>' + (/^https?:\/\//.test(i.place || '') ? '' : '📍 ') + '<b>' + esc(placeText(i.place)) + '</b></div>' +   // 地図リンクは placeText が 📍 を付ける
+    '<div>🚗 <b>' + esc(i.car || '—') + '</b> <span class="num">' + esc(i.plate || '') + '</span> · ' + (i.size === 'SUV' ? t('size_suv') : t('size_sedan')) + '</div>' +
+    (i.src ? '<div>🏢 <b>' + esc(i.src) + (i.room ? ' #' + esc(i.room) : '') + '</b></div>' : '') +
+    (i.amount > 0 ? '<div>💰 ' + t('amount') + ' <b class="num">' + esc(String(i.amount)) + '$</b></div>' : '');
+  var acts = (i.place ? '<button type="button" class="act go" data-map="' + esc(i.place) + '"><span class="ic">🗺</span>' + t('btn_map') + '</button>' : '') +
+    (canStart ? '<button type="button" class="act" data-open="' + esc(i.id) + '"><span class="ic">▶</span>' + t('btn_start') + '</button>' : '');
+  return '<div class="bkd">' + rows + (acts ? '<div class="acts">' + acts + '</div>' : '') + '</div>';
+}
+function bkRowHtml(i, cls, canStart) {
+  var open = S.bkOpen === i.id;
+  return '<div class="tl-item ' + cls + '" data-bk="' + esc(i.id) + '" role="button" tabindex="0" aria-expanded="' + open + '"><span class="t num">' + esc(i.time || '--:--') + '</span><span class="ln"><i></i></span><span class="c"><span class="n">' + esc(i.name || t('no_name')) + '</span><span class="s chips">' + itemChips(i) + '</span>' + (open ? bkDetailHtml(i, canStart) : '') + '</span></div>';
+}
 function itemChips(i) {
   var chips = i.menu.map(function (c) { return '<span class="chip menu">' + menuLabelH(c) + '</span>'; }).join('');
   return chips + ' <span class="chip">' + (i.mode === 'shop' ? '🏪 ' + esc(i.place || '') : (i.store ? '🏪 ' + t('place_store') : '🛵 ' + t('place_delivery'))) + '</span>' +
@@ -1022,7 +1042,7 @@ function renderHome() {
     html += '<div class="card next"><div class="band">⏭ ' + t('next_title') + '</div>' +
       '<div class="body"><div class="when"><span class="t num">' + esc(nx.time || '--:--') + '</span><span class="in">' + inTxt + '</span></div>' +
       '<div class="name">' + esc(nx.name || t('no_name')) + '</div><div class="chips">' + itemChips(nx) + '</div>' +
-      '<div class="meta"><div>📍 <b>' + esc(placeText(nx.place)) + '</b></div><div>🚗 <b>' + esc(nx.car || '—') + '</b> <span class="num">' + esc(nx.plate) + '</span> · ' + (nx.size === 'SUV' ? t('size_suv') : t('size_sedan')) + '</div></div>' +
+      '<div class="meta"><div>' + (/^https?:\/\//.test(nx.place || '') ? '' : '📍 ') + '<b>' + esc(placeText(nx.place)) + '</b></div><div>🚗 <b>' + esc(nx.car || '—') + '</b> <span class="num">' + esc(nx.plate) + '</span> · ' + (nx.size === 'SUV' ? t('size_suv') : t('size_sedan')) + '</div></div>' +
       '<div class="acts"><button type="button" class="act go" data-map="' + esc(nx.place) + '"><span class="ic">🗺</span>' + t('btn_map') + '</button>' +
       '<button type="button" class="act" data-open="' + esc(nx.id) + '"><span class="ic">🔍</span>' + t('job_precheck') + '</button></div>' +
       '<button type="button" class="btn green" data-open="' + esc(nx.id) + '">▶ ' + t('btn_start') + '</button></div></div>';
@@ -1036,12 +1056,12 @@ function renderHome() {
     html += '<div class="card"><div class="band">📋 ' + t('tab_today') + '<span class="r num">' + done + '/' + list.length + '</span></div><div class="body" style="padding:6px 14px 4px"><div class="tl">' +
       list.map(function (i) {
         var cls = isDone(i) ? 'done' : (S.cur && S.cur.job.id === i.id && S.cur.startQueued ? 'working' : (nx && nx.id === i.id ? 'now' : ''));
-        return '<button type="button" class="tl-item ' + cls + '" data-open="' + esc(i.id) + '"><span class="t num">' + esc(i.time || '--:--') + '</span><span class="ln"><i></i></span><span class="c"><span class="n">' + esc(i.name || t('no_name')) + '</span><span class="s chips">' + itemChips(i) + '</span></span></button>';
+        return bkRowHtml(i, cls, !isDone(i));
       }).join('') + '</div></div></div>';
   }
   if (S.tomorrow.length) {
     html += '<div class="card"><div class="band">📅 ' + t('tomorrow') + '<span class="r num">' + S.tomorrow.length + '</span></div><div class="body" style="padding:6px 14px 4px"><div class="tl">' +
-      S.tomorrow.map(function (i) { return '<div class="tl-item"><span class="t num">' + esc(i.time) + '</span><span class="ln"><i></i></span><span class="c"><span class="n">' + esc(i.name || t('no_name')) + '</span><span class="s chips">' + itemChips(i) + '</span></span></div>'; }).join('') +
+      S.tomorrow.map(function (i) { return bkRowHtml(i, '', false); }).join('') +
       '</div></div></div>';
   }
   html += '<div class="row2"><button type="button" class="btn sm ghost" id="reload2">🔄 ' + t('refresh') + '</button><button type="button" class="btn sm ghost" id="oldApp">' + t('old_app') + '</button></div>';
@@ -1056,6 +1076,16 @@ function renderHome() {
   bindHomeExtras();
   document.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { openItem(b.getAttribute('data-open')); }; });
   document.querySelectorAll('[data-map]').forEach(function (b) { b.onclick = function () { openUrl(mapUrl(b.getAttribute('data-map'))); }; });
+  document.querySelectorAll('[data-bk]').forEach(function (r) {
+    var toggle = function (e) {
+      if (e && e.target && e.target.closest && e.target.closest('button')) return;   // 中の「地図」「開始」は各ボタンの動き
+      var id = r.getAttribute('data-bk');
+      if (S.cur && S.cur.job.id === id && S.cur.startQueued) { openItem(id); return; }   // 作業中の予約はそのまま続きへ
+      S.bkOpen = S.bkOpen === id ? null : id; renderHome();
+    };
+    r.onclick = toggle;
+    r.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e); } };
+  });
   $('newJob').onclick = function () { S.view = 'new'; S.nj = { name: '', car: '', plate: '', size: 'SEDAN', store: false, menu: ['WASH'] }; render(); };
   $('reload2').onclick = function () { loadData(true); };
   $('oldApp').onclick = function () { location.href = OLD_APP_URL; };
