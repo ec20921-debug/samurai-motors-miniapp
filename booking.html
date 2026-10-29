@@ -1656,6 +1656,15 @@ body.lang-enja .campaign-banner .ja { color: rgba(255,255,255,0.85); }
       <div id="leafletMap" style="width:100%; height:clamp(360px, 58vh, 500px); border-radius:var(--radius); border:1px solid var(--border); margin-bottom:10px; box-shadow: 0 4px 16px rgba(0,0,0,0.4);"></div>
       <div style="font-size:11px; color:var(--text-dim); margin-bottom:16px; text-align:center; letter-spacing:0.3px;" id="coordsText">📍 Tap the map to set your location</div>
 
+      <!-- 2026-10-29: 場所のメモ（任意）→ 予約タブ 場所補足・管理通知・現場アプリの予約の中身（スタッフが車を早く見つけるため） -->
+      <div class="field">
+        <label for="placeNote">Location note (optional)<span class="km">កំណត់សម្គាល់អំពីទីតាំង (ស្រេចចិត្ត)</span><span class="ja">場所のメモ（任意）</span></label>
+        <textarea id="placeNote" maxlength="200" rows="2" autocomplete="off" placeholder="e.g. Building name, gate, B2 parking"></textarea>
+        <div class="hint">Building name, gate, parking floor, etc. — so our team can find your car quickly.<br><span class="km">ឈ្មោះអគារ ច្រកចូល ជាន់ដែលអ្នកចត ជាដើម — ដើម្បីឱ្យក្រុមការងាររបស់យើងរកឃើញរថយន្តអ្នកបានឆាប់។</span><span class="ja">建物名・入口・駐車場の階など。スタッフが車を早く見つけられます。</span></div>
+        <!-- 2026-10-29: メモは管理グループと現場アプリに出るので、暗証番号・電話番号は書いてもらわない（Panha 条件付き合格 43/50） -->
+        <div class="hint">Please don't write door or gate codes, or phone numbers, here.<br><span class="km">សូមកុំសរសេរលេខសម្ងាត់ទ្វារ លេខសម្ងាត់ច្រកចូល ឬលេខទូរស័ព្ទនៅទីនេះ។</span><span class="ja">入口やゲートの暗証番号、電話番号は、ここには書かないでください。</span></div>
+      </div>
+
       <div style="font-size:13px; color:var(--text-dim); text-align:center; padding:8px 16px; background:var(--card); border-radius:var(--radius); border:1px solid var(--border);">
         Parking details can be shared via chat after booking<br>
         <span class="km">ព័ត៌មានលម្អិតអំពីកន្លែងចតអាចផ្ញើតាម chat បន្ទាប់ពីកក់</span>
@@ -1822,6 +1831,7 @@ var state = {
   campaignShownPct: 0,          // 2026-10-27: そのとき見せた率（全体キャンペーン or 個人提携の紹介割引）
   source: null,                 // booking_init の source（{code,label,lang,start,end,servicePct,itemPct,placeName,...}）
   unitNo: '',                   // 流入元の固定場所で使う 部屋番号・車種
+  placeNote: '',                // 2026-10-29: 出張の「場所のメモ」（任意）
   carModel: '',
   currentView: 'view-loading',
   history: []
@@ -2259,6 +2269,8 @@ function srcHasPerk_() {
   var s = state.source;
   return !!(s && (Number(s.servicePct) > 0 || Object.keys(s.itemPct || {}).length > 0));
 }
+// 2026-10-29: 場所のメモは出張（地図にピン）のときだけ。店舗・流入元の固定場所（Picasso 等）では使わない
+function placeNoteUsed_() { return !srcFixedPlace_() && state.serviceType !== '店舗' && !!state.placeNote; }
 function srcFixedPlace_() { return !!(state.source && state.source.placeName); }
 // 品目の割引率(%)。WASH は画面上の code が letter('W') なので 'WASH' として引く（サーバーの sourcePctFor_ と同じ判定）
 //   ymd = 予約日。未選択なら、期間限定の特典がまだ終わっていなければ期間内として見せる（期間はバナーで案内）
@@ -2871,6 +2883,7 @@ function renderSummary() {
   html += summaryRow('Time', state.selectedSlot + ' (~' + state.selectedDuration + 'min)');
   html += summaryRow('Location', escapeHtml(state.selectedLocation) + (srcFixedPlace_() && state.unitNo ? ' · Unit ' + escapeHtml(state.unitNo) : ''));
   if (srcFixedPlace_() && state.carModel) html += summaryRow('Car', escapeHtml(state.carModel));
+  if (placeNoteUsed_()) html += summaryRow('Location note', '<span style="overflow-wrap:anywhere">' + escapeHtml(state.placeNote) + '</span>');
   // 料金内訳: 各品目 / [Subtotal / Discount] / Delivery / Total
   items.forEach(function(it) {
     html += summaryRow(itemLabel(it), srcHasPerk_() ? fmtUsdTrim(it.price) : fmtUsd2(it.price));
@@ -2960,6 +2973,7 @@ function handleNext() {
         }
         var mapsUrl = 'https://www.google.com/maps?q=' + savedCoords.lat + ',' + savedCoords.lng;
         state.selectedLocation = '📍 ' + mapsUrl;
+        state.placeNote = String(document.getElementById('placeNote').value || '').trim().substring(0, 200);
       }
       // 2026-10-08: 確認画面の金額は必ずこの起動で取った最新データで出す
       if (state.initFresh) { showView('view-confirm'); break; }
@@ -3037,7 +3051,8 @@ function submitBooking() {
     // 2026-10-27: 確認画面で見せた割引率（全体キャンペーン or 個人提携の紹介割引）。サーバーの率と違えば予約を作らず取り直す
     campaignPct: state.campaignShown ? (state.campaignShownPct || 0) : 0,
     unitNo: srcFixedPlace_() ? state.unitNo : '',
-    carModel: srcFixedPlace_() ? state.carModel : ''
+    carModel: srcFixedPlace_() ? state.carModel : '',
+    placeNote: placeNoteUsed_() ? state.placeNote : ''   // 2026-10-29: 出張の場所のメモ（古いサーバーは読まないだけ）
   };
 
   bookingSubmitted = true; // 送信開始で即座にフラグを立てる
