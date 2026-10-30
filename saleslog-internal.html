@@ -863,7 +863,7 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
     <details class="fold hidden" id="adminFold" style="margin-top:18px">
       <summary>🔗 ホーム画面用リンク（管理者）</summary>
       <div class="fin">
-        <div class="notes-hint">スタッフに送ると、Safari で開いて「ホーム画面に追加」→ 次から1タップで開けます。鍵はスタッフごと（現場アプリ v2 と同じ）。全員の鍵を無効にする時は GAS のスクリプトプロパティ FIELD_LINK_SECRET を削除。</div>
+        <div class="notes-hint">スタッフに送ると、Safari で開いて「ホーム画面に追加」→ 次から1タップで開けます。鍵はスタッフごと（現場アプリ v2 と同じ）。全員の鍵を無効にする時は GAS のスクリプトプロパティ FIELD_LINK_SECRET を削除（v7 と v7-operations の両方を同時に）。</div>
         <button type="button" class="ghost" id="btnAdminList" style="width:100%">スタッフ一覧を出す</button>
         <div id="adminList"></div>
       </div>
@@ -1497,7 +1497,9 @@ function apiRead(payload, attempt) {
 //   （勤怠アプリで実発生。「未登録」は ok:true で staff なし確定のときだけ表示する）
 function fetchWho(attempt) {
   var p = { action: 'whoami' };
-  if (linkKey) p.k = linkKey; // 専用リンクで開いた時は鍵が正しいかも確かめる（FieldLink.gs）
+  // 専用リンクで開いた時は鍵が正しいかも確かめる（FieldLink.gs）。
+  // 2026-10-30: 鍵は当社の GAS にだけ送る（?gas= を細工したリンクで鍵を抜かれないように。tg-auth.js の一覧）
+  if (linkKey && window.SM_GAS_ALLOWED && SM_GAS_ALLOWED(GAS_URL)) p.k = linkKey;
   return api(p)
     .then(function(d) {
       if (d && d.ok) return d;                      // 成功（staff の有無はここで確定）

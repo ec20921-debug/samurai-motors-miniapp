@@ -1977,8 +1977,9 @@ function getAvatarColor(name) {
 }
 
 function renderDashboardCard(b) {
-  var name = b.customerName || 'Guest';
-  var initial = name.charAt(0).toUpperCase();
+  var rawName = String(b.customerName || 'Guest');
+  var name = escapeHtml(rawName);   // 2026-10-30: お客様が入れた名前はそのまま画面に入れない
+  var initial = escapeHtml(rawName.charAt(0).toUpperCase());
   var color = getAvatarColor(name);
   var st = formatTimeDisplay(b.startTime);
   var et = formatTimeDisplay(b.endTime);
@@ -2005,14 +2006,14 @@ function renderDashboardCard(b) {
   // Menu v4: オプション(GLASS_3,HEADLIGHT,BODY 等)も並べる
   var optParts = String(b.options || '').split(',').filter(function(c) { return c.trim(); });
   var svcParts = (planDisplay ? [planDisplay] : []).concat(optParts);
-  var sub = '✨ ' + (svcParts.length ? svcParts.join(' + ') : 'WASH') + ' ・ ' + (b.vehicleType || '-');
+  var sub = escapeHtml('✨ ' + (svcParts.length ? svcParts.join(' + ') : 'WASH') + ' ・ ' + (b.vehicleType || '-'));
 
   var doneCls = (b.status === '作業完了') ? ' opacity:0.5;' : '';
 
   // 2026-05-31: 手動特価キャンペーンの清算ボタン（手動特価 ＆ 作業完了 ＆ 未清算 の時のみ）
   var settleBtn = '';
   if (b.manualCampaign && b.status === '作業完了' && b.paymentStatus && b.paymentStatus !== '清算済み') {
-    settleBtn = '<button onclick="settleCampaignBooking(\'' + b.bookingId + '\', event)" ' +
+    settleBtn = '<button onclick="settleCampaignBooking(\'' + String(b.bookingId || '').replace(/[^A-Za-z0-9_-]/g, '') + '\', event)" ' +
       'style="display:block;margin-top:6px;width:100%;padding:8px 12px;' +
       'background:linear-gradient(135deg,#8b0000 0%,#c9a84c 100%);color:#fff;' +
       'border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;' +
@@ -2032,10 +2033,10 @@ function renderDashboardCard(b) {
     campBadge = '<span style="display:inline-block;background:rgba(139,0,0,0.25);' +
       'color:#ffb88a;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;' +
       'letter-spacing:0.3px;margin-left:6px;border:1px solid rgba(201,168,76,0.5);">' +
-      '🎫 ' + (b.campaignName || 'SPECIAL') + '</span>';
+      '🎫 ' + escapeHtml(b.campaignName || 'SPECIAL') + '</span>';
   }
 
-  return '<div class="chat-item" data-id="' + b.bookingId + '" style="' + doneCls + 'flex-wrap:wrap;">' +
+  return '<div class="chat-item" data-id="' + escapeAttr(b.bookingId) + '" style="' + doneCls + 'flex-wrap:wrap;">' +
     '<div class="chat-avatar" style="background:' + color + '">' + initial + '</div>' +
     '<div class="chat-body">' +
       '<div class="chat-name">' + name + svcBadge + campBadge + srcBadge + '</div>' +
@@ -2067,10 +2068,10 @@ function openThread(b) {
   var loc;
   if (isInStoreThread) {
     loc = '<span style="color:#D4AF37;font-weight:700">🏪 STORE — Customer comes to office / អតិថិជនមកការិយាល័យ</span>';
-  } else if ((b.location || '').indexOf('google.com/maps') >= 0) {
-    loc = '<a href="' + b.location + '" target="_blank" style="color:var(--blue)">📍 地図を開く / បើកផែនទី</a>';
+  } else if ((b.location || '').indexOf('google.com/maps') >= 0 && /^https:\/\//.test(b.location)) {
+    loc = '<a href="' + escapeAttr(b.location) + '" target="_blank" style="color:var(--blue)">📍 地図を開く / បើកផែនទី</a>';
   } else {
-    loc = b.location || '-';
+    loc = escapeHtml(b.location || '-');
   }
 
   var statusBadge = '';
@@ -2086,17 +2087,17 @@ function openThread(b) {
 
   card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
     '<div>' +
-      '<div style="font-size:16px;font-weight:700">👤 ' + (b.customerName || 'Guest') + svcBadgeDetail + '</div>' +
-      '<div style="font-size:13px;color:var(--text-dim);margin-top:4px">🆔 ' + b.bookingId + '</div>' +
+      '<div style="font-size:16px;font-weight:700">👤 ' + escapeHtml(b.customerName || 'Guest') + svcBadgeDetail + '</div>' +
+      '<div style="font-size:13px;color:var(--text-dim);margin-top:4px">🆔 ' + escapeHtml(b.bookingId) + '</div>' +
     '</div>' + statusBadge +
   '</div>' +
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;font-size:13px">' +
     '<div><span style="color:var(--text-dim);font-size:10px">🕐 ម៉ោង / 時間</span><br><b>' + st + ' - ' + et + '</b></div>' +
     '<div><span style="color:var(--text-dim);font-size:10px">💰 តម្លៃ / 料金</span><br><b>' + fmtUsd(b.amount || 0) + '</b></div>' +
     '<div><span style="color:var(--text-dim);font-size:10px">✨ សេវា / Service</span><br><b>' +
-      ((b.planLetter === 'W' ? ['WASH'] : (b.planLetter ? [b.planLetter + '（' + planName + '）'] : []))
+      escapeHtml((b.planLetter === 'W' ? ['WASH'] : (b.planLetter ? [b.planLetter + '（' + planName + '）'] : []))
         .concat(String(b.options || '').split(',').filter(function(c) { return c.trim(); })).join(' + ') || '-') + '</b></div>' +
-    '<div><span style="color:var(--text-dim);font-size:10px">🚙 ប្រភេទរថយន្ត / 車種</span><br><b>' + (b.vehicleType || '-') + '</b></div>' +
+    '<div><span style="color:var(--text-dim);font-size:10px">🚙 ប្រភេទរថយន្ត / 車種</span><br><b>' + escapeHtml(b.vehicleType || '-') + '</b></div>' +
     '<div style="grid-column:1/-1"><span style="color:var(--text-dim);font-size:10px">📍 ទីតាំង / 場所</span><br>' + loc + '</div>' +
   '</div>' +
   (b.status !== '作業完了' ?
@@ -2191,8 +2192,13 @@ function renderChatMessages(messages) {
 
 function escapeHtml(str) {
   var div = document.createElement('div');
-  div.textContent = str;
+  div.textContent = (str === null || str === undefined) ? '' : String(str);
   return div.innerHTML;
+}
+// 2026-10-30: 属性の中（href・data-id）に入れる値。引用符も無害化する（お客様が入れた名前・場所から
+//   スクリプトが動くと、スタッフの Telegram の本人証明を抜かれる）
+function escapeAttr(str) {
+  return escapeHtml(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // スレッドからジョブ開始ボタン
@@ -2534,15 +2540,15 @@ function renderBookingCard(b, key) {
   var loc = b.location || '-';
   if (loc.indexOf('google.com/maps') >= 0) loc = '📍 地図リンクあり';
 
-  return '<div class="bp-card' + linkedCls + doneCls + '" data-id="' + b.bookingId + '">' +
+  return '<div class="bp-card' + linkedCls + doneCls + '" data-id="' + escapeAttr(b.bookingId) + '">' +
     '<div class="bp-card-row">' +
       '<div class="bp-time" style="font-size:18px;font-weight:700">🕐 ' + st + ' - ' + et + '</div>' +
       '<div class="bp-amount" style="font-size:16px;font-weight:700">' + amountStr + '</div>' +
     '</div>' +
     '<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">' +
-      '<div style="font-size:14px">👤 <b>' + (b.customerName || '名無し') + '</b></div>' +
-      '<div style="font-size:13px;color:var(--text-dim)">📍 ' + loc + '</div>' +
-      '<div style="font-size:13px;color:var(--text-dim)">🚗 ' + (b.vehicleType || '-') + ' ・ ✨ プラン' + b.planLetter + '（' + planName + '）</div>' +
+      '<div style="font-size:14px">👤 <b>' + escapeHtml(b.customerName || '名無し') + '</b></div>' +
+      '<div style="font-size:13px;color:var(--text-dim)">📍 ' + escapeHtml(loc) + '</div>' +
+      '<div style="font-size:13px;color:var(--text-dim)">🚗 ' + escapeHtml(b.vehicleType || '-') + ' ・ ✨ プラン' + escapeHtml(String(b.planLetter || '') + '（' + planName + '）') + '</div>' +
     '</div>' +
     '<span class="bp-status ' + statusCls + '">' + statusText + '</span>' +
   '</div>';

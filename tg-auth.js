@@ -8,9 +8,27 @@
  *   - ページ遷移で initData が消える問題（docs/OPS_LESSONS.md #3）に備え、sessionStorage に保持する。
  *     URL には載せない（本人証明なので履歴・共有リンクに残さない）。
  *   - 添付に失敗しても元のリクエストはそのまま送る（業務を止めない）。
+ *   - 2026-10-30: 付けるのは当社の2つの GAS だけ（KNOWN_GAS）。Telegram の外ではスタッフ専用リンクの `_fu` / `_fk` を付ける。
  */
 (function () {
   var KEY = 'sm_tg_init_data';
+  var LINK_KEY = 'sm_field_link';
+
+  // 2026-10-30: 本人証明を付けるのは当社の2つの GAS（v7 = 顧客系 / v7-operations = 社内業務系）だけ。
+  //   各ページは開発用に ?gas= を受け付けるので、一覧が無いと細工したリンクで他人の GAS に本人証明を送らされる。
+  //   GAS を作り直して URL が変わったら、ここと各ページの GAS_URL を一緒に直す。
+  var KNOWN_GAS = [
+    'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec',
+    'https://script.google.com/macros/s/AKfycbxHLCD6vhnNZhSywyWmpaUuwt1goC4n9pwLNNlVzo-3gp9eSwAIMU_EXWPVdbt9Vw/exec'
+  ];
+  function isKnownGas(url) {
+    if (typeof url !== 'string') return false;
+    for (var i = 0; i < KNOWN_GAS.length; i++) {
+      if (url === KNOWN_GAS[i] || url.indexOf(KNOWN_GAS[i] + '?') === 0) return true;
+    }
+    return false;
+  }
+  window.SM_GAS_ALLOWED = isKnownGas;
 
   function getInitData() {
     var d = '';
@@ -24,29 +42,45 @@
     return d;
   }
 
-  function isGasUrl(url) {
-    return /^https:\/\/script\.google(usercontent)?\.com\//.test(url);
+  // 2026-10-30: ホーム画面アプリ（Telegram の外）のスタッフ専用リンク ?u=<chatId>&k=<鍵>。
+  //   Telegram の本人証明が無い時だけ `_fu` / `_fk` として付ける（v7/StaffGate.gs が確かめる）。
+  //   同じタブの中で旧アプリ等に移っても使えるよう sessionStorage に持つ（URL には載せ直さない）。
+  function getFieldLink() {
+    try {
+      var q = new URLSearchParams(location.search);
+      var u = q.get('u'), k = q.get('k');
+      if (u && k) sessionStorage.setItem(LINK_KEY, JSON.stringify({ u: u, k: k }));
+      var m = JSON.parse(sessionStorage.getItem(LINK_KEY) || 'null');
+      return (m && m.u && m.k) ? m : null;
+    } catch (e) {
+      return null;
+    }
   }
 
   getInitData(); // 起動ページで保存しておく
+  getFieldLink();
 
   var origFetch = window.fetch;
   if (!origFetch) return;
 
   window.fetch = function (input, init) {
     try {
-      if (typeof input === 'string' && isGasUrl(input)) {
+      if (typeof input === 'string' && isKnownGas(input)) {
         var d = getInitData();
-        if (d) {
+        var link = d ? null : getFieldLink();
+        if (d || link) {
           var method = String((init && init.method) || 'GET').toUpperCase();
           if (method === 'POST' && init && typeof init.body === 'string') {
             var obj = JSON.parse(init.body);
             if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
-              obj._tgInitData = d;
+              if (d) obj._tgInitData = d;
+              else if (!obj._fu) { obj._fu = link.u; obj._fk = link.k; }
               init = Object.assign({}, init, { body: JSON.stringify(obj) });
             }
           } else if (method === 'GET') {
-            input = input + (input.indexOf('?') >= 0 ? '&' : '?') + '_tg=' + encodeURIComponent(d);
+            var sep = input.indexOf('?') >= 0 ? '&' : '?';
+            if (d) input = input + sep + '_tg=' + encodeURIComponent(d);
+            else if (input.indexOf('_fu=') < 0) input = input + sep + '_fu=' + encodeURIComponent(link.u) + '&_fk=' + encodeURIComponent(link.k);
           }
         }
       }
