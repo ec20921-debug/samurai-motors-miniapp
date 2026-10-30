@@ -327,7 +327,7 @@ div.tl-item{cursor:pointer}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261029-073741';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261031-002437';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -497,6 +497,9 @@ var ME = { chatId: '', key: '', via: '', staff: null, keyOk: null, state: 'unkno
     try { var m = JSON.parse(localStorage.getItem('sm_field_me') || 'null'); if (m) { ME.chatId = m.u; ME.key = m.k; } } catch (e) {}
   }
   if (!ME.chatId) ME.state = 'need_link';
+  // 2026-10-30: tg-auth.js が v7 への送信のたびに専用リンクの chatId と鍵を付ける（送信時に付けるので、
+  //   送信待ち箱の古い記録や旧アプリへの移動でも最新の鍵になる。v7/StaffGate.gs）
+  else { try { sessionStorage.setItem('sm_field_link', JSON.stringify({ u: ME.chatId, k: ME.key })); } catch (e) {} }
 })();
 function postOps(action, data, ms) {
   var ctrl = window.AbortController ? new AbortController() : null;
