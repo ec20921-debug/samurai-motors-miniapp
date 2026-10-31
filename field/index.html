@@ -329,7 +329,7 @@ div.tl-item{cursor:pointer}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261031-202727';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261031-203832';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -1124,7 +1124,7 @@ function renderHome() {
     r.onclick = toggle;
     r.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(e); } };
   });
-  $('newJob').onclick = function () { S.view = 'new'; S.nj = { name: '', car: '', plate: '', size: 'SEDAN', store: false, menu: ['WASH'], res: '', who: '', room: '' }; render(); };
+  $('newJob').onclick = function () { S.view = 'new'; S.nj = { name: '', car: '', plate: '', size: 'SEDAN', store: false, menu: ['WASH'], res: '', who: '', room: '', price: 0 }; render(); };
   $('reload2').onclick = function () { loadData(true); };
   bindSjHome();
 }
@@ -1180,7 +1180,13 @@ function renderNew() {
       var on = n.menu.indexOf(k) >= 0, m = MENU[k], pr = m[n.size === 'SUV' ? 'suv' : 'sedan'];
       return '<button type="button" class="s ' + (on ? 'now' : '') + '" data-pick="' + k + '"><span class="n"><span class="latin">' + menuLabelH(k) + '</span><small>' + t(menuTk(k)) + '</small></span><span class="t num">' + (on ? '✓ ' : '') + (pr != null ? pr + '$' : '') + '</span></button>';
     }).join('') + '</div></div></div>';
+  // 値段（決まっていれば先に入れる・任意）。最後の支払い画面に自動で入り、そこでも直せる（2026-10-31 Daisuke「値段いれるところ最初の方に」）
+  var guide = priceOf({ size: n.size, menu: n.menu });
+  html += '<div class="card"><div class="band">💲 ' + t('amount') + ' (' + t('lbl_optional') + ')</div><div class="body">' +
+    '<div class="big-amt"><input type="number" inputmode="decimal" id="njPrice" value="' + (n.price > 0 ? esc(String(n.price)) : '') + '"' + (guide > 0 ? ' placeholder="' + guide + '"' : '') + '><span>$</span></div>' +
+    '<div class="note">' + t('sj_later_ok') + '</div></div></div>';
   $('main').innerHTML = html;
+  var np = $('njPrice'); if (np) np.oninput = function () { var v = parseFloat(np.value); n.price = (v > 0 && v <= 2000) ? v : 0; };
   ['Car', 'Plate', 'Name'].forEach(function (f) { var el = $('nj' + f); el.oninput = function () { n[f.toLowerCase()] = el.value; }; });
   var rm = $('njRoom'); if (rm) rm.oninput = function () { n.room = rm.value; };
   document.querySelectorAll('[data-res]').forEach(function (b) { b.onclick = function () { n.res = b.getAttribute('data-res'); if (!n.res) { n.room = ''; n.who = ''; } renderNew(); renderBar(); }; });
@@ -1209,7 +1215,7 @@ function startNewJob() {
     item.src = res.name;   // 管理通知の「建物」にも使うので画面の言語の文字は混ぜない（住人／スタッフは residence_who で送る）
     item.room = n.who === 'resident' ? String(n.room || '').trim() : '';
   }
-  item.amount = priceOf(item);
+  item.amount = n.price > 0 ? n.price : priceOf(item);   // 先に入れた値段があればそれ（支払い画面の初期値になる）
   S.local.push(item); Outbox.kvSet('local', S.local);
   openItem(item.id);
 }
