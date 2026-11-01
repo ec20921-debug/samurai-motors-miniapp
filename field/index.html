@@ -329,7 +329,7 @@ div.tl-item{cursor:pointer}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261031-203832';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261101-122701';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -1109,7 +1109,9 @@ function renderHome() {
   }
   html += adminCardHtml();
   if (S.diag) html += diagHtml();
+  html += '<div class="note" style="text-align:center;font-size:11px;opacity:.6">' + esc(APP_VERSION) + '</div>';   // 今の版（現場で古い版か確かめる用・2026-11-01）
   $('main').innerHTML = html;
+  setTimeout(maybeAutoUpdate, 800);   // 作業を終えて TOP に戻った時、新しい版が届いていれば切り替える（2026-11-01）
   bindStrips();
   bindHomeExtras();
   document.querySelectorAll('[data-open]').forEach(function (b) { b.onclick = function () { openItem(b.getAttribute('data-open')); }; });
@@ -1819,6 +1821,17 @@ function boot() {
     });
 }
 
+// 作業中でない時は新しい版へ自動で切り替える（2026-11-01 Daisuke「直して」。現場で古い版のまま開き、Picasso の選択が出なかったため）
+// 条件: TOP の作業タブ・作業の途中でない・入力中でない・送信中でない。そろわない時は今までどおり青い帯で案内し、TOP に戻った時に切り替える
+function appIdle() {
+  var typing = document.activeElement && /^(TEXTAREA|INPUT|SELECT)$/.test(document.activeElement.tagName);
+  return S.view === 'home' && S.tab === 'today' && (!S.cur || S.cur.step === 'done') && !S.sj && !typing && !(S.ob && S.ob.sending);
+}
+function maybeAutoUpdate() {
+  if (S.waitingSW && appIdle()) { try { S.waitingSW.postMessage('skipWaiting'); } catch (e) {} }
+}
+var swReg = null;
+
 // 画面の端末保存（Service Worker）と新しい版の案内
 if ('serviceWorker' in navigator) {
   var reloading = false;
@@ -1831,13 +1844,21 @@ if ('serviceWorker' in navigator) {
     function watch(w) {
       if (!w) return;
       w.addEventListener('statechange', function () {
-        if (w.state === 'installed' && navigator.serviceWorker.controller) { S.waitingSW = w; render(); }
+        if (w.state === 'installed' && navigator.serviceWorker.controller) { S.waitingSW = w; render(); maybeAutoUpdate(); }
       });
     }
-    if (reg.waiting && navigator.serviceWorker.controller) { S.waitingSW = reg.waiting; }
+    swReg = reg;
+    if (reg.waiting && navigator.serviceWorker.controller) { S.waitingSW = reg.waiting; setTimeout(maybeAutoUpdate, 1500); }
     reg.addEventListener('updatefound', function () { watch(reg.installing); });
     reg.update().catch(function () {});
   }).catch(function () {});
+  // 開きっぱなしでも新しい版に気づく: 画面に戻った時と、開いている間 10 分ごとに確かめる（2026-11-01）
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') return;
+    if (swReg) swReg.update().catch(function () {});
+    maybeAutoUpdate();
+  });
+  setInterval(function () { if (swReg && document.visibilityState === 'visible') swReg.update().catch(function () {}); }, 10 * 60 * 1000);
 }
 
 document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { S.tab = b.getAttribute('data-tab'); S.view = 'home'; render(); window.scrollTo(0, 0); }; });
