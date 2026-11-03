@@ -329,7 +329,7 @@ div.tl-item{cursor:pointer}
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261101-122701';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261103-142346';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -468,6 +468,12 @@ applyMenu(MENU_FALLBACK);
 function menuLabel(code) { return CODE_NAME[code] || code; }
 function menuLabelH(code) { return esc(menuLabel(code)); }
 function menuTk(code) { var m = MENU[code]; return KIND_TK[m ? m.kind : ''] || 'svc_wash'; }
+// レジデンス等（Picasso）の割引率。流入元タブのサービス割引(%)をサーバーが返す（2026-11-03・予約なしの作業の金額の初期値に使う）
+function resPctOf(id) {
+  var r = id ? (S.residences || []).filter(function (x) { return x.id === id; })[0] : null, p = r ? Number(r.pct) : 0;
+  return p > 0 && p < 100 ? p : 0;
+}
+function resPrice(list, id) { var p = resPctOf(id); return p ? Math.round(list * (100 - p)) / 100 : list; }
 function priceOf(job) {
   var suv = job.size === 'SUV', sum = 0;
   job.menu.forEach(function (c) { var m = MENU[c]; if (m && m[suv ? 'suv' : 'sedan'] != null) sum += m[suv ? 'suv' : 'sedan']; });
@@ -766,7 +772,7 @@ function queueStart(c) {
 }
 // 2026-10-25 支払いの区分: 提携店の仕事（紹介客 shopref・店の車 shop）は店を選ぶと 当社の受け取り＝定価×(100−店の率)% を入れる（直せる）
 function isShopPay(pt) { return pt === 'shop' || pt === 'shopref'; }
-function listPriceOf(c) { return Number(c.job.amount || priceOf(c.job)) || 0; }
+function listPriceOf(c) { return Number(c.job.listAmount || c.job.amount || priceOf(c.job)) || 0; }   // listAmount = レジデンス等の割引前の定価（割引額を売上に残すため・2026-11-03）
 function shopRateOf(id) {
   var sp = (S.shops || []).filter(function (x) { return x.id === id; })[0];
   var r = sp && sp.rate !== undefined && sp.rate !== '' ? Number(sp.rate) : 30;
@@ -779,7 +785,7 @@ function applyShopAmount(c) {
     c.amount = Math.round(c.list * (100 - c.rate)) / 100;
   } else if (c.list) {   // 店の仕事から別の区分に変えた時は定価に戻す
     c.amount = c.list; c.list = 0; c.rate = null;
-  } else if (!c.amount) c.amount = listPriceOf(c);
+  } else if (!c.amount) c.amount = Number(c.job.amount) || listPriceOf(c);   // 空にした時は初期値（レジデンス等は割引後）に戻す
 }
 function canSavePay(c) { return !!c.pay && c.pay !== 'cash' && !(isShopPay(c.pay) && !c.shop) && (c.pay === 'free' || (Number(c.amount) > 0 && Number(c.amount) <= 2000)); }   // 無料以外は金額が要る
 function queueEnd(c) {
@@ -1183,9 +1189,10 @@ function renderNew() {
       return '<button type="button" class="s ' + (on ? 'now' : '') + '" data-pick="' + k + '"><span class="n"><span class="latin">' + menuLabelH(k) + '</span><small>' + t(menuTk(k)) + '</small></span><span class="t num">' + (on ? '✓ ' : '') + (pr != null ? pr + '$' : '') + '</span></button>';
     }).join('') + '</div></div></div>';
   // 値段（決まっていれば先に入れる・任意）。最後の支払い画面に自動で入り、そこでも直せる（2026-10-31 Daisuke「値段いれるところ最初の方に」）
-  var guide = priceOf({ size: n.size, menu: n.menu });
+  var listSum = priceOf({ size: n.size, menu: n.menu }), guide = resPrice(listSum, n.res), resPct = resPctOf(n.res);
   html += '<div class="card"><div class="band">💲 ' + t('amount') + ' (' + t('lbl_optional') + ')</div><div class="body">' +
     '<div class="big-amt"><input type="number" inputmode="decimal" id="njPrice" value="' + (n.price > 0 ? esc(String(n.price)) : '') + '"' + (guide > 0 ? ' placeholder="' + guide + '"' : '') + '><span>$</span></div>' +
+    (resPct ? '<div class="note num">🏢 −' + resPct + '%' + (listSum > 0 ? ': ' + listSum + '$ → ' + guide + '$' : '') + '</div>' : '') +
     '<div class="note">' + t('sj_later_ok') + '</div></div></div>';
   $('main').innerHTML = html;
   var np = $('njPrice'); if (np) np.oninput = function () { var v = parseFloat(np.value); n.price = (v > 0 && v <= 2000) ? v : 0; };
@@ -1217,7 +1224,8 @@ function startNewJob() {
     item.src = res.name;   // 管理通知の「建物」にも使うので画面の言語の文字は混ぜない（住人／スタッフは residence_who で送る）
     item.room = n.who === 'resident' ? String(n.room || '').trim() : '';
   }
-  item.amount = n.price > 0 ? n.price : priceOf(item);   // 先に入れた値段があればそれ（支払い画面の初期値になる）
+  item.amount = n.price > 0 ? n.price : resPrice(priceOf(item), item.resId);   // 先に入れた値段があればそれ。無ければ定価（レジデンス等は割引後）。支払い画面の初期値になる
+  if (!(n.price > 0) && resPctOf(item.resId) && priceOf(item) > 0) item.listAmount = priceOf(item);
   S.local.push(item); Outbox.kvSet('local', S.local);
   openItem(item.id);
 }
