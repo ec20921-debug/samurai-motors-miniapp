@@ -20,6 +20,7 @@
   var MAX_TRIES = 8;
   var TIMEOUT_MS = 90000;
   var KEEP_SENT_MS = 7 * 24 * 3600 * 1000;
+  var CANCEL_WAIT_MS = 95000;   // 取り消しが送信ループの終わりを待つ上限（1件の送信の上限 TIMEOUT_MS より少し長く）
 
   var dbp = null;
   function db() {
@@ -87,6 +88,12 @@
   var cfg = { url: '', onChange: null, appVersion: '' };
   var sending = false;
   var timer = null;
+  var paused = false;      // 取り消しで箱の中身を触っている間は送らない（cancelJob）
+  var flushing = null;     // 送信ループ1回分の Promise（cancelJob が終わりを待つ）
+  // 管理者のテストモード（2026-11-05 Daisuke「おれだけテスト環境あればいい」）: 箱に入れた記録はサーバーへ送らず、
+  // その場で「送信済み（テスト）」にする＝お店・お客さん・売上・請求・経費・打刻のどこにも出ない。切り替えは画面（index.html）
+  var testMode = false;
+  function setTest(on) { testMode = !!on; }
 
   /** 記録を箱に入れる（保存できたら resolve ＝「保存しました」を出してよい）
    *  opts.url: 送り先（既定は現場の GAS。勤怠・日報は勤務Bot側の GAS） */
@@ -107,6 +114,10 @@
       last_error: '',
       payload: payload
     };
+    if (testMode) {   // テストモード: 送らない（写真も持たない）
+      var tp = Object.assign({}, payload); delete tp.beforePhotos; delete tp.afterPhotos; delete tp.photoBase64;
+      rec.payload = tp; rec.status = 'sent'; rec.sent_at = rec.created_at; rec.test = true; rec.server = { test: true };
+    }
     return put(rec).then(function () {
       notify();
       setTimeout(flush, 50);
@@ -142,15 +153,23 @@
 
   /** 1回分の送信ループ（同時に1本だけ） */
   function flush() {
-    if (sending || !cfg.url) return Promise.resolve();
+    if (sending || paused || !cfg.url) return Promise.resolve();
     sending = true;
-    return getAll().then(function (list) {
+    return (flushing = getAll().then(function (list) {
       var now = Date.now();
       // 送信済みの古い記録を掃除
       list.filter(function (r) { return r.status === 'sent' && now - Date.parse(r.sent_at || r.created_at) > KEEP_SENT_MS; })
         .forEach(function (r) { del(r.client_id); });
       // 送信中のまま止まった記録（アプリ強制終了など）は送り直し対象へ
       list.forEach(function (r) { if (r.status === 'sending') r.status = 'local'; });
+
+      // 取り消した作業（job_cancel が箱にある）の、まだ送っていない開始・終了は送らずに捨てる（cancelJob が途中で落ちた時の続き）
+      var cancelled = {};
+      list.forEach(function (r) { if (r.kind === 'job_cancel') cancelled[r.job_client_id] = true; });
+      list = list.filter(function (r) {
+        if ((r.kind === 'job_start' || r.kind === 'job_end') && cancelled[r.job_client_id] && r.status !== 'sent') { del(r.client_id); return false; }
+        return true;
+      });
 
       var sentStart = {};
       list.forEach(function (r) { if (r.kind === 'job_start' && r.status === 'sent') sentStart[r.job_client_id] = true; });
@@ -222,10 +241,10 @@
       });
       return chain;
     }).then(function () {
-      sending = false; notify(); schedule();
+      sending = false; flushing = null; notify(); schedule();
     }, function () {
-      sending = false; notify(); schedule();
-    });
+      sending = false; flushing = null; notify(); schedule();
+    }));
   }
 
   function schedule() {
@@ -250,8 +269,49 @@
     });
   }
 
+  /**
+   * 作業の取り消し（2026-11-05「この作業を取り消す」・管理者だけ）
+   *   - 開始がサーバーに届いた（かもしれない）時だけ、取り消しの記録（job_cancel）を入れて送る＝作業記録を「中断」に。
+   *     届いたかどうかは端末では決めきれない（応答が来る前に切れた等）ので、一度でも送ろうとした開始は「届いたかも」と扱う
+   *     （サーバーは行が無ければ印を残して ok。遅れて届いた開始も配信しない・v7/JobCancel.gs）。
+   *     opts.started = 画面が開始を箱に入れた印（送信済みの記録は7日で掃除されるため）
+   *   - まだ送れていない開始・終了は箱から消す。取り消しの記録を先に入れてから消す（途中で落ちても flush が捨てる）
+   *   - 終了の記録がある仕事は取り消さない → { ended: true }
+   *   - 送信の途中で記録を消すと、送り終わった時に書き戻される（put）ので、送信ループ1回分が終わるのを待ってから触る。
+   *     待つのは CANCEL_WAIT_MS まで。過ぎたら何もせず { busy: true }（あとでもう一度）
+   */
+  function startMayHaveReached(st, opts) {
+    if (!st) return !!(opts && opts.started);
+    return st.status === 'sent' || st.attempts > 0 || st.fails > 0 || !!st.last_error;
+  }
+  function cancelJob(jobCid, payload, opts) {
+    if (paused) return Promise.resolve({ busy: true });
+    paused = true;
+    var wait = !flushing ? Promise.resolve(true) : Promise.race([
+      flushing.then(function () { return true; }, function () { return true; }),
+      new Promise(function (r) { setTimeout(function () { r(false); }, CANCEL_WAIT_MS); })
+    ]);
+    return wait.then(function (ok) {
+      if (!ok) return { busy: true };
+      return getAll().then(function (list) {
+        var mine = list.filter(function (r) { return r.job_client_id === jobCid && (r.kind === 'job_start' || r.kind === 'job_end'); });
+        if (mine.some(function (r) { return r.kind === 'job_end'; })) return { ended: true, queued: false };
+        var reached = startMayHaveReached(mine.filter(function (r) { return r.kind === 'job_start'; })[0], opts);
+        return (reached ? enqueue('job_cancel', payload) : Promise.resolve(null)).then(function (rec) {
+          return Promise.all(mine.filter(function (r) { return r.status !== 'sent'; }).map(function (r) { return del(r.client_id); }))
+            .then(function () { return { ended: false, queued: !!rec }; });
+        });
+      });
+    }).then(function (r) {
+      paused = false; flush(); return r;
+    }, function (err) {
+      paused = false; flush(); throw err;
+    });
+  }
+
   /** 「要確認」も含めて今すぐ送り直す（手動） */
   function retryAll() {
+    if (paused) return Promise.resolve();   // 取り消しが箱を触っている間は書き戻さない（cancelJob）
     return getAll().then(function (list) {
       return Promise.all(list.filter(function (r) { return r.status === 'review' || r.status === 'local'; }).map(function (r) {
         r.status = 'local'; r.next_at = 0; r.attempts = 0; if ((r.fails || 0) >= MAX_TRIES) r.fails = MAX_TRIES - 3;
@@ -276,7 +336,7 @@
   }
 
   global.Outbox = {
-    start: start, enqueue: enqueue, flush: flush, retryAll: retryAll, all: getAll, supersede: supersede,
+    start: start, enqueue: enqueue, flush: flush, retryAll: retryAll, all: getAll, supersede: supersede, cancelJob: cancelJob, setTest: setTest,
     kvGet: kvGet, kvSet: kvSet, kvDel: kvDel, uuid: uuid
   };
 })(window);
