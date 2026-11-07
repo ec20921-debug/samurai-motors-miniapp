@@ -1402,6 +1402,48 @@ function loadWho() {
 var OUTBOX_KEY = 'sl_outbox_v1', FAILED_KEY = 'sl_outbox_failed_v1', SHOPS_KEY = 'sl_shops_v1', DETAIL_KEY = 'sl_detail_v1';
 function lsGet(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+// ── 読み取り用の写し（Supabase・2026-11-07 Daisuke「読み込み遅いから supabase に」）──
+//  台帳は今までどおりシート（GAS）。お店の一覧・店の詳細は、GAS が Supabase に写した控えを先に読む（速い）。
+//  写しが読めない・通行証が無い時は、今までどおり GAS から読む（営業は止めない）。
+//  通行証は GAS（scout_token）がスタッフを確かめてから渡す（7日・スマホに保存）。サーバー側: v7-operations/ScoutSupabase.gs
+var SB_KEY = 'sl_sb_v1', SB_OFF_KEY = 'sl_sb_off_v1', sbCfg = lsGet(SB_KEY, null);
+function sbOk() {
+  return !!(sbCfg && sbCfg.token && sbCfg.key && sbCfg.u === currentChatId && sbCfg.exp > Date.now() &&
+    /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(sbCfg.url || ''));
+}
+// 写しを1件読む → { data, at } / 無い・読めない時は null（例外は出さない）
+function sbRead(key) {
+  if (!sbOk() || navigator.onLine === false) return Promise.resolve(null);
+  var h = { 'Content-Type': 'application/json', apikey: sbCfg.key };
+  if (/^eyJ/.test(sbCfg.key)) h.Authorization = 'Bearer ' + sbCfg.key;
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 8000) : null;
+  return fetch(sbCfg.url + '/rest/v1/rpc/scout_read', {
+    method: 'POST', headers: h, body: JSON.stringify({ p_token: sbCfg.token, p_key: key }),
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function(r) {
+    if (timer) clearTimeout(timer);
+    return r.text().then(function(t) {
+      if (r.ok) { try { var j = JSON.parse(t); return j && j.data !== undefined ? j : null; } catch (e) { return null; } }
+      if (t.indexOf('SCOUT_TOKEN_INVALID') >= 0) { sbCfg = null; lsSet(SB_KEY, null); } // 期限切れ・取り消し → 次に取り直す
+      return null;
+    });
+  }).catch(function() { if (timer) clearTimeout(timer); return null; });
+}
+// 通行証が無い・残り2日を切ったら GAS にもらう（裏で。失敗しても何もしない。GAS 側が未設定なら6時間は聞かない）
+function sbRefreshToken() {
+  if (!currentChatId || !GAS_URL || navigator.onLine === false) return;
+  if (sbOk() && sbCfg.exp - Date.now() > 2 * 86400000) return;
+  if (Date.now() - (lsGet(SB_OFF_KEY, 0) || 0) < 6 * 3600000) return;
+  api({ action: 'scout_token' }).then(function(d) {
+    if (d && d.ok && d.token && /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(d.url || '')) {
+      sbCfg = { url: d.url, key: d.key, token: d.token, exp: Number(d.exp) || 0, u: currentChatId };
+      lsSet(SB_KEY, sbCfg); lsSet(SB_OFF_KEY, 0);
+    } else if (d && !d.transient) {
+      lsSet(SB_OFF_KEY, Date.now());
+    }
+  }).catch(function() {});
+}
 function newClientId() { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 function outbox() { return lsGet(OUTBOX_KEY, []); }
 
@@ -1515,6 +1557,22 @@ function loadShops() {
       return Promise.resolve();
     }
   }
+  // 2026-11-07: 開いた瞬間は最後に見た一覧を出し、裏で新しくする（待たせない）
+  if (!shopsCache.length) {
+    var c1 = lsGet(SHOPS_KEY, null);
+    if (c1 && c1.shops && c1.shops.length) { shopsCache = c1.shops.map(cleanShop); renderShopList(); refreshMapMarkers(); }
+  }
+  return sbRead('shops').then(function(r) {
+    if (r && Array.isArray(r.data) && r.data.length) { // 空の写しは信じない（GAS から読む）
+      shopsCache = r.data.map(cleanShop);
+      lsSet(SHOPS_KEY, { at: Date.parse(r.at) || Date.now(), shops: shopsCache }); // 控えの時刻は写した時刻
+      showCacheBar(null); renderShopList(); refreshMapMarkers();
+      return;
+    }
+    return loadShopsFromGas();
+  });
+}
+function loadShopsFromGas() {
   return apiRead({ action: 'saleslog_shops' })
     .then(function(d) {
       if (!d.ok) {
@@ -1810,6 +1868,7 @@ function ppTodayStr() {
 // ═══════════════════════════════════════════
 //  店詳細
 // ═══════════════════════════════════════════
+var shopOpenSeq = 0;
 function openShop(shopId) {
   showView('shop');
   tlLimit = 8;
@@ -1826,8 +1885,21 @@ function openShop(shopId) {
   if (!hereGps || Date.now() - hereGpsAt > 120000) locateHere(function() {}); // 訪問の記録に付ける位置を先に取っておく
   document.getElementById('commissionList').innerHTML = '<div class="empty">' + esc(STR.loading) + '</div>';
   document.getElementById('unpaidBar').className = 'unpaid-bar hidden';
+  // 2026-11-07: 写し（Supabase）に詳細があれば先に出す。GAS の最新が届いたら上書きする
+  var gasDone = false, sbShown = false, sbAt = 0, mySeq = ++shopOpenSeq;
+  sbRead('detail:' + shopId).then(function(r) {
+    if (gasDone || !r || !r.data || !r.data.shop) return;
+    if (mySeq !== shopOpenSeq || document.getElementById('viewShop').className !== '') return;
+    applyShopDetail(shopId, r.data); sbShown = true; sbAt = Date.parse(r.at) || Date.now();
+    saveDetailCache(shopId, r.data); // 電波が無い時の控えにも
+  });
   apiRead({ action: 'saleslog_shop_detail', shopId: shopId })
     .then(function(d) {
+      gasDone = true;
+      if (!d.ok && sbShown) { // 写しはもう出している（古い控えで上書きしない）。最新でないことだけ見せる
+        if (mySeq === shopOpenSeq) { showCacheBar(sbAt); loadCommissions(shopId); }
+        return;
+      }
       if (!d.ok) {
         var c = (!d || d.transient) ? loadDetailCache(shopId) : null;
         if (!c) {
@@ -1835,25 +1907,31 @@ function openShop(shopId) {
           if (pre && (!d || d.transient) && currentShop && currentShop.shopId === shopId) {
             showCacheBar(Date.now()); renderTimeline(); renderQrCard(null); return;
           }
-          toast('⚠️ ' + (d.error || STR.netError), 'err'); showView('home'); return;
+          toast('⚠️ ' + (d.error || STR.netError), 'err'); if (!sbShown) showView('home'); return;
         }
         d = c.d; showCacheBar(c.at);
       } else {
         saveDetailCache(shopId, d);
         showCacheBar(null);
       }
-      var base = null;
-      for (var j = 0; j < shopsCache.length; j++) if (shopsCache[j].shopId === shopId) base = shopsCache[j];
-      currentShop = cleanShop(Object.assign({}, base || {}, d.shop));
-      currentVisits = d.visits || [];
-      currentHearings = d.hearings || [];
-      currentNotes = d.notes || [];
-      resolveToday();
-      renderShopDetail();
-      currentQr = d.qr || null; renderQrCard(currentQr);
+      if (mySeq !== shopOpenSeq) return; // 待っている間にほかのお店を開いた
+      applyShopDetail(shopId, d);
       loadCommissions(shopId);
     })
-    .catch(function() { if (pre) { renderTimeline(); renderQrCard(null); return; } toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
+    .catch(function() { if (sbShown) { if (mySeq === shopOpenSeq) { showCacheBar(sbAt); loadCommissions(shopId); } return; } if (pre) { renderTimeline(); renderQrCard(null); return; } toast('⚠️ ' + STR.netError, 'err'); showView('home'); });
+}
+
+// 店の詳細（GAS の応答・Supabase の写し 共通）を画面に入れる
+function applyShopDetail(shopId, d) {
+  var base = null;
+  for (var j = 0; j < shopsCache.length; j++) if (shopsCache[j].shopId === shopId) base = shopsCache[j];
+  currentShop = cleanShop(Object.assign({}, base || {}, d.shop));
+  currentVisits = d.visits || [];
+  currentHearings = d.hearings || [];
+  currentNotes = d.notes || [];
+  resolveToday();
+  renderShopDetail();
+  currentQr = d.qr || null; renderQrCard(currentQr);
 }
 
 // ═══════════════════════════════════════════
@@ -2324,7 +2402,8 @@ function dueAfter(days) {
 }
 function freshGps() { return (hereGps && Date.now() - hereGpsAt < 10 * 60000) ? hereGps : (currentGps || null); }
 var shopsRefreshTimer = null;
-function refreshShopsSoon() { clearTimeout(shopsRefreshTimer); shopsRefreshTimer = setTimeout(function() { loadShops(); }, 1500); }
+// 書いたあとの読み直しは GAS から（写しはまだ古いことがある。GAS が作った一覧はそのまま写しにも送られる）
+function refreshShopsSoon() { clearTimeout(shopsRefreshTimer); shopsRefreshTimer = setTimeout(function() { loadShopsFromGas(); }, 1500); }
 
 function renderTodayCard() {
   var t = todayVisit;
@@ -3321,7 +3400,11 @@ document.getElementById('btnOffSend').textContent = STR.offSend;
 document.getElementById('btnOffSend').addEventListener('click', function() { flushOutbox(true); });
 renderOffBars();
 setLang(LANG);
-loadWho().then(loadShops).then(function() {
+// 2026-11-07: 「あなたは誰？」と「お店の一覧」を同時に聞く（前は順番に待っていた）
+Promise.all([
+  loadWho().then(sbRefreshToken),
+  (currentChatId && GAS_URL) ? loadShops() : null
+]).then(function() {
   flushOutbox();
   // 現場では「いまいる所から近い順」が一番使う。位置が取れたら自動で近い順にする（もう一度押せば解除）
   locateHere(function(ok) {
