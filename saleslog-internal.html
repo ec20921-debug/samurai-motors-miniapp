@@ -603,7 +603,7 @@ nav.tabs button.plus { color:var(--gold2); }
 .hero-last { margin-top:10px; font-size:15px; line-height:1.55; color:#e3dac4; }
 .hero-last b { color:var(--gold2); }
 .hero-last .nx { display:block; margin-top:4px; color:#ffb35c; }
-.hero-acts { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:14px; }
+.hero-acts { display:grid; grid-template-columns:1fr; gap:8px; margin-top:14px; }
 .act { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:58px; border-radius:14px;
   border:1px solid var(--border); background:rgba(0,0,0,.28); color:var(--text); font-size:13px; font-weight:700; text-decoration:none;
   font-family:inherit; cursor:pointer; line-height:1.25; text-align:center; padding:6px 4px; }
@@ -698,6 +698,7 @@ details.fold > .fin { padding:0 14px 14px; }
 .hres .big small span { font-family:'Kantumruy Pro','Noto Sans JP',sans-serif; font-size:14px; color:var(--text-dim); }
 .hres .cells div { border-radius:12px; padding:7px 10px; }
 .hres .cells span { font-size:11.5px; }
+.hrnote { font-size:11.5px; color:var(--text-dim); margin:-4px 2px 12px; line-height:1.5; }
 .hres .cells b { font-family:var(--f-num); font-weight:400; font-size:22px; }
 .hres .n { font-size:11.5px; }
 .hmode { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:4px; gap:4px; margin:14px 0 12px; }
@@ -815,6 +816,23 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
 .qr-ok { color:#1f8a4c; font-weight:700; }
 .qr-warn { color:#c25e00; font-weight:700; line-height:1.55; }
 .qr-scan { font-size:14px; margin-top:8px; }
+/* 2026-11-07 引き算: 結果カードは「数字＋1行」だけにして小さく（大きいと下の入力欄が隠れて入力できなかった） */
+.hres { padding:10px 16px; }
+.hres .big { font-size:44px; }
+.hres .cells { display:flex; flex-wrap:wrap; gap:2px 14px; margin-top:4px; }
+.hres .cells div { flex:none; background:none; border-radius:0; padding:0; }
+.hres .cells span { display:inline; font-size:12px; margin-right:5px; }
+.hres .cells b { font-size:18px; }
+/* 2026-11-07 お気に入り（このスマホだけに覚える） */
+.hero-top { display:flex; align-items:flex-start; gap:8px; }
+.hero-top .hero-name { flex:1; min-width:0; }
+.fav-btn { flex:none; width:44px; height:44px; border:1.5px solid var(--border); border-radius:12px; background:#fff;
+  color:var(--text-dim); font-size:24px; line-height:1; cursor:pointer; font-family:inherit; }
+.fav-btn.on { border-color:var(--gold); color:var(--gold); background:#fff6df; }
+.near-btn#btnFav { font-size:20px; }
+.near-btn#btnFav.on { background:#fff6df; }
+.shop-name .fav { color:var(--gold); margin-right:4px; }
+.hero-acts .act { flex-direction:row; gap:8px; min-height:48px; } /* 2026-11-07 道案内だけの1ボタン */
 </style>
 </head>
 <body>
@@ -839,7 +857,7 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
     <div class="find-row">
       <input type="search" id="shopSearch" autocomplete="off">
       <button type="button" class="near-btn" id="btnNear"></button>
-      <button type="button" class="near-btn" id="btnPot">⭐</button>
+      <button type="button" class="near-btn" id="btnFav" aria-pressed="false">☆</button>
     </div>
 
     <div class="follow-box hidden" id="followBox">
@@ -879,13 +897,11 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
   <div id="viewShop" class="hidden">
     <button class="back-btn" id="btnShopBack">← ត្រឡប់ / 戻る</button>
     <div class="hero">
-      <div class="hero-name" id="shopTitle"></div>
+      <div class="hero-top"><div class="hero-name" id="shopTitle"></div><button type="button" class="fav-btn" id="btnShopFav" aria-pressed="false">☆</button></div>
       <div class="hero-meta" id="heroMeta"></div>
       <div class="hero-last" id="heroLast"></div>
       <div class="hero-acts">
-        <a class="act" id="actCall" href="#"><span class="ic">📞</span><span id="actCallL"></span></a>
         <a class="act" id="actMap" href="#" target="_blank" rel="noopener"><span class="ic">🧭</span><span id="actMapL"></span></a>
-        <button type="button" class="act gold" id="btnHear"><span class="ic">🧮</span><span id="actCalcL"></span></button>
       </div>
     </div>
     <div class="shop-src hidden" id="shopSrc"></div>
@@ -1070,7 +1086,6 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
       <div class="l" id="hrLab"></div>
       <div class="big"><span id="hrBig">0</span><small>$ <span id="hrUnit"></span></small></div>
       <div class="cells" id="hrCells"></div>
-      <div class="n" id="hrNote"></div>
     </div>
     <div class="hmode">
       <button type="button" id="hmGarage"></button>
@@ -1078,9 +1093,9 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
       <button type="button" id="hmFacility"></button>
     </div>
     <div id="hearInputs"></div>
+    <div class="hrnote" id="hrNote"></div>
     <input type="text" class="note-line" id="hearNote" maxlength="2000">
     <button class="primary" id="btnHearSave"></button>
-    <div class="hint" id="hearHint"></div>
   </div>
 
   <!-- ═══════ コミッション記帳フォーム（新規 / 編集 共用） ═══════ -->
@@ -1150,7 +1165,6 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
   <button type="button" id="tabMap" data-nav="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M9 4L3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg><span id="navMapL"></span></button>
   <button type="button" id="tabList" data-nav="list" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10l1.5-5h13L20 10M4 10v9h16v-9M4 10h16M9 19v-5h6v5"/></svg><span id="navListL"></span></button>
   <button type="button" id="btnNew" class="plus"><span class="pc">＋</span><span id="navNewL"></span></button>
-  <button type="button" id="tabCalc" data-nav="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7h7M8.5 12h1M12 12h1M15.5 12h0M8.5 16h1M12 16h1M15.5 16h0" stroke-linecap="round"/></svg><span id="navCalcL"></span></button>
 </div></nav>
 <div class="sheet hidden" id="sheet"><div class="in" id="sheetIn"></div></div>
 <div class="toast" id="toast"></div>
@@ -1240,7 +1254,6 @@ var STR = {
   hearHead:    '🧮 ប្រវត្តិការគណនា / 商談計算の履歴',
   hearEmpty:   'មិនទាន់មានការគណនាទេ / まだ計算の記録がありません',
   hearNote:    'អ្វីដែលម្ចាស់ហាងនិយាយ និងកំណត់ចំណាំរថយន្តស្តុក / 言われたこと・在庫車のメモ',
-  hearHint:    '※ រក្សាទុកក្នុង Google Sheet ផ្ទាំង «商談ヒアリング» / GSS の「商談ヒアリング」タブに保存されます',
   priceErr:    'មិនអាចអានតម្លៃសេវាបានទេ / サービス料金（メニュー）を読めません',
   // ↓ 2026-10-20 一本化（未訪問の店・フォロー）。Panha 校閲済み（provisional・Run Kosal の確認待ち）
   unvisited:   'មិនទាន់ចុះជួប / 未訪問',
@@ -1282,7 +1295,6 @@ var STR = {
   navList:     'ហាង / お店',
   navNew:      'ហាងថ្មី / 新しいお店',
   navCalc:     'គណនា / 計算',
-  actCall:     'ទូរស័ព្ទ / 電話',
   actMap:      'ផ្លូវទៅ / 道案内',
   todayHead:   '📍 ការចុះជួបថ្ងៃនេះ / 今日の訪問',
   todayHint:   'ចុចប៊ូតុងណាមួយ វានឹងរក្សាទុកភ្លាមៗ / ボタンを押すと、すぐ保存されます',
@@ -1325,7 +1337,6 @@ var HS = {
   one_in:      ['1 ក្នុង {n} នាក់', '{n}人に1人'],
   avg_price:   ['តម្លៃសេវាជាមធ្យមក្នុងមួយដង', '1件の平均料金'],
   jobs_month:  ['ចំនួនដងធ្វើសេវាក្នុងមួយខែ', '月の件数'],
-  sales_month: ['ភ្ញៀវបង់សរុបក្នុងមួយខែ', 'お客さんの支払い（月）'],
   your_month:  ['កម្រៃជើងសាររបស់អ្នកក្នុងមួយខែ', '御社の紹介料（月）'],
   your_year:   ['ក្នុងមួយឆ្នាំ', '年間'],
   rate_note:   ['កម្រៃជើងសារ {r}% នៃទឹកប្រាក់ដែលភ្ញៀវបង់ — រាល់ដង', 'お客さんの支払額に対して紹介料{r}%・毎回'],
@@ -1335,13 +1346,11 @@ var HS = {
   glass_dirty: ['កញ្ចក់ត្រូវការថែទាំ', 'ガラスの手入れが必要'],
   price_regular: ['តម្លៃធម្មតា', '定価'],
   price_partner: ['តម្លៃសេវាដៃគូ សម្រាប់រថយន្តស្តុករបស់អ្នក (បញ្ចុះ 30%)', '在庫車の提携価格（30%オフ）'],
-  price_partner_short: ['តម្លៃដៃគូ (បញ្ចុះ 30%)', '提携価格（30%オフ）'],
   you_save:    ['អ្នកសន្សំបាន', '割引額'],
   buyers_month: ['ចំនួនភ្ញៀវមកហាងក្នុងមួយខែ', '月のお客さん数'],
   refresh_title: ['ធ្វើឱ្យរថយន្តស្តុកមើលទៅថ្មីឡើងវិញ', '在庫車をきれいに'],
   referral_title: ['ណែនាំភ្ញៀវមកយើង', 'お客さんを紹介'],
-  example_note: ['ជាការប៉ាន់ស្មានប៉ុណ្ណោះ។ លទ្ធផលពិតអាស្រ័យលើចំនួនភ្ញៀវរបស់អ្នក។', '試算です。実際はお客さんの数によって変わります。'],
-  cars_unit:   ['គ្រឿង', '台'], days_unit: ['ថ្ងៃ', '日'], jobs_unit: ['ដង', '件'], month_unit: ['/ខែ', '／月'],
+  cars_unit:   ['គ្រឿង', '台'], days_unit: ['ថ្ងៃ', '日'], jobs_unit: ['ដង', '件'], month_unit: ['/ខែ', '月'],
   // ↓ 2026-10-20 施設モード（km は FAC_KM で流し込む）
   facility: ['', '施設（ゴルフ場・レストラン・ホテル・モール・レジデンス）'], spaces: ['', '駐車場の台数'], occ: ['', '混む時間の埋まり具合'],
   occ30: ['', '3割くらい'], occ50: ['', '半分くらい'], occ80: ['', '8割くらい'], stay: ['', '1台あたりの駐車時間'],
@@ -1395,7 +1404,15 @@ var editingVisitId = null;    // edit 時の対象訪問
 var selectedReaction = '';
 var selectedStatus = '';
 var map = null, mapMarkers = [];
-var hereGps = null, hereGpsAt = 0, meMarker = null, nearMode = false, potMode = false;
+var hereGps = null, hereGpsAt = 0, meMarker = null, nearMode = false, favMode = false;
+// お気に入り（2026-11-07 Daisuke「お気に入り登録は出来るといいな」）。そのスマホだけに覚える（サーバーには送らない）
+var FAV_KEY = 'sl_fav_v1', favIds = {};
+try { (JSON.parse(localStorage.getItem(FAV_KEY) || '[]') || []).forEach(function(id) { favIds[id] = true; }); } catch (e) {}
+function isFav(id) { return !!favIds[id]; }
+function toggleFav(id) {
+  if (favIds[id]) delete favIds[id]; else favIds[id] = true;
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(Object.keys(favIds))); } catch (e) {}
+}
 var homeTab = 'list';                                   // 下のタブ（地図 / お店）
 var todayVisit = null, todayChain = Promise.resolve();  // 今日の訪問（こまめ保存）
 var calcShop = null, calcFrom = '';                     // 計算タブのお店（店の画面から来たら 'shop'）
@@ -1698,7 +1715,7 @@ function renderListError(msg) {
 
 function badgeFor(shop) {
   if (isUnvisited(shop)) return '<span class="badge unv">' + esc(STR.unvisited) + '</span>';
-  if (shop.status === '提携済') return '<span class="badge partner">⭐ ' + esc(shop.lastReaction || 'A') + '</span>';
+  if (shop.status === '提携済') return '<span class="badge partner">🤝 ' + esc(shop.lastReaction || 'A') + '</span>';
   var cls = shop.lastReaction ? 'r' + shop.lastReaction : 'rNone';
   return '<span class="badge ' + cls + '">' + esc(shop.lastReaction || '—') + '</span>';
 }
@@ -1742,15 +1759,10 @@ function renderShopList() {
   var rows = shopsCache.filter(function(s) {
     if (listFilter === 'visited' && isUnvisited(s)) return false;
     if (listFilter === 'unvisited' && !isUnvisited(s)) return false;
+    if (favMode && !isFav(s.shopId)) return false;
     return !q || (s.shopName + ' ' + (s.phone || '') + ' ' + (s.ownerName || '') + ' ' + (s.address || '')).toLowerCase().indexOf(q) >= 0;
   });
-  if (potMode) {
-    var rank = { S: 0, A: 1, B: 2, C: 3 };
-    rows = rows.slice().sort(function(a, b) {
-      var ra = rank[a.potential] === undefined ? 9 : rank[a.potential], rb = rank[b.potential] === undefined ? 9 : rank[b.potential];
-      return ra - rb || (Number(b.potentialMine) || 0) - (Number(a.potentialMine) || 0);
-    });
-  } else if (nearMode && hereGps) {
+  if (nearMode && hereGps) {
     rows = rows.map(function(s) {
       return { s: s, d: (s.lat === null || s.lng === null) ? Infinity : distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng) };
     }).sort(function(a, b) { return a.d - b.d; }).map(function(x) { return x.s; });
@@ -1777,9 +1789,9 @@ function renderShopList() {
     var dist = (hereGps && s.lat !== null && s.lng !== null) ? fmtDist(distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng)) : '';
     card.innerHTML =
       '<div class="shop-head">' +
-        '<div class="shop-name">' + esc(s.shopName) + '</div>' +
+        '<div class="shop-name">' + (isFav(s.shopId) ? '<span class="fav">★</span>' : '') + esc(s.shopName) + '</div>' +
         (dist ? '<span class="dist">' + esc(dist) + '</span>' : '') +
-        (s.potential ? '<span class="pot ' + esc(s.potential) + '">⭐' + esc(s.potential) + '</span>' : '') +
+        (s.potential ? '<span class="pot ' + esc(s.potential) + '">' + esc(s.potential) + '</span>' : '') +
         badgeFor(s) +
       '</div>' +
       typesLine +
@@ -1819,7 +1831,7 @@ function refreshMapMarkers() {
   mapMarkers = [];
 
   var located = shopsCache.filter(function(s) {
-    return s.lat !== null && s.lng !== null && (showUnvisited || !isUnvisited(s));
+    return s.lat !== null && s.lng !== null && (showUnvisited || !isUnvisited(s)) && (!favMode || isFav(s.shopId));
   });
   document.getElementById('mapHint').textContent =
     located.length ? ('📍 ' + located.length) : STR.mapEmpty;
@@ -1842,7 +1854,7 @@ function refreshMapMarkers() {
       ((s.shopTypes && s.shopTypes.length) ? '🔧 ' + esc(s.shopTypes.join(' / ')) + '<br>' : '') +
       esc((s.lastReaction || '—') + ' · 🔁 ' + s.visitCount + (s.lastVisit ? ' · ' + s.lastVisit : '')) +
       (hereGps ? ' · ' + esc(fmtDist(distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng))) : '') +
-      (s.potential ? ' · ⭐' + esc(s.potential) + (s.potentialMine !== null ? ' (' + esc(hMoney(s.potentialMine)) + '$/月)' : '') : '') +
+      (s.potential ? ' · 📈' + esc(s.potential) + (s.potentialMine !== null ? ' (' + esc(hMoney(s.potentialMine)) + '$/月)' : '') : '') +
       (s.lastMemo ? '<div class="popup-last"><b>' + esc(STR.lastLabel) + '</b><br>' + esc(s.lastMemo) + '</div>' : '') +
       (unv ? '<div class="popup-last">' + esc(STR.unvisited) + (s.tier ? ' · Tier ' + esc(s.tier) : '') + (s.address ? '<br>' + esc(s.address) : '') + '</div>' : '') +
       (s.nextAction || s.nextDue ? '<div class="popup-last">⏰ ' + esc((s.nextDue ? s.nextDue + ' ' : '') + (s.nextAction || '')) + '</div>' : '');
@@ -1852,12 +1864,7 @@ function refreshMapMarkers() {
     btn.className = 'popup-open-btn';
     btn.textContent = STR.open;
     btn.addEventListener('click', function() { openShop(s.shopId); });
-    var btn2 = document.createElement('button');
-    btn2.className = 'popup-open-btn alt';
-    btn2.textContent = '🧮';
-    btn2.setAttribute('aria-label', STR.hearTitle);
-    btn2.addEventListener('click', function() { openShop(s.shopId, true); });
-    btns.appendChild(btn); btns.appendChild(btn2);
+    btns.appendChild(btn);
     div.appendChild(btns);
     marker.bindPopup(div);
 
@@ -1926,7 +1933,7 @@ function hereThen(after) {
 }
 
 function setNav(which) {
-  ['tabMap', 'tabList', 'tabCalc'].forEach(function(id) {
+  ['tabMap', 'tabList'].forEach(function(id) {
     var b = document.getElementById(id);
     if (b.getAttribute('data-nav') === which) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
@@ -2401,21 +2408,20 @@ function saveCommission() {
 function renderShopDetail() {
   var s = currentShop;
   document.getElementById('shopTitle').textContent = s.shopName;
+  renderShopFav();
   var chips = [];
   chips.push(STATUS_LABELS[s.status] || s.status || '');
   if (s.shopTypes && s.shopTypes.length) chips.push(s.shopTypes.join('・'));
   if (hereGps && s.lat !== null && s.lng !== null && s.lat !== undefined) chips.push('📍 ' + fmtDist(distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng)));
-  if (s.potential) chips.push('⭐ ' + s.potential + (s.potentialMine !== null && s.potentialMine !== undefined ? ' · ' + hMoney(s.potentialMine) + '$' : ''));
+  if (s.potential) chips.push('📈 ' + s.potential + (s.potentialMine !== null && s.potentialMine !== undefined ? ' · ' + hMoney(s.potentialMine) + '$' : ''));
   if (s.visitCount) chips.push('🔁 ' + s.visitCount);
+  if (s.phone) chips.push('☎ ' + s.phone); // 2026-11-07 電話ボタンはなくし、番号は文字で見せるだけ
   document.getElementById('heroMeta').innerHTML = chips.filter(function(c) { return c; })
     .map(function(c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
   var last = '';
   if (s.lastMemo) last += '<b>' + esc(STR.lastLabel) + (s.lastVisit ? ' ' + esc(s.lastVisit.substring(5).replace('-', '/')) : '') + '</b><br>' + esc(s.lastMemo);
   if (s.nextAction || s.nextDue) last += '<span class="nx">⏰ ' + esc((s.nextDue ? s.nextDue.substring(5).replace('-', '/') + ' ' : '')) + '<span>' + esc(s.nextAction || '') + '</span></span>';
   document.getElementById('heroLast').innerHTML = last;
-  var call = document.getElementById('actCall');
-  if (s.phone) { call.href = 'tel:' + String(s.phone).replace(/[^\d+]/g, ''); call.className = 'act'; }
-  else { call.removeAttribute('href'); call.className = 'act off'; }
   var nav = document.getElementById('actMap');
   if (s.lat !== null && s.lat !== undefined && s.lng !== null) {
     nav.href = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(s.lat + ',' + s.lng); nav.className = 'act';
@@ -2603,7 +2609,7 @@ function renderTimeline() {
       : o.mode === 'dealer' ? '🚗 ' + o.stock + ' · 💡 ' + o.light + '+' + o.heavy + ' · 🪟 ' + o.glass + ' · 👥 ' + o.buyers
       : '🚗 ' + o.carsDay + ' × ' + o.days + ' · 1/' + o.oneIn + ' · ' + o.avg + '$';
     return '<div class="tl-item"><div class="tl-ic">🧮</div><div class="tl-b"><div class="tl-d">' + d + (o.staff ? ' · ' + esc(o.staff) : '') +
-      (o.potential ? ' <span class="pot ' + esc(o.potential) + '">⭐' + esc(o.potential) + '</span>' : '') +
+      (o.potential ? ' <span class="pot ' + esc(o.potential) + '">' + esc(o.potential) + '</span>' : '') +
       '<span class="tl-m">' + hMoney(o.mine || 0) + '$</span></div><div style="color:var(--text-dim);font-size:13.5px">' + esc(how) + '</div>' +
       (o.note ? '<div>' + esc(o.note) + '</div>' : '') + '</div></div>';
   }).join('');
@@ -3079,7 +3085,6 @@ function saveVisit() {
 // ═══════════════════════════════════════════
 document.getElementById('tabList').addEventListener('click', function() { showView('home'); switchTab('list'); });
 document.getElementById('tabMap').addEventListener('click',  function() { showView('home'); switchTab('map'); });
-document.getElementById('tabCalc').addEventListener('click', function() { openCalcTab(); });
 document.getElementById('btnNew').addEventListener('click',  function() { openNewShop(); });
 document.getElementById('btnShopBack').addEventListener('click', function() { showView('home'); switchTab(homeTab); loadShops(); });
 document.getElementById('btnShopSave').addEventListener('click', saveShop);
@@ -3228,9 +3233,7 @@ function renderHearingInputs() {
       '<div class="hcard">' +
       hRow('spaces', hs('cars_unit'), 'spaces', f.spaces, 0, 10000) +
       lbl('occ') + chipSet('occ', [[30, 'occ30'], [50, 'occ50'], [80, 'occ80']]) +
-      lbl('stay') + chipSet('stay', [['lt1', 'stay_lt1'], ['1to3', 'stay_1to3'], ['gt3', 'stay_gt3']]) +
-      lbl('peak') + chipSet('peak', [['day', 'peak_day'], ['night', 'peak_night'], ['both', 'peak_both']]) +
-      hRow('visitors', '', 'visitors', f.visitors, 0, 100000) + '</div>';
+      lbl('stay') + chipSet('stay', [['lt1', 'stay_lt1'], ['1to3', 'stay_1to3'], ['gt3', 'stay_gt3']]) + '</div>';
     renderHearingResult();
     return;
   }
@@ -3264,13 +3267,11 @@ function renderHearingResult() {
   document.getElementById('hrLab').textContent = hs('your_month');
   document.getElementById('hrBig').textContent = hMoney(r.mine);
   document.getElementById('hrUnit').textContent = hs('month_unit');
-  var cells = hMode !== 'dealer'
-    ? [['jobs_month', r.jobs + ' ' + pickLang(hs('jobs_unit'))], ['sales_month', hMoney(r.sales) + '$'], ['your_year', hMoney(r.year) + '$']]
-    : [['price_partner_short', hMoney(r.partner) + '$'], ['jobs_month', r.jobs + ' ' + pickLang(hs('jobs_unit'))], ['your_year', hMoney(r.year) + '$']];
+  var cells = [['jobs_month', r.jobs + ' ' + pickLang(hs('jobs_unit'))], ['your_year', hMoney(r.year) + '$']];
   document.getElementById('hrCells').innerHTML = cells.map(function(c) {
     return '<div><span>' + esc(hs(c[0])) + '</span><b>' + esc(c[1]) + '</b></div>';
   }).join('');
-  document.getElementById('hrNote').innerHTML = '<span>' + esc(hs('rate_note').replace(/\{r\}/g, hRate())) + '</span> · <span>' + esc(hs('example_note')) + '</span>';
+  document.getElementById('hrNote').innerHTML = '<span>' + esc(hs('rate_note').replace(/\{r\}/g, hRate())) + '</span>';
   var sum = document.getElementById('hSum');
   if (sum) {
     sum.innerHTML = '<span>' + esc(hs('price_regular')) + '</span><b class="strike">' + hMoney(r.regular) + '$</b>' +
@@ -3471,10 +3472,7 @@ document.getElementById('lblFormNotes').textContent = STR.notesHead;
 document.getElementById('navMapL').textContent = STR.navMap;
 document.getElementById('navListL').textContent = STR.navList;
 document.getElementById('navNewL').textContent = STR.navNew;
-document.getElementById('navCalcL').textContent = STR.navCalc;
-document.getElementById('actCallL').textContent = STR.actCall;
 document.getElementById('actMapL').textContent = STR.actMap;
-document.getElementById('actCalcL').textContent = STR.navCalc;
 document.getElementById('btnJustVisit').textContent = STR.justVisit;
 document.getElementById('nextHead').textContent = STR.nextHead;
 document.getElementById('dueHead').textContent = STR.dueHead;
@@ -3520,7 +3518,6 @@ document.querySelector('.due-row').addEventListener('click', function(e) {
 document.getElementById('shopSearch').placeholder = STR.search;
 document.getElementById('btnNear').textContent = STR.nearBtn;
 document.getElementById('btnHere').textContent = STR.hereBtn;
-document.getElementById('hearHint').textContent = STR.hearHint;
 document.getElementById('hmGarage').textContent = hs('garage');
 document.getElementById('hmDealer').textContent = hs('dealer');
 document.getElementById('hmGarage').addEventListener('click', function() { hMode = 'garage'; renderHearingInputs(); });
@@ -3531,19 +3528,30 @@ Object.keys(FAC_KM).forEach(function(k) { if (HS[k]) HS[k][0] = FAC_KM[k]; });
 SHOP_TYPES.forEach(function(t) { if (t.kmKey && FAC_KM[t.kmKey]) t.km = FAC_KM[t.kmKey]; else if (t.kmKey) t.km = t.jp; });
 // ボタンは Panha 確定文の1行目（កន្លែងអាជីវកម្ម）＋「施設」だけ。括弧の例示（2行目）はボタンに入らないので省く
 document.getElementById('hmFacility').textContent = (HS.facility[0] || '').split(' (')[0] + ' / 施設';
-document.getElementById('btnPot').addEventListener('click', function() {
-  potMode = !potMode;
-  this.className = 'near-btn' + (potMode ? ' on' : '');
-  if (potMode) { nearMode = false; document.getElementById('btnNear').className = 'near-btn'; }
-  renderShopList();
+// ☆ = お気に入りの店だけ表示（一覧と地図）。近い順と一緒に使える
+document.getElementById('btnFav').addEventListener('click', function() {
+  favMode = !favMode;
+  this.className = 'near-btn' + (favMode ? ' on' : '');
+  this.textContent = favMode ? '★' : '☆';
+  this.setAttribute('aria-pressed', favMode ? 'true' : 'false');
+  renderShopList(); refreshMapMarkers();
 });
-document.getElementById('btnHear').addEventListener('click', openHearing);
+function renderShopFav() {
+  var b = document.getElementById('btnShopFav'), on = !!(currentShop && isFav(currentShop.shopId));
+  b.textContent = on ? '★' : '☆';
+  b.className = 'fav-btn' + (on ? ' on' : '');
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
+document.getElementById('btnShopFav').addEventListener('click', function() {
+  if (!currentShop) return;
+  toggleFav(currentShop.shopId);
+  renderShopFav(); renderShopList(); refreshMapMarkers();
+});
 document.getElementById('btnHearBack').addEventListener('click', function() { if (currentShop) openShop(currentShop.shopId); else showView('home'); });
 document.getElementById('btnHearSave').addEventListener('click', saveHearing);
 document.getElementById('shopSearch').addEventListener('input', renderShopList);
 document.getElementById('btnNear').addEventListener('click', function() {
   if (nearMode) { nearMode = false; this.className = 'near-btn'; renderShopList(); return; }
-  potMode = false; document.getElementById('btnPot').className = 'near-btn';
   var b = this;
   var on = function() { nearMode = true; b.className = 'near-btn on'; renderShopList(); refreshMapMarkers(); };
   if (hereGps) on(); else hereThen(on);
@@ -3797,7 +3805,7 @@ loadWho().then(loadShops).then(function() {
   flushOutbox();
   // 現場では「いまいる所から近い順」が一番使う。位置が取れたら自動で近い順にする（もう一度押せば解除）
   locateHere(function(ok) {
-    if (!ok || potMode || nearMode) return;
+    if (!ok || nearMode) return;
     nearMode = true; document.getElementById('btnNear').className = 'near-btn on';
     renderShopList(); refreshMapMarkers();
   });
