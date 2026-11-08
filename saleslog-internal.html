@@ -698,6 +698,31 @@ nav.tabs button.plus .pc { border-color:#fff; box-shadow:0 6px 16px rgba(160,110
 input[type="date"], .due-row input { color-scheme:light; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { box-shadow:0 3px 14px rgba(0,0,0,.18); }
 .note-item, .visit-item, .cm-item, .gps-box, .suggest-chip { background:#fff; }
+/* ── 2026-11-08 お店の顔（外観の写真・Facebook） ── */
+.photo-main { display:block; width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:16px; border:1px solid var(--border); background:#f3efe6; margin:6px 0 8px; cursor:zoom-in; }
+.photo-thumbs { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:6px; }
+.photo-thumbs img { flex:none; width:72px; height:54px; object-fit:cover; border-radius:10px; border:2px solid transparent; background:#f3efe6; cursor:pointer; }
+.photo-thumbs img.sel { border-color:var(--gold); }
+.photo-cap { font-size:12.5px; color:var(--text-dim); margin-bottom:6px; }
+.photo-btn { width:100%; min-height:52px; border-radius:14px; border:2px dashed var(--gold); background:#fffaf0; color:var(--gold2); font-size:16px; font-weight:700; margin-top:6px; }
+.photo-btn.has { border-style:solid; border-width:1.5px; background:#fff; font-size:15px; min-height:46px; }
+.photo-btn:disabled { opacity:.55; }
+.fb-row { margin-top:14px; padding-top:12px; border-top:1px solid #eee8db; }
+.card2.nophoto .fb-row { margin-top:0; padding-top:0; border-top:none; }
+.fb-h { font-size:14px; font-weight:700; margin-bottom:6px; }
+#fbView { display:flex; gap:8px; align-items:center; }
+.fb-open { flex:1; display:flex; align-items:center; justify-content:center; min-height:46px; border-radius:12px; background:#1877f2; color:#fff; font-weight:700; text-decoration:none; font-size:15px; }
+.fb-chg { flex:none; min-height:46px; border-radius:12px; border:1.5px solid var(--border); background:#fff; color:var(--text); padding:0 14px; font-size:14px; }
+.fb-edit { display:flex; gap:8px; }
+.fb-edit input { flex:1; min-width:0; min-height:46px; border-radius:12px; border:1.5px solid var(--border); padding:0 12px; font-size:15px; background:#fff; color:var(--text); }
+.fb-edit button { flex:none; border:none; border-radius:12px; padding:0 16px; background:var(--gold); color:#1d1b16; font-weight:700; font-size:15px; }
+.shop-card.has-ph { display:flex; gap:12px; align-items:flex-start; }
+.shop-card .sc-ph { flex:none; width:78px; height:62px; object-fit:cover; border-radius:12px; background:#f3efe6; }
+.shop-card .sc-b { flex:1; min-width:0; }
+.popup-ph { display:block; width:220px; max-width:100%; height:130px; object-fit:cover; border-radius:10px; margin:6px 0; background:#f3efe6; }
+.lightbox { position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.92); display:flex; align-items:center; justify-content:center; padding:16px; }
+.lightbox img { max-width:100%; max-height:100%; object-fit:contain; border-radius:8px; }
+.lb-close { position:absolute; top:max(14px, env(safe-area-inset-top)); right:14px; width:46px; height:46px; border-radius:50%; border:none; background:rgba(255,255,255,.18); color:#fff; font-size:22px; }
 .pend { color:#1d1b16; }
 .need-link { text-align:center; padding:60px 16px; font-size:17px; line-height:1.7; }
 .need-link .nl-ic { font-size:52px; margin-bottom:10px; }
@@ -809,6 +834,20 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
         <a class="act" id="actMap" href="#" target="_blank" rel="noopener"><span class="ic">🧭</span><span id="actMapL"></span></a>
       </div>
     </div>
+
+    <!-- 2026-11-08 お店の顔: 外観の写真と Facebook（日本側が「どんなお店か」をつかめるように・v7-operations/ShopProfile.gs） -->
+    <section class="card2" id="faceCard">
+      <div class="ch" id="photoHead"></div>
+      <div id="photoBox"></div>
+      <div class="notes-hint" id="photoHint"></div>
+      <button type="button" class="photo-btn" id="btnPhoto"></button>
+      <input type="file" id="photoInput" accept="image/*" class="hidden">
+      <div class="fb-row">
+        <div class="fb-h">🔗 Facebook</div>
+        <div id="fbView" class="hidden"><a class="fb-open" id="fbOpen" href="#" target="_blank" rel="noopener"></a><button type="button" class="fb-chg" id="btnFbChange"></button></div>
+        <div id="fbEdit" class="fb-edit"><input type="url" id="fbInput" maxlength="300" inputmode="url" autocomplete="off"><button type="button" id="btnFbSave"></button></div>
+      </div>
+    </section>
     <div class="shop-src hidden" id="shopSrc"></div>
 
     <section class="today" id="todayCard">
@@ -821,12 +860,7 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
         <button type="button" data-qr="D"><span class="L">D</span><span>បដិសេធ / 断り</span></button>
       </div>
       <button type="button" class="link-btn" id="btnJustVisit"></button>
-      <div class="sub-h" id="nextHead"></div>
-      <div class="qchips" id="nextChips"></div>
-      <div class="next-custom hidden" id="nextCustom"><input type="text" id="nextText" maxlength="300"><button type="button" id="btnNextText"></button></div>
-      <div class="sub-h" id="dueHead"></div>
-      <div class="qchips" id="dueChips"></div>
-      <div class="next-now hidden" id="nextNow"></div>
+      <!-- 2026-11-08 Daisuke「次にやることと、いつ？はいらない」→ 外した（過去の記録にある分は、これまでの記録に出るだけ） -->
     </section>
 
     <section class="card2 hidden" id="qrCard">
@@ -964,7 +998,8 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
       <button type="button" class="note-more" id="btnNoteMore"></button>
     </div>
 
-    <div class="field">
+    <!-- 2026-11-08 次にやること・期日は使わない（Daisuke）。保存のしくみは残し、欄だけ隠す -->
+    <div class="field hidden">
       <label id="lblNext"></label>
       <input type="text" id="fNext" maxlength="300">
       <div class="due-row">
@@ -1052,6 +1087,7 @@ body { padding-bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
   <button type="button" id="tabList" data-nav="list" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 10l1.5-5h13L20 10M4 10v9h16v-9M4 10h16M9 19v-5h6v5"/></svg><span id="navListL"></span></button>
 </div></nav>
 <div class="sheet hidden" id="sheet"><div class="in" id="sheetIn"></div></div>
+<div class="lightbox hidden" id="lightbox"><img id="lightboxImg" alt=""><button type="button" class="lb-close" id="btnLbClose">✕</button></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1178,8 +1214,20 @@ var STR = {
   todaySaved:  'បានរក្សាទុក / 保存済み',
   todayPend:   'បានរក្សាទុកក្នុងទូរស័ព្ទ (មិនទាន់ផ្ញើ) / スマホに保存（未送信）',
   justVisit:   'មិនទាន់មានប្រតិកម្ម — រក្សាទុកតែការចុះជួប / 反応はまだ — 行ったことだけ保存',
-  nextHead:    '⏰ អ្វីដែលត្រូវធ្វើបន្ទាប់ / 次にやること',
-  dueHead:     '📅 ថ្ងៃណា? / いつ？',
+  // ↓ 2026-11-08 お店の顔（外観の写真・Facebook）。km は Panha 校閲済み 2026-11-08（provisional・Run Kosal の確認待ち: 電波=អ៊ីនធឺណិត か / តំណ で通じるか / ថតដោយ / សូមកុំ の丁寧さ）
+  photoHead:   '📷 មុខហាង / お店の外観',
+  photoTake:   '📷 ថតរូបមុខហាង / 外観の写真を撮る',
+  photoMore:   '📷 ថតរូបបន្ថែម / 写真を追加',
+  photoHint:   'សូមថតឱ្យឃើញស្លាកហាង និងមុខហាងទាំងមូល។ សូមកុំថតមុខមនុស្ស ឬស្លាកលេខរថយន្តឱ្យឃើញច្បាស់។ / 看板と店の正面全体が入るように。人の顔や車のナンバーは大きく写さないでください',
+  photoSending:'កំពុងផ្ញើរូបថត… / 写真を送っています…',
+  photoSaved:  'បានរក្សាទុករូបថតហើយ ✅ / 写真を保存しました ✅',
+  photoFail:   'ផ្ញើរូបថតមិនបានទេ។ សូមព្យាយាមម្ដងទៀត នៅកន្លែងដែលមានអ៊ីនធឺណិត។ / 写真を送れませんでした。電波のある所でもう一度どうぞ',
+  photoBy:     'ថតដោយ / 撮った人',
+  fbOpen:      'បើក Facebook / Facebook を開く',
+  fbPh:        'បិទភ្ជាប់តំណ Facebook របស់ហាង / お店の Facebook の URL を貼る',
+  fbChange:    'ប្តូរ / 変更',
+  fbSaved:     'បានរក្សាទុក Facebook ហើយ ✅ / Facebook を保存しました ✅',
+  fbBad:       'តំណនេះប្រើមិនបានទេ / この URL は使えません',
   nextOther:   'ផ្សេងទៀត / ほかのこと',
   saveShort:   'រក្សាទុក / 保存',
   historyHead: '📜 កំណត់ត្រាទាំងអស់ / これまでの記録',
@@ -1308,11 +1356,11 @@ var linkKey = '';
 
 // v7 booking.html と同一方式: POST + text/plain。応答は text で受けて JSON.parse
 // （認可切れ等の HTML 応答を切り分けるため。home-internal.html と同方式）
-function api(payload) {
+function api(payload, timeoutMs) {
   payload.chatId = currentChatId;
   // 電波が弱い所で固まらないよう 20 秒で打ち切る（書き込みは clientId 付きなので、届いていても送り直しで二重にならない）
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 20000) : null;
+  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, timeoutMs || 20000) : null;
   return fetch(GAS_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1621,9 +1669,9 @@ function renderFollow() {
   box.className = 'follow-box';
   document.getElementById('followHead').textContent = pickLang(STR.followHead) + (due.length ? ' · ' + due.length : '');
   var list = document.getElementById('followList');
-  if (!due.length) { // 何もない日は1行だけ（お店の一覧を上に詰める）
-    box.className = 'follow-box none';
-    list.innerHTML = '<div class="follow-none">⏰ ' + esc(STR.followNone) + '</div>';
+  if (!due.length) { // 2026-11-08 次にやること・期日の入力をやめたので、何もない日は出さない
+    box.className = 'follow-box hidden';
+    list.innerHTML = '';
     return;
   }
   list.innerHTML = '';
@@ -1661,7 +1709,7 @@ function renderShopList() {
   if (!rows.length) { renderListError(STR.noMatch); return; }
   rows.forEach(function(s) {
     var card = document.createElement('div');
-    card.className = 'shop-card';
+    card.className = 'shop-card' + (s.photoId ? ' has-ph' : '');
     var meta = [];
     meta.push('🔁 ' + s.visitCount);
     if (s.lastVisit) meta.push('📅 ' + s.lastVisit);
@@ -1678,7 +1726,7 @@ function renderShopList() {
     var typesLine = (s.shopTypes && s.shopTypes.length)
       ? '<div class="shop-meta">🔧 ' + esc(s.shopTypes.join(' / ')) + '</div>' : '';
     var dist = (hereGps && s.lat !== null && s.lng !== null) ? fmtDist(distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng)) : '';
-    card.innerHTML =
+    card.innerHTML = (s.photoId ? '<img class="sc-ph" loading="lazy" alt="" src="' + esc(photoUrl(s.photoId, 200)) + '"><div class="sc-b">' : '') +
       '<div class="shop-head">' +
         '<div class="shop-name">' + (isFav(s.shopId) ? '<span class="fav">★</span>' : '') + esc(s.shopName) + '</div>' +
         (dist ? '<span class="dist">' + esc(dist) + '</span>' : '') +
@@ -1688,7 +1736,7 @@ function renderShopList() {
       typesLine +
       '<div class="shop-meta">' + esc(meta.join(' · ')) + '</div>' +
       (s.lastMemo ? '<div class="shop-last"><b>' + esc(STR.lastLabel) + '</b> ' + esc(s.lastMemo) + '</div>' : '') +
-      (s.nextAction || s.nextDue ? '<div class="vnext">⏰ ' + esc((s.nextDue ? s.nextDue + ' ' : '') + (s.nextAction || '')) + '</div>' : '');
+      (s.photoId ? '</div>' : '');
     card.addEventListener('click', function() { openShop(s.shopId); });
     body.appendChild(card);
   });
@@ -1742,13 +1790,14 @@ function refreshMapMarkers() {
     var div = document.createElement('div');
     div.innerHTML =
       '<b>' + esc(s.shopName) + '</b><br>' +
+      (s.photoId ? '<img class="popup-ph" loading="lazy" alt="" src="' + esc(photoUrl(s.photoId, 440)) + '">' : '') +
       ((s.shopTypes && s.shopTypes.length) ? '🔧 ' + esc(s.shopTypes.join(' / ')) + '<br>' : '') +
       esc((s.lastReaction || '—') + ' · 🔁 ' + s.visitCount + (s.lastVisit ? ' · ' + s.lastVisit : '')) +
       (hereGps ? ' · ' + esc(fmtDist(distMeters(hereGps.lat, hereGps.lng, s.lat, s.lng))) : '') +
       (s.potential ? ' · 📈' + esc(s.potential) + (s.potentialMine !== null ? ' (' + esc(hMoney(s.potentialMine)) + '$/月)' : '') : '') +
       (s.lastMemo ? '<div class="popup-last"><b>' + esc(STR.lastLabel) + '</b><br>' + esc(s.lastMemo) + '</div>' : '') +
       (unv ? '<div class="popup-last">' + esc(STR.unvisited) + (s.tier ? ' · Tier ' + esc(s.tier) : '') + (s.address ? '<br>' + esc(s.address) : '') + '</div>' : '') +
-      (s.nextAction || s.nextDue ? '<div class="popup-last">⏰ ' + esc((s.nextDue ? s.nextDue + ' ' : '') + (s.nextAction || '')) + '</div>' : '');
+      '';
     var btns = document.createElement('div');
     btns.className = 'popup-btns';
     var btn = document.createElement('button');
@@ -1872,6 +1921,7 @@ var shopOpenSeq = 0;
 function openShop(shopId) {
   showView('shop');
   tlLimit = 8;
+  currentPhotos = []; photoSel = 0; fbEditing = false;
   document.getElementById('infoFold').open = false;
   // 一覧の情報で先にカードを出す（電波が弱くても、押した瞬間にお店の画面が出る）
   var pre = null;
@@ -1929,6 +1979,10 @@ function applyShopDetail(shopId, d) {
   currentVisits = d.visits || [];
   currentHearings = d.hearings || [];
   currentNotes = d.notes || [];
+  currentPhotos = d.photos || [];
+  // サーバーが写真に対応した版か（古い版の応答には photos が無い → 写真のボタンは出さない。PC で反映すると自動で出る）
+  photoServerOk = Array.isArray(d.photos);
+  photoSel = 0;
   resolveToday();
   renderShopDetail();
   currentQr = d.qr || null; renderQrCard(currentQr);
@@ -2329,7 +2383,6 @@ function renderShopDetail() {
     .map(function(c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
   var last = '';
   if (s.lastMemo) last += '<b>' + esc(STR.lastLabel) + (s.lastVisit ? ' ' + esc(s.lastVisit.substring(5).replace('-', '/')) : '') + '</b><br>' + esc(s.lastMemo);
-  if (s.nextAction || s.nextDue) last += '<span class="nx">⏰ ' + esc((s.nextDue ? s.nextDue.substring(5).replace('-', '/') + ' ' : '')) + '<span>' + esc(s.nextAction || '') + '</span></span>';
   document.getElementById('heroLast').innerHTML = last;
   var nav = document.getElementById('actMap');
   if (s.lat !== null && s.lat !== undefined && s.lng !== null) {
@@ -2368,6 +2421,7 @@ function renderShopDetail() {
     box.className = 'gps-box';
     box.textContent = '📍 ' + STR.noLocation;
   }
+  renderFaceCard();
   renderTodayCard();
   renderTimeline();
 }
@@ -2415,21 +2469,6 @@ function renderTodayCard() {
   var bs = document.querySelectorAll('#bigReact [data-qr]');
   for (var i = 0; i < bs.length; i++) bs[i].className = (t && t.reaction === bs[i].getAttribute('data-qr')) ? 'sel' : '';
   document.getElementById('btnJustVisit').className = 'link-btn' + (t ? ' hidden' : '');
-  var na = t ? (t.nextAction || '') : '';
-  var known = STR.nextOpts.map(function(o) { return o[1]; });
-  document.getElementById('nextChips').innerHTML = STR.nextOpts.map(function(o) {
-    return '<button type="button" data-next="' + esc(o[1]) + '" class="' + (na === o[1] ? 'sel' : '') + '">' + o[0] + ' ' + esc(o[1]) + '</button>';
-  }).join('') + '<button type="button" data-next-other="1" class="' + (na && known.indexOf(na) < 0 ? 'sel' : '') + '">✏️ ' + esc(STR.nextOther) + '</button>';
-  var due = t ? (t.nextDue || '') : '';
-  document.getElementById('dueChips').innerHTML = [[1, STR.dueTomorrow], [3, STR.due3d], [7, STR.due1w]].map(function(x) {
-    var v = dueAfter(x[0]);
-    return '<button type="button" data-qdue="' + v + '" class="' + (due === v ? 'sel' : '') + '">' + esc(x[1]) + '</button>';
-  }).join('');
-  var now = document.getElementById('nextNow');
-  if (t && (t.nextAction || t.nextDue)) {
-    now.className = 'next-now';
-    now.innerHTML = '⏰ ' + esc(t.nextDue ? t.nextDue.substring(5).replace('-', '/') + ' ' : '') + '<span>' + esc(t.nextAction || '') + '</span>';
-  } else { now.className = 'next-now hidden'; }
 }
 
 // fields = { reaction } / { nextAction } / { nextDue } など。押すたびに呼ぶ
@@ -2466,27 +2505,133 @@ document.getElementById('bigReact').addEventListener('click', function(e) {
   todayDo({ reaction: r });
 });
 document.getElementById('btnJustVisit').addEventListener('click', function() { if (!todayVisit) todayDo({}); });
-document.getElementById('nextChips').addEventListener('click', function(e) {
-  var b = e.target.closest('[data-next]');
-  if (b) { document.getElementById('nextCustom').className = 'next-custom hidden'; todayDo({ nextAction: b.getAttribute('data-next') }); return; }
-  if (e.target.closest('[data-next-other]')) {
-    var box = document.getElementById('nextCustom');
-    box.className = 'next-custom';
-    var inp = document.getElementById('nextText');
-    var known = STR.nextOpts.map(function(o) { return o[1]; });
-    inp.value = todayVisit && todayVisit.nextAction && known.indexOf(todayVisit.nextAction) < 0 ? todayVisit.nextAction : '';
-    inp.focus();
+// ═══════════════════════════════════════════
+//  📷 お店の顔: 外観の写真・Facebook（2026-11-08・v7-operations/ShopProfile.gs）
+//  Daisuke「たくさん車屋あるから、どんなお店か把握したい思いが日本側にはあります」
+//  写真はスマホで長い辺 1280px の JPEG に縮めてから送る（0.3MB 前後）。電波が無い時は箱に貯めない（大きいので）
+// ═══════════════════════════════════════════
+var currentPhotos = [];
+var photoSel = 0;
+var photoBusy = '';   // 写真を送っている店の shop_id（送っていなければ空）
+var fbEditing = false;
+var photoServerOk = false;
+function photoUrl(fileId, w) { return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(fileId) + '&sz=w' + (w || 800); }
+
+function renderFaceCard() {
+  var box = document.getElementById('photoBox');
+  var ph = currentPhotos.length ? currentPhotos : (currentShop && currentShop.photoId ? [{ fileId: currentShop.photoId }] : []);
+  if (photoSel >= ph.length) photoSel = 0;
+  if (!ph.length) { box.innerHTML = ''; }
+  else {
+    var cur = ph[photoSel];
+    box.innerHTML = '<img class="photo-main" id="photoMain" alt="" src="' + esc(photoUrl(cur.fileId, 900)) + '">' +
+      (cur.datetime ? '<div class="photo-cap">' + esc(String(cur.datetime).substring(0, 10).replace(/-/g, '/')) +
+        (cur.staff ? ' · ' + esc(pickLang(STR.photoBy)) + (LANG === 'km' ? '៖ ' : ': ') + esc(cur.staff) : '') + '</div>' : '') +
+      (ph.length > 1 ? '<div class="photo-thumbs">' + ph.map(function(p, i) {
+        return '<img data-ph="' + i + '" class="' + (i === photoSel ? 'sel' : '') + '" loading="lazy" alt="" src="' + esc(photoUrl(p.fileId, 200)) + '">';
+      }).join('') + '</div>' : '');
+  }
+  document.getElementById('photoHead').className = 'ch' + (ph.length || photoServerOk ? '' : ' hidden');
+  document.getElementById('faceCard').className = 'card2' + (ph.length || photoServerOk ? '' : ' nophoto');
+  document.getElementById('photoHint').className = 'notes-hint' + (ph.length || !photoServerOk ? ' hidden' : '');
+  var btn = document.getElementById('btnPhoto');
+  btn.className = 'photo-btn' + (ph.length ? ' has' : '') + (photoServerOk ? '' : ' hidden');
+  var busy = !!(photoBusy && currentShop && photoBusy === currentShop.shopId);
+  btn.disabled = busy;
+  btn.textContent = busy ? STR.photoSending : (ph.length ? STR.photoMore : STR.photoTake);
+  renderFb();
+}
+function renderFb() {
+  var fb = (currentShop && currentShop.facebook) || '';
+  var link = /^https?:\/\//i.test(fb);
+  var showView = link && !fbEditing;
+  document.getElementById('fbView').className = showView ? '' : 'hidden';
+  document.getElementById('fbEdit').className = 'fb-edit' + (showView ? ' hidden' : '');
+  if (link) document.getElementById('fbOpen').href = fb; else document.getElementById('fbOpen').removeAttribute('href');
+  if (!showView && document.activeElement !== document.getElementById('fbInput')) document.getElementById('fbInput').value = fb;
+}
+document.getElementById('photoBox').addEventListener('click', function(e) {
+  var t = e.target.closest('[data-ph]');
+  if (t) { photoSel = Number(t.getAttribute('data-ph')) || 0; renderFaceCard(); return; }
+  if (e.target.id === 'photoMain') {
+    var ph = currentPhotos.length ? currentPhotos : [{ fileId: currentShop.photoId }];
+    document.getElementById('lightboxImg').src = photoUrl(ph[photoSel].fileId, 1600);
+    document.getElementById('lightbox').className = 'lightbox';
   }
 });
-document.getElementById('btnNextText').addEventListener('click', function() {
-  var v = document.getElementById('nextText').value.trim();
-  if (!v) { document.getElementById('nextText').focus(); return; }
-  document.getElementById('nextCustom').className = 'next-custom hidden';
-  todayDo({ nextAction: v });
+document.getElementById('lightbox').addEventListener('click', function() {
+  this.className = 'lightbox hidden'; document.getElementById('lightboxImg').src = '';
 });
-document.getElementById('dueChips').addEventListener('click', function(e) {
-  var b = e.target.closest('[data-qdue]'); if (!b) return;
-  todayDo({ nextDue: b.getAttribute('data-qdue') });
+document.getElementById('btnPhoto').addEventListener('click', function() {
+  if (photoBusy || !currentShop) return;
+  var inp = document.getElementById('photoInput'); inp.value = ''; inp.click();
+});
+// 画像を長い辺 maxPx の JPEG（data URL）にする
+function shrinkPhoto(file, maxPx) {
+  return new Promise(function(res, rej) {
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function() {
+      var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, maxPx / Math.max(w, h));
+      var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = function() { URL.revokeObjectURL(url); rej(new Error('image')); };
+    img.src = url;
+  });
+}
+document.getElementById('photoInput').addEventListener('change', function() {
+  var f = this.files && this.files[0];
+  if (!f || !currentShop) return;
+  var shopId = currentShop.shopId, clientId = newClientId();
+  photoBusy = shopId; renderFaceCard();
+  var done = function() { photoBusy = ''; if (currentShop && currentShop.shopId === shopId) renderFaceCard(); };
+  shrinkPhoto(f, 1280).then(function(dataUrl) {
+    // 送り直しても1枚だけになるよう clientId を付ける。弱い電波を考えて 1 回だけ送り直す
+    var send = function() { return api({ action: 'shop_photo_add', shopId: shopId, image: dataUrl, clientId: clientId }, 60000); };
+    return send().catch(function() { return { ok: false, transient: true }; })
+      .then(function(d) { return (d && !d.ok && d.transient) ? send().catch(function() { return { ok: false }; }) : d; });
+  }).then(function(d) {
+    if (!d || !d.ok) { toast('⚠️ ' + pickLang(STR.photoFail), 'err'); return; }
+    if (currentShop && currentShop.shopId === shopId) {
+      currentPhotos = d.photos || currentPhotos; photoSel = 0;
+      if (currentPhotos[0]) currentShop.photoId = currentPhotos[0].fileId;
+    }
+    for (var i = 0; i < shopsCache.length; i++) if (shopsCache[i].shopId === shopId && d.photos && d.photos[0]) shopsCache[i].photoId = d.photos[0].fileId;
+    toast(pickLang(STR.photoSaved), 'ok');
+    refreshShopsSoon();
+  }).catch(function() { toast('⚠️ ' + pickLang(STR.photoFail), 'err'); }).then(done);
+});
+document.getElementById('btnFbChange').addEventListener('click', function() {
+  fbEditing = true; renderFb(); document.getElementById('fbInput').focus();
+});
+document.getElementById('btnFbSave').addEventListener('click', function() {
+  if (!currentShop) return;
+  var shopId = currentShop.shopId, v = document.getElementById('fbInput').value.trim(), btn = this;
+  btn.disabled = true;
+  var cs = currentShop;
+  api({ action: 'shop_facebook_set', shopId: shopId, facebook: v })
+    .then(function(d) {
+      if (!d || d.error !== 'UNKNOWN_ACTION') return d;
+      // サーバーが古い版の間は、今までの「お店の情報の保存」で Facebook を入れる（ほかの欄は今の値のまま送る）
+      var fb = v && !/^https?:\/\//i.test(v) ? 'https://' + v : v;
+      return api({ action: 'saleslog_shop_update', shopId: shopId, shopName: cs.shopName || '', shopTypes: cs.shopTypes || [],
+        ownerName: cs.ownerName || '', phone: cs.phone || '', facebook: fb, status: cs.status || '', memo: cs.memo || '' })
+        .then(function(r) { return r && r.ok ? { ok: true, shopId: shopId, facebook: fb } : r; });
+    })
+    .catch(function() { return { ok: false, error: STR.netError }; })
+    .then(function(d) {
+      btn.disabled = false;
+      if (!d || !d.ok) { toast('⚠️ ' + (d && d.error === 'INVALID_URL' ? pickLang(STR.fbBad) : ((d && d.error) || STR.netError)), 'err'); return; }
+      for (var i = 0; i < shopsCache.length; i++) if (shopsCache[i].shopId === shopId) shopsCache[i].facebook = d.facebook;
+      if (currentShop && currentShop.shopId === shopId) {
+        currentShop.facebook = d.facebook; fbEditing = false;
+        document.getElementById('sFb').value = d.facebook; renderShopDetail();
+      }
+      toast(pickLang(STR.fbSaved), 'ok');
+      refreshShopsSoon();
+    });
 });
 
 // ── これまでの記録（訪問・聞いたこと・計算を新しい順に1本で） ──
@@ -3098,10 +3243,12 @@ document.getElementById('navListL').textContent = STR.navList;
 document.getElementById('navNewL').textContent = STR.navNew;
 document.getElementById('actMapL').textContent = STR.actMap;
 document.getElementById('btnJustVisit').textContent = STR.justVisit;
-document.getElementById('nextHead').textContent = STR.nextHead;
-document.getElementById('dueHead').textContent = STR.dueHead;
-document.getElementById('btnNextText').textContent = STR.saveShort;
-document.getElementById('nextText').placeholder = STR.nextAction;
+document.getElementById('photoHead').textContent = STR.photoHead;
+document.getElementById('photoHint').textContent = STR.photoHint;
+document.getElementById('fbOpen').textContent = STR.fbOpen + ' ↗';
+document.getElementById('btnFbChange').textContent = STR.fbChange;
+document.getElementById('btnFbSave').textContent = STR.saveShort;
+document.getElementById('fbInput').placeholder = STR.fbPh;
 document.getElementById('infoHead').textContent = STR.infoHead;
 document.getElementById('formNotesHint').textContent = STR.notesHint;
 document.getElementById('btnNoteMore').textContent = STR.notesMore;
