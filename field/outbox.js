@@ -118,6 +118,21 @@
   // その場で「送信済み（テスト）」にする＝お店・お客さん・売上・請求・経費・打刻のどこにも出ない。切り替えは画面（index.html）
   var testMode = false;
   function setTest(on) { testMode = !!on; }
+  // 送信済みと分かった記録（メモリ上）。端末に保存できない時の「その場で直接送る」で、順番を守るために使う（2026-11-09）
+  var sentMem = {}, startSentMem = {};
+  function markSent(rec) { sentMem[rec.client_id] = true; if (rec.kind === 'job_start') startSentMem[rec.job_client_id] = true; }
+  function okEcho(res, rec) {
+    // 現場の GAS は status ok/duplicate、勤務Bot側の GAS は ok:true（重複は status duplicate）
+    return !!res && String(res.client_id || '') === String(rec.client_id) &&
+           (res.status === 'ok' || res.status === 'duplicate' || res.ok === true);
+  }
+  /** 端末に保存できない時に、箱を通さずその場で送ってよいか（先に送るべき記録が送信済みと分かっている時だけ） */
+  function canDirect(rec) {
+    if (rec.kind === 'job_cancel') return false;
+    if (rec.kind === 'job_end') return !!startSentMem[rec.job_client_id];   // 開始が届いていないのに終了を先に送らない
+    if (rec.after) return !!sentMem[rec.after];
+    return true;
+  }
 
   /** 記録を箱に入れる（保存できたら resolve ＝「保存しました」を出してよい）
    *  opts.url: 送り先（既定は現場の GAS。勤怠・日報は勤務Bot側の GAS） */
@@ -146,6 +161,16 @@
       notify();
       setTimeout(flush, 50);
       return rec;
+    }, function (err) {
+      // 2026-11-09 端末に保存できない（つなぎ直してもダメ）時の逃げ道: 電波があれば、その場で直接送る。
+      //   届いた（サーバーが client_id を返した）時だけ成功。届かなければ元の保存エラーのまま（記録は画面に残る）
+      if (testMode || !canDirect(rec)) throw err;
+      return postOnce(rec).then(function (res) {
+        if (!okEcho(res, rec)) throw err;
+        markSent(rec); rec.status = 'sent'; rec.sent_at = new Date().toISOString(); rec.direct = true;
+        try { console.warn('[outbox] saved failed, sent directly', rec.kind, rec.client_id, err); } catch (e) {}
+        return rec;
+      }, function () { throw err; });
     });
   }
 
@@ -196,7 +221,7 @@
       });
 
       var sentStart = {};
-      list.forEach(function (r) { if (r.kind === 'job_start' && r.status === 'sent') sentStart[r.job_client_id] = true; });
+      list.forEach(function (r) { if (r.status === 'sent') markSent(r); if (r.kind === 'job_start' && r.status === 'sent') sentStart[r.job_client_id] = true; });
       var startKnown = {};
       list.forEach(function (r) { if (r.kind === 'job_start') startKnown[r.job_client_id] = true; });
 
@@ -230,10 +255,8 @@
           if (blockedBy(rec)) return;
           rec.status = 'sending'; rec.attempts++;
           return put(rec).then(function () { notify(); return postOnce(rec); }).then(function (res) {
-            // 現場の GAS は status ok/duplicate、勤務Bot側の GAS は ok:true（重複は status duplicate）
-            var okEcho = res && String(res.client_id || '') === String(rec.client_id) &&
-                         (res.status === 'ok' || res.status === 'duplicate' || res.ok === true);
-            if (okEcho) {
+            if (okEcho(res, rec)) {
+              markSent(rec);
               rec.status = 'sent';
               rec.sent_at = new Date().toISOString();
               rec.server = { jobId: res.jobId || '', status: res.status, warning: res.warning || '' };
