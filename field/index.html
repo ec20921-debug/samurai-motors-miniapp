@@ -346,7 +346,7 @@ body.test .bar::before{content:"🧪 TEST";position:absolute;right:12px;top:-30p
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261105-110406';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261109-145628';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -591,6 +591,8 @@ function toMin(s) { var p = String(s || '0:0').split(':'); return (+p[0] || 0) *
 function hms(sec) { sec = Math.max(0, Math.floor(sec)); return [Math.floor(sec / 3600), Math.floor(sec % 3600 / 60), sec % 60].map(function (n) { return String(n).padStart(2, '0'); }).join(':'); }
 function fmtDur(sec) { return Math.round(sec / 60) + ' ' + t('minutes'); }
 var toastTimer;
+// 端末への保存に失敗した時の表示（2026-11-09）: 原因の名前（例: QuotaExceededError）も出して、スクショで原因が分かるようにする
+function idbFail() { var n = Outbox.lastError ? Outbox.lastError() : ''; toast('⚠ IndexedDB' + (n ? ' · ' + n : ''), 'warn'); }
 function toast(msg, kind) {
   var el = $('toast'), bar = $('bar'), tabs = $('tabs');
   // 下の操作バー（作業中）かタブ（ホーム）のすぐ上に出す＝押そうとしているボタンに重ねない（2026-11-05 デザインレビュー）
@@ -740,7 +742,7 @@ function shotProg(shots, photos) {
 var draftTimer = null;
 function saveDraft() {
   clearTimeout(draftTimer);
-  draftTimer = setTimeout(function () { if (S.cur) Outbox.kvSet('draft', S.cur); }, 250);
+  draftTimer = setTimeout(function () { if (S.cur) Outbox.kvSet('draft', S.cur).catch(function () {}); }, 250);
 }
 function svcSec(s) { return ((s.acc || 0) + (s.since ? Date.now() - s.since : 0)) / 1000; }
 function totalSvcSec(c) { return Object.keys(c.svc).reduce(function (a, k) { return a + svcSec(c.svc[k]); }, 0); }
@@ -839,7 +841,8 @@ function queueEnd(c) {
            residence_id: !c.job.bookingId ? (c.job.resId || '') : '', residence_who: !c.job.bookingId ? (c.job.resWho || '') : '' };   // 開始の記録が無い時の控え（2026-10-31）
   if (c.mode === 'shop') { p.v2.mode = 'shop'; p.v2.price_mode = 'agreed'; p.v2.agreed_price = sjNum(c.price); p.v2.guide_price = sjGuide(c.job, c.who, c.rate); p.v2.new_shop_name = c.newShop ? c.shopName : ''; }
   // 先に下書きへ endCid を保存（送信待ち箱に入れた後に落ちても、同じ client_id で上書きされるだけ）
-  return Outbox.kvSet('draft', c).then(function () { return Outbox.enqueue('job_end', p); });
+  //   下書きの保存に失敗しても、記録そのものは箱に入れる（endCid は画面の中に残っている・2026-11-09）
+  return Outbox.kvSet('draft', c).catch(function () {}).then(function () { return Outbox.enqueue('job_end', p); });
 }
 
 function getGps() {
@@ -869,7 +872,7 @@ function doPunch(type) {
       toast((type === 'in' ? '🟢 ' : '🔴 ') + t('punch_saved') + ' ' + tm, 'ok');
       render();
     });
-  }).catch(function () { if (btn) btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+  }).catch(function () { if (btn) btn.disabled = false; idbFail(); });
 }
 // ═══════════════════════════════════════════════════════════════
 //  経費（試作の9ボタン → 経費マスターの分類。2026-10-08 Step 2）
@@ -940,7 +943,7 @@ function saveExpense() {
     S.expHist = S.expHist.slice(0, 30); Outbox.kvSet('exp_hist', S.expHist);
     S.exp = { item: e.item, cur: e.cur, memo: '', img: null, amt: '' };
     toast('📥 ' + t('exp_saved'), 'ok'); renderExpense(); window.scrollTo(0, 0);
-  }).catch(function () { $('expSave').disabled = false; toast('⚠ IndexedDB', 'warn'); });
+  }).catch(function () { $('expSave').disabled = false; idbFail(); });
 }
 
 // ── 管理者: スタッフ専用リンクの発行（日本語のみ・Telegram から開いたときだけ） ──
@@ -1531,16 +1534,16 @@ function renderBar() {
       c.startAt = new Date().toISOString();
       setActive(c, j.menu[0]);
       queueStart(c).then(function () { c.startQueued = true; saveDraft(); toast('📥 ' + t('offline_saved'), 'ok'); goStep('work'); })
-        .catch(function () { btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+        .catch(function () { btn.disabled = false; idbFail(); });
     }
     else if (c.step === 'work') { setActive(c, null); c.endAt = new Date().toISOString(); goStep('after'); }
     else if (c.step === 'after') goStep('close');
     else if (c.step === 'close') {
       queueEnd(c).then(function () {
         S.done[j.id] = { pay: c.pay, amountDone: c.pay === 'free' ? 0 : (Number(c.amount) || 0), menuDone: Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }), test: !!c.test };
-        Outbox.kvSet('done:' + ppDate(0), S.done);
-        c.step = 'done'; Outbox.kvDel('draft'); renderJob(); window.scrollTo(0, 0);
-      }).catch(function () { btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+        Outbox.kvSet('done:' + ppDate(0), S.done).catch(function () {});
+        c.step = 'done'; Outbox.kvDel('draft').catch(function () {}); renderJob(); window.scrollTo(0, 0);
+      }, function () { btn.disabled = false; idbFail(); });
     }
     else { S.view = 'home'; S.cur = null; Outbox.kvDel('draft'); render(); }
   };
@@ -1790,7 +1793,7 @@ function sjStartWork(c, btn) {
   c.startAt = new Date().toISOString();
   setActive(c, c.job.menu[0]);
   queueStart(c).then(function () { c.startQueued = true; sjBumpFreq(c.shop); saveDraft(); toast('📥 ' + t('offline_saved'), 'ok'); goStep('work'); })
-    .catch(function () { btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+    .catch(function () { btn.disabled = false; idbFail(); });
 }
 
 // ── 作業中: 値段をすぐ直せる ──
@@ -1835,11 +1838,16 @@ function sjSend(c, btn) {
   c.sending = true;
   var v = sjVals(c);
   c.pay = v.pay; c.amount = v.amount; c.list = v.list; c.rate = v.rate; c.src = 'shop';
+  // 保存の失敗と、保存後の画面の描画エラーを分ける（前は描画のエラーも「⚠ IndexedDB」になっていた・2026-11-09）
   queueEnd(c).then(function () {
     S.done[c.job.id] = { pay: c.pay, amountDone: c.amount, menuDone: Object.keys(c.svc).filter(function (k) { return !c.svc[k].skip; }), test: !!c.test };
-    Outbox.kvSet('done:' + ppDate(0), S.done);
-    c.step = 'done'; Outbox.kvDel('draft'); renderJob(); window.scrollTo(0, 0);
-  }).catch(function () { c.sending = false; btn.disabled = false; toast('⚠ IndexedDB', 'warn'); });
+    Outbox.kvSet('done:' + ppDate(0), S.done).catch(function () {});
+    c.step = 'done'; Outbox.kvDel('draft').catch(function () {}); renderJob(); window.scrollTo(0, 0);
+  }, function () {
+    // 保存できなかった: 画面を描き直して「正しい・送る」が点線（押せない）のまま残らないようにする。
+    //   offOk は残すので、もう一度「送る」を押せば確認なしで保存をやり直す
+    c.sending = false; c.askOff = false; renderJob(); idbFail();
+  });
 }
 
 // 小さい画面だと「この金額でいい？」が下のボタンの裏に隠れて、送るを押しても何も起きないように見える（2026-10-29）→ 見える所まで動かす

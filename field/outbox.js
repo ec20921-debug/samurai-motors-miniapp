@@ -22,57 +22,81 @@
   var KEEP_SENT_MS = 7 * 24 * 3600 * 1000;
   var CANCEL_WAIT_MS = 95000;   // 取り消しが送信ループの終わりを待つ上限（1件の送信の上限 TIMEOUT_MS より少し長く）
 
+  // 2026-11-09 現場の「⚠ IndexedDB」（Run Kosal・お店の仕事の「正しい・送る」で保存できない）:
+  //   ① スマホがアプリを裏に回す・保存場所の更新などで、開いたままの接続が切れることがある → 切れた接続を捨てて開き直す
+  //   ② 開くのに一度失敗すると、その失敗を覚えたまま再起動まで全部の保存が失敗していた → 失敗は覚えない
+  //   ③ 容量いっぱい（QuotaExceededError）は、送信済みの記録を消して1回だけやり直す
+  //   どの保存も put / delete なので、やり直しても記録が二重にはならない
   var dbp = null;
+  function resetDb() {
+    var p = dbp; dbp = null;
+    if (p) p.then(function (d) { try { d.close(); } catch (e) {} }, function () {});
+  }
   function db() {
     if (dbp) return dbp;
-    dbp = new Promise(function (resolve, reject) {
-      var req = indexedDB.open(DB_NAME, DB_VER);
+    var p = dbp = new Promise(function (resolve, reject) {
+      var req;
+      try { req = indexedDB.open(DB_NAME, DB_VER); } catch (e) { reject(e); return; }
       req.onupgradeneeded = function () {
         var d = req.result;
         if (!d.objectStoreNames.contains('outbox')) d.createObjectStore('outbox', { keyPath: 'client_id' });
         if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv', { keyPath: 'k' });
       };
-      req.onsuccess = function () { resolve(req.result); };
+      req.onsuccess = function () {
+        var d = req.result;
+        d.onversionchange = function () { try { d.close(); } catch (e) {} if (dbp === p) dbp = null; };
+        d.onclose = function () { if (dbp === p) dbp = null; };   // ブラウザ側が接続を閉じた
+        resolve(d);
+      };
       req.onerror = function () { reject(req.error); };
     });
-    return dbp;
+    p.catch(function () { if (dbp === p) dbp = null; });   // 次の保存で開き直す
+    return p;
   }
 
-  function tx(store, mode, fn) {
+  function errName(e) { return (e && (e.name || e.message)) || String(e || 'error'); }
+  var lastError = '';
+
+  /** 1回分の処理（読み書き）。fn(store) が返したリクエストの結果を返す */
+  function runOnce(store, mode, fn) {
     return db().then(function (d) {
       return new Promise(function (resolve, reject) {
-        var t = d.transaction(store, mode);
-        var s = t.objectStore(store);
-        var out = fn(s);
-        t.oncomplete = function () { resolve(out && out.result !== undefined ? out.result : out); };
-        t.onerror = function () { reject(t.error); };
-        t.onabort = function () { reject(t.error); };
+        var t = d.transaction(store, mode);   // 切れた接続ではここで投げる → reject
+        var out = fn(t.objectStore(store));
+        t.oncomplete = function () { resolve(out && out.result !== undefined ? out.result : undefined); };
+        t.onerror = function () { reject(t.error || (out && out.error)); };
+        t.onabort = function () { reject(t.error || new Error('AbortError')); };
       });
     });
   }
-
-  function getAll() {
-    return db().then(function (d) {
-      return new Promise(function (resolve, reject) {
-        var r = d.transaction('outbox', 'readonly').objectStore('outbox').getAll();
-        r.onsuccess = function () { resolve(r.result || []); };
-        r.onerror = function () { reject(r.error); };
+  function purgeSent() {   // 容量いっぱいの時だけ: 送信済みの記録（写真は既に外してある）を消す
+    return runOnce('outbox', 'readonly', function (s) { return s.getAll(); }).then(function (list) {
+      var ids = (list || []).filter(function (r) { return r.status === 'sent'; }).map(function (r) { return r.client_id; });
+      if (!ids.length) return;
+      return runOnce('outbox', 'readwrite', function (s) { ids.forEach(function (id) { s.delete(id); }); });
+    }).catch(function () {});
+  }
+  function run(store, mode, fn) {
+    return runOnce(store, mode, fn).catch(function (e1) {
+      resetDb();
+      var quota = /quota/i.test(errName(e1));
+      return (quota && mode === 'readwrite' ? purgeSent() : Promise.resolve()).then(function () {
+        return runOnce(store, mode, fn);
+      }).catch(function (e2) {
+        lastError = errName(e2 || e1);
+        try { console.warn('[outbox] IndexedDB', store, mode, e1, e2); } catch (e) {}
+        throw e2 || e1;
       });
     });
   }
+  function tx(store, mode, fn) { return run(store, mode, fn); }
+
+  function getAll() { return run('outbox', 'readonly', function (s) { return s.getAll(); }).then(function (r) { return r || []; }); }
   function put(rec) { return tx('outbox', 'readwrite', function (s) { s.put(rec); }); }
   function del(id) { return tx('outbox', 'readwrite', function (s) { s.delete(id); }); }
 
   // ── 小さな保存場所（下書き・一覧のキャッシュ等） ──
-  function kvGet(k) {
-    return db().then(function (d) {
-      return new Promise(function (resolve, reject) {
-        var r = d.transaction('kv', 'readonly').objectStore('kv').get(k);
-        r.onsuccess = function () { resolve(r.result ? r.result.v : undefined); };
-        r.onerror = function () { reject(r.error); };
-      });
-    });
-  }
+  function kvGet(k) { return run('kv', 'readonly', function (s) { return s.get(k); }).then(function (r) { return r ? r.v : undefined; }); }
   function kvSet(k, v) { return tx('kv', 'readwrite', function (s) { s.put({ k: k, v: v }); }); }
   function kvDel(k) { return tx('kv', 'readwrite', function (s) { s.delete(k); }); }
 
@@ -337,6 +361,7 @@
 
   global.Outbox = {
     start: start, enqueue: enqueue, flush: flush, retryAll: retryAll, all: getAll, supersede: supersede, cancelJob: cancelJob, setTest: setTest,
-    kvGet: kvGet, kvSet: kvSet, kvDel: kvDel, uuid: uuid
+    kvGet: kvGet, kvSet: kvSet, kvDel: kvDel, uuid: uuid,
+    lastError: function () { return lastError; }
   };
 })(window);
