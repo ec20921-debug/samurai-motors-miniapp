@@ -74,6 +74,7 @@ main.flow{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 .strip.err{background:var(--red-bg);color:var(--red)}
 .strip.info{background:var(--blue-bg);color:var(--blue)}
 .strip.ok{background:var(--green-bg);color:var(--green)}
+.strip.sendbn{font-size:17px;padding:16px 14px;margin-bottom:10px}
 
 /* ── 共通部品 ── */
 .card{background:var(--card);border:1px solid #dce2ea;border-radius:var(--r);overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.05)}
@@ -346,7 +347,7 @@ body.test .bar::before{content:"🧪 TEST";position:absolute;right:12px;top:-30p
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261109-150201';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261113-164416';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -440,6 +441,7 @@ var T_JA = {
   new_job:'車屋以外のお客さん（予約なし）', new_job_s:'個人・レジデンス（Picasso など）', cal_chip:'カレンダー', all_day:'終日',
   res_title:'どこのお客さん？', res_none:'個人', res_resident:'住人', res_staff:'スタッフ（社員）', room_opt:'部屋番号（なくてもOK）', res_note:'作業前・作業後の写真がこのグループに届きます（金額は届きません）', jobs_done:'完了', total:'合計', free_demo:'無料デモ', minutes:'分',
   ob_pending:'未送信 {n} 件', ob_sending:'送信中…', ob_all_sent:'すべて送信済み', ob_review:'送れない記録があります。管理者に連絡してください', ob_send_now:'今すぐ送る',
+  send_wait:'送信中… あと {n} 件。この画面を開いたままに', send_ok:'届きました。スマホをしまって大丈夫です', send_later:'電波が弱いです。次にアプリを開いた時に自動で送ります',
   update_ready:'新しい版があります。タップして更新', confirm_leave:'作業を中断しますか？（記録はスマホに残ります）', draft_restored:'前回の続きから再開しました',
   old_app:'旧アプリを開く（チャット・キャンペーン）', loading:'読み込み中…', load_failed:'予約を読み込めません。前回の一覧を表示しています', refresh:'更新',
   install_title:'ホーム画面に追加', install_ios:'Safari の共有ボタン →「ホーム画面に追加」', install_android:'右上のメニュー →「ホーム画面に追加」',
@@ -455,7 +457,7 @@ var T_JA = {
   tab_expense:'経費', exp_receipt:'レシートを撮る', exp_recent:'最近の登録', it_fuel:'ガソリン', it_fuel_ex:'例: バイクのガソリン', it_chem:'洗車の薬', it_chem_ex:'例: スプレー・ワックス・シャンプー（車に使って、なくなるもの）', it_tools:'道具', it_tools_ex:'例: クロス・バケツ・手袋（何回も使うもの）', it_bike:'バイクの修理', it_bike_ex:'例: パンク修理・オイル交換', it_parking:'駐車代', it_parking_ex:'例: 駐車場・通行料', it_flyer:'チラシ印刷', it_flyer_ex:'例: チラシ・ポスター・名刺', it_phone:'電話代', it_phone_ex:'例: 電話のチャージ・インターネット', it_util:'店の電気・水道', it_util_ex:'例: 電気代・水道代', it_other:'そのほか', it_other_ex:'例: 上にないもの（何を買ったか書いてください）', memo_required:'何を買ったか書いてください', exp_amount_req:'金額を入れてください', exp_no_receipt_q:'レシートの写真がありません。このまま保存しますか？', exp_saved:'経費を保存しました。電波があれば送ります'
 };
 /*KM-START*/
-var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_scout": "ចុះជួបហាង", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "រថយន្តរបស់ហាង (ហាងបង់)", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "shop_pick": "ហាងដៃគូណា?", "shop_none": "មិនជ្រើសរើស (មិនដឹង)", "shop_need": "បើជាការងាររបស់ហាងដៃគូ សូមជ្រើសរើសហាង", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ភ្ញៀវក្រៅពីហាងដៃគូ (គ្មានការកក់)", "new_job_s": "បុគ្គល / ខុនដូ (ដូចជា Picasso)", "cal_chip": "ប្រតិទិន", "all_day": "ទាំងថ្ងៃ", "res_title": "ភ្ញៀវប្រភេទណា?", "res_none": "បុគ្គល", "res_resident": "អ្នករស់នៅ", "res_staff": "បុគ្គលិកអគារ","room_opt": "លេខបន្ទប់ (គ្មានក៏បាន)", "res_note": "រូបថតមុន និងក្រោយធ្វើសេវា នឹងទៅដល់ក្រុម Telegram របស់អគារនេះ (មិនបង្ហាញទឹកប្រាក់ទេ)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "pay_qr": "ទទួលលុយតាម ABA QR", "pay_shopref": "ភ្ញៀវដែលហាងបានណែនាំមក", "amt_split": "តម្លៃសេវា {list}$ → យើងទទួល {amt}$ (ហាងទទួលបាន {rate}%)", "shop_need2": "សូមជ្រើសរើសហាងសិន (ទឹកប្រាក់នឹងបំពេញឱ្យដោយស្វ័យប្រវត្តិ)", "pay_hint": "ទទួលលុយតាម QR តែប៉ុណ្ណោះ (មិនទទួលសាច់ប្រាក់ទេ)", "tab_work": "ការងារ", "tab_att": "ចុះវត្តមាន", "sj_start": "🏪 ចាប់ផ្ដើមការងាររបស់ហាងដៃគូ", "sj_start_s": "ពេលហាងហៅ ចាប់ផ្ដើមនៅទីនេះ។ ទៅអេក្រង់ជ្រើសហាង", "sj_fav": "ហាងដែលទៅញឹកញាប់", "sj_bk_none": "📅 ការកក់ថ្ងៃនេះ៖ គ្មាន", "sj_pick": "ជ្រើសហាង", "sj_search": "🔍 ស្វែងរកតាមឈ្មោះហាង (វាយ 2-3 អក្សរក៏បាន)", "sj_fav_order": "តាមលំដាប់ហាងដែលទៅញឹកញាប់", "sj_all": "ហាងទាំងអស់ (តាមលំដាប់ ABC)", "sj_new": "+ ហាងថ្មី (មិនទាន់មានក្នុងបញ្ជី)<small>បញ្ចូលឈ្មោះ ហើយចាប់ផ្ដើមភ្លាមបាន។ រូបថត និងការស្នើសុំទូទាត់ប្រាក់ ទៅដល់ខាងជប៉ុន ហើយពេលមានក្រុមរួច ហាងនឹងបង្ហាញក្នុងបញ្ជី</small>", "sj_mode": "ការងាររបស់ហាងដៃគូ", "sj_who_shop": "រថយន្តរបស់ហាង", "sj_who_ref": "ភ្ញៀវដែលហាងបានណែនាំមក", "sj_plate": "ស្លាកលេខ / លេខតួ (គ្មានក៏បាន)", "sj_shoot": "📷 ថត", "sj_svc": "សេវា", "sj_pay_shop": "ទឹកប្រាក់ដែលហាងបង់", "sj_pay_ref": "តម្លៃរបស់ភ្ញៀវដែលហាងបានណែនាំមក", "sj_later_ok": "កែពេលក្រោយបាន", "sj_diff": "ធៀបនឹងតម្លៃប្រហែល {s}{v}$", "sj_diff_eq": "ស្មើតម្លៃប្រហែល", "sj_rp": "រថយន្តធ្លាប់បាញ់ថ្នាំឡើងវិញ?", "sj_rp_s": "តែពេលខាត់ប៉ុណ្ណោះ", "sj_yes": "ធ្លាប់", "sj_no": "មិនធ្លាប់", "sj_unk": "មិនដឹង", "sj_rp_note": "⚠ មុនធ្វើការ សូមប្រាប់ហាងថា «ថ្នាំលាបអាចរបក»។ ខាត់ស្រាលៗ", "sj_next_photos": "▶ ទៅរូបថតមុនធ្វើសេវា", "sj_dmg": "🩹 ស្នាមកោស / ស្នាមជ្រុញ / កន្លែងគួរកត់សម្គាល់", "sj_dmg_note": "បើគ្មានស្នាម សូមចុច «គ្មានស្នាម» (ត្រូវចុចមួយណាមួយ ទើបទៅមុខបាន)", "sj_go": "▶ ចាប់ផ្ដើម<small>រូបថត និង «ស្នាមដែលមានតាំងពីមុនធ្វើសេវា» ផ្ញើទៅហាង</small>", "sj_edit": "💲 កែតម្លៃ (ឥឡូវ ", "sj_edit_note": "បើនិយាយជាមួយហាងហើយតម្លៃប្ដូរ អាចកែពីទីនេះភ្លាម", "sj_preview": "អ្វីដែលនឹងផ្ញើទៅក្រុមរបស់ហាង", "sj_tg_end": "✅ ការងារបញ្ចប់ហើយ (តាមការស្នើសុំ របស់ហាងអ្នក)", "sj_tg_after": "📷 រូបថតក្រោយធ្វើសេវា ↓", "sj_tg_req": "🧾 ការស្នើសុំទូទាត់ប្រាក់", "sj_tg_due": "💰 ទឹកប្រាក់ត្រូវបង់:", "sj_tg_scan": "📱 សូមស្កេន QR ខាងលើ ដើម្បីបង់ប្រាក់ឱ្យ Samurai Motors។", "sj_amt_s": "កែនៅទីនេះក៏បាន", "sj_free_q": "🎁 ប្ដូរជាការសាកល្បងឥតគិតថ្លៃ", "sj_free_btn": "ប្ដូរ", "sj_send": "📨 ផ្ញើទៅហាង<small>រូបថតក្រោយធ្វើសេវា + ការស្នើសុំទូទាត់ប្រាក់ (QR)</small>", "sj_sent_t": "បានផ្ញើហើយ", "sj_home": "ត្រឡប់ទៅផ្ទាំងការងារ", "sj_gps": "📡 កត់ត្រាទីតាំង (GPS) ជាមួយផងដែរ", "sj_fix": "✎ កែ", "sj_sent": "បានផ្ញើទៅ {shop} ហើយ", "sj_again": "+ រថយន្ត 1 គ្រឿងទៀត នៅហាងដដែល<small>ចាប់ផ្ដើមដោយមាន {shop} រួចហើយ</small>", "sj_guide_shop": "តម្លៃប្រហែល {v}$ (តម្លៃសម្រាប់ហាង)", "sj_guide_ref": "តម្លៃប្រហែល {v}$", "sj_new_name": "ឈ្មោះហាងថ្មី", "sj_none": "រកមិនឃើញទេ។ សូមចុច «ហាងថ្មី» ហើយបញ្ចូលឈ្មោះហាង", "sj_price_need": "សូមបញ្ចូលទឹកប្រាក់ដែលបានព្រមព្រៀងជាមួយហាង", "sj_no_guide": "គ្មានតម្លៃប្រហែល (សូមបញ្ចូលទឹកប្រាក់ដែលបានព្រមព្រៀងជាមួយហាង)", "sj_off_q": "{v}$ ត្រឹមត្រូវឬទេ? (តម្លៃប្រហែល {g}$)", "sj_off_yes": "ត្រឹមត្រូវ ផ្ញើ", "sj_dmg_need_photo": "សូមថតរូបស្នាម (ម្ដងមួយកន្លែង)", "sj_off_q0": "{v}$ ត្រឹមត្រូវឬទេ?", "job_cancel": "🗑 បោះបង់ការងារនេះ (ធ្វើតេស្តកម្មវិធី ឬចុចខុស)", "job_cancel_q": "បោះបង់ការងារនេះឬទេ?\nនឹងមិនមានការកត់ត្រាតម្លៃសេវា និងការស្នើសុំទូទាត់ប្រាក់ (QR) ទេ។\nបើអ្នកបានធ្វើការងារលើរថយន្តពិតប្រាកដ (រួមទាំងការងារ «ឥតគិតថ្លៃ (សាកល្បង)») សូមកុំបោះបង់ សូមបន្តធ្វើរហូតដល់ចប់។", "job_cancelled": "បានបោះបង់ការងារនេះហើយ", "job_cancel_ng": "បានផ្ញើកំណត់ត្រាបញ្ចប់នៃការងារនេះរួចហើយ ដូច្នេះមិនអាចបោះបង់បានទេ។ សូមទាក់ទងអ្នកគ្រប់គ្រង"};
+var T_KM = {"tab_today": "ថ្ងៃនេះ", "tab_scout": "ចុះជួបហាង", "next_title": "ការកក់បន្ទាប់", "btn_map": "ផែនទី", "no_jobs": "ថ្ងៃនេះមិនមានការកក់ទេ", "tomorrow": "ថ្ងៃស្អែក", "job_precheck": "ពិនិត្យមុនធ្វើការ", "photo_before": "រូបថតមុនលាង", "photo_after": "រូបថតក្រោយលាង", "btn_start": "ចាប់ផ្ដើម", "btn_finish": "រួចរាល់", "btn_save": "រក្សាទុក", "btn_next": "បន្ទាប់", "btn_back": "ថយក្រោយ", "chk_engine": "ម៉ាស៊ីនដើរ", "chk_lights": "ភ្លើង", "chk_windows": "កញ្ចក់ទ្វារ", "chk_wipers": "ដងជូតកញ្ចក់", "chk_ac": "ម៉ាស៊ីនត្រជាក់", "chk_ok": "ធម្មតា", "chk_ng": "ខូច", "damage_title": "ស្នាមកោស / ស្នាមជ្រុញ", "damage_tap": "ចុចលើកន្លែងដែលមានស្នាម", "damage_none": "គ្មានស្នាម", "damage_photo": "ថតរូបស្នាម", "side_front": "មុខ", "side_rear": "ក្រោយ", "side_left": "ឆ្វេង", "side_right": "ស្ដាំ", "part_windshield": "កញ្ចក់មុខ", "part_hl_left": "ចង្កៀងមុខឆ្វេង", "part_hl_right": "ចង្កៀងមុខស្តាំ", "part_seat_front": "កៅអីមុខ", "part_seat_rear": "កៅអីក្រោយ", "btn_retake": "ថតម្ដងទៀត", "btn_ok": "យល់ព្រម", "lbl_required": "ត្រូវការ", "lbl_optional": "ស្រេចចិត្ត", "lbl_photos": "រូបថត", "now_doing": "សេវាកំពុងធ្វើ", "svc_wash": "លាងសម្អាត", "svc_glass": "ស្រោបកញ្ចក់", "svc_headlight": "ខាត់ចង្កៀងមុខ", "svc_body": "ខាត់ខ្លួនរថយន្ត", "svc_done_q": "សូមចុចសេវាទាំងអស់ដែលបានធ្វើ", "work_time": "រយៈពេលធ្វើការ", "pay_title": "ការទូទាត់", "pay_cash": "សាច់ប្រាក់", "pay_aba": "ABA", "pay_shop": "រថយន្តរបស់ហាង (ហាងបង់)", "pay_free": "ឥតគិតថ្លៃ (សាកល្បង)", "pay_later": "មិនទាន់បង់", "amount": "ទឹកប្រាក់", "shop_pick": "ហាងដៃគូណា?", "shop_none": "មិនជ្រើសរើស (មិនដឹង)", "shop_need": "បើជាការងាររបស់ហាងដៃគូ សូមជ្រើសរើសហាង", "src_title": "អតិថិជនមកពីណា?", "src_shop": "ហាងដៃគូ", "src_flyer": "ខិត្តប័ណ្ណ", "src_facebook": "Facebook", "src_repeat": "អតិថិជនចាស់", "src_walkin": "ជួបផ្ទាល់", "cust_name": "ឈ្មោះអតិថិជន", "car": "រថយន្ត", "plate": "ស្លាកលេខ", "size_sedan": "សេដាន ឬ តូចជាង", "size_suv": "SUV ឬ ធំជាង", "place_store": "នៅហាង", "place_delivery": "ដឹកជញ្ជូន", "note": "កំណត់សម្គាល់", "offline_saved": "បានរក្សាទុកក្នុងទូរស័ព្ទ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "sent": "បានផ្ញើ", "new_job": "ភ្ញៀវក្រៅពីហាងដៃគូ (គ្មានការកក់)", "new_job_s": "បុគ្គល / ខុនដូ (ដូចជា Picasso)", "cal_chip": "ប្រតិទិន", "all_day": "ទាំងថ្ងៃ", "res_title": "ភ្ញៀវប្រភេទណា?", "res_none": "បុគ្គល", "res_resident": "អ្នករស់នៅ", "res_staff": "បុគ្គលិកអគារ","room_opt": "លេខបន្ទប់ (គ្មានក៏បាន)", "res_note": "រូបថតមុន និងក្រោយធ្វើសេវា នឹងទៅដល់ក្រុម Telegram របស់អគារនេះ (មិនបង្ហាញទឹកប្រាក់ទេ)", "jobs_done": "បានបញ្ចប់", "total": "សរុប", "free_demo": "លាងសាកល្បង (ឥតគិតថ្លៃ)", "minutes": "នាទី", "ob_pending": "មានការងារ {n} មិនទាន់បានផ្ញើ", "ob_sending": "កំពុងផ្ញើ…", "ob_all_sent": "បានផ្ញើទាំងអស់", "ob_review": "មានកំណត់ត្រាដែលផ្ញើមិនបាន។ សូមទាក់ទងអ្នកគ្រប់គ្រង", "ob_send_now": "ផ្ញើឥឡូវនេះ", "send_wait": "កំពុងផ្ញើ… នៅសល់ {n} ការងារ។ សូមទុកអេក្រង់នេះបើកសិន", "send_ok": "បានផ្ញើរួចរាល់។ អាចដាក់ទូរស័ព្ទចុះបានហើយ", "send_later": "អ៊ីនធឺណិតខ្សោយ។ នឹងផ្ញើដោយស្វ័យប្រវត្តិ ពេលបើកកម្មវិធីលើកក្រោយ", "update_ready": "មានកំណែថ្មី។ ចុចដើម្បីធ្វើបច្ចុប្បន្នភាព", "confirm_leave": "ផ្អាកការងារឬទេ? (កំណត់ត្រានៅតែនៅក្នុងទូរស័ព្ទ)", "draft_restored": "បានបន្តពីលើកមុន", "old_app": "បើកកម្មវិធីចាស់ (ជជែក / យុទ្ធនាការ)", "loading": "កំពុងផ្ទុក…", "load_failed": "ផ្ទុកការកក់មិនបាន។ កំពុងបង្ហាញបញ្ជីលើកមុន", "refresh": "ផ្ទុកឡើងវិញ", "install_title": "បន្ថែមទៅអេក្រង់ដើម", "install_ios": "ចុចប៊ូតុងចែករំលែករបស់ Safari → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home Screen)", "install_android": "ចុចម៉ឺនុយនៅជ្រុងខាងលើស្តាំ → «បន្ថែមទៅអេក្រង់ដើម» (Add to Home screen)", "pick_menu": "ជ្រើសរើសសេវា", "job_running": "មានការងារកំពុងធ្វើ។ សូមបន្ត", "no_name": "គ្មានឈ្មោះ", "punch_title": "ចុះវត្តមាន", "punch_in": "ចូលធ្វើការ", "punch_out": "ចេញពីការងារ", "st_not_yet": "មិនទាន់ចុះ", "st_working": "កំពុងធ្វើការ", "st_off": "បានចេញពីការងារ", "gps_ok": "GPS បានហើយ", "gps_ng": "រកទីតាំងមិនឃើញ (ចុះវត្តមានបានដដែល)", "need_link": "សូមបើកតាមតំណផ្ទាល់ខ្លួនរបស់អ្នក។ សូមសុំតំណពី Daisuke", "link_bad": "តំណនេះប្រើមិនបានទេ។ សូមសុំតំណថ្មីពី Daisuke", "not_staff": "អ្នកមិនទាន់ត្រូវបានចុះឈ្មោះជាបុគ្គលិកទេ។ សូមទាក់ទង Daisuke", "confirm_out": "ចេញពីការងារឬទេ?", "punch_saved": "បានកត់ត្រាម៉ោង", "tab_expense": "ចំណាយ", "exp_receipt": "ថតបង្កាន់ដៃ", "exp_recent": "បានកត់ត្រាថ្មីៗ", "it_fuel": "សាំង", "it_fuel_ex": "សាំងម៉ូតូ", "it_chem": "ថ្នាំលាង", "it_chem_ex": "ស្ព្រាយ / ក្រេម / សាប៊ូ (ប្រើអស់)", "it_tools": "ឧបករណ៍", "it_tools_ex": "កន្សែង / ធុង / ស្រោមដៃ (ប្រើបានច្រើនដង)", "it_bike": "ជួសជុលម៉ូតូ", "it_bike_ex": "បិទកង់ / ដូរប្រេង", "it_parking": "ចតឡាន / ថ្លៃផ្លូវ", "it_parking_ex": "ចំណតឡាន / ថ្លៃផ្លូវ", "it_flyer": "បោះពុម្ពខិត្តប័ណ្ណ", "it_flyer_ex": "ខិត្តប័ណ្ណ / ផ្ទាំងផ្សាយ / កាតឈ្មោះ", "it_phone": "ថ្លៃទូរស័ព្ទ", "it_phone_ex": "កាតទូរស័ព្ទ / អ៊ីនធឺណិត", "it_util": "ភ្លើងហាង / ទឹកហាង", "it_util_ex": "ថ្លៃភ្លើង / ថ្លៃទឹក", "it_other": "ផ្សេងៗ", "it_other_ex": "មិនមានខាងលើ (សូមសរសេរ)", "memo_required": "សូមសរសេរថាទិញអ្វី", "exp_amount_req": "សូមបញ្ចូលចំនួនលុយ", "exp_no_receipt_q": "មិនទាន់មានរូបថតបង្កាន់ដៃទេ។ រក្សាទុកដោយគ្មានរូបថតឬទេ?", "exp_saved": "បានរក្សាទុកការចំណាយ។ នឹងផ្ញើពេលមានអ៊ីនធឺណិត", "pay_qr": "ទទួលលុយតាម ABA QR", "pay_shopref": "ភ្ញៀវដែលហាងបានណែនាំមក", "amt_split": "តម្លៃសេវា {list}$ → យើងទទួល {amt}$ (ហាងទទួលបាន {rate}%)", "shop_need2": "សូមជ្រើសរើសហាងសិន (ទឹកប្រាក់នឹងបំពេញឱ្យដោយស្វ័យប្រវត្តិ)", "pay_hint": "ទទួលលុយតាម QR តែប៉ុណ្ណោះ (មិនទទួលសាច់ប្រាក់ទេ)", "tab_work": "ការងារ", "tab_att": "ចុះវត្តមាន", "sj_start": "🏪 ចាប់ផ្ដើមការងាររបស់ហាងដៃគូ", "sj_start_s": "ពេលហាងហៅ ចាប់ផ្ដើមនៅទីនេះ។ ទៅអេក្រង់ជ្រើសហាង", "sj_fav": "ហាងដែលទៅញឹកញាប់", "sj_bk_none": "📅 ការកក់ថ្ងៃនេះ៖ គ្មាន", "sj_pick": "ជ្រើសហាង", "sj_search": "🔍 ស្វែងរកតាមឈ្មោះហាង (វាយ 2-3 អក្សរក៏បាន)", "sj_fav_order": "តាមលំដាប់ហាងដែលទៅញឹកញាប់", "sj_all": "ហាងទាំងអស់ (តាមលំដាប់ ABC)", "sj_new": "+ ហាងថ្មី (មិនទាន់មានក្នុងបញ្ជី)<small>បញ្ចូលឈ្មោះ ហើយចាប់ផ្ដើមភ្លាមបាន។ រូបថត និងការស្នើសុំទូទាត់ប្រាក់ ទៅដល់ខាងជប៉ុន ហើយពេលមានក្រុមរួច ហាងនឹងបង្ហាញក្នុងបញ្ជី</small>", "sj_mode": "ការងាររបស់ហាងដៃគូ", "sj_who_shop": "រថយន្តរបស់ហាង", "sj_who_ref": "ភ្ញៀវដែលហាងបានណែនាំមក", "sj_plate": "ស្លាកលេខ / លេខតួ (គ្មានក៏បាន)", "sj_shoot": "📷 ថត", "sj_svc": "សេវា", "sj_pay_shop": "ទឹកប្រាក់ដែលហាងបង់", "sj_pay_ref": "តម្លៃរបស់ភ្ញៀវដែលហាងបានណែនាំមក", "sj_later_ok": "កែពេលក្រោយបាន", "sj_diff": "ធៀបនឹងតម្លៃប្រហែល {s}{v}$", "sj_diff_eq": "ស្មើតម្លៃប្រហែល", "sj_rp": "រថយន្តធ្លាប់បាញ់ថ្នាំឡើងវិញ?", "sj_rp_s": "តែពេលខាត់ប៉ុណ្ណោះ", "sj_yes": "ធ្លាប់", "sj_no": "មិនធ្លាប់", "sj_unk": "មិនដឹង", "sj_rp_note": "⚠ មុនធ្វើការ សូមប្រាប់ហាងថា «ថ្នាំលាបអាចរបក»។ ខាត់ស្រាលៗ", "sj_next_photos": "▶ ទៅរូបថតមុនធ្វើសេវា", "sj_dmg": "🩹 ស្នាមកោស / ស្នាមជ្រុញ / កន្លែងគួរកត់សម្គាល់", "sj_dmg_note": "បើគ្មានស្នាម សូមចុច «គ្មានស្នាម» (ត្រូវចុចមួយណាមួយ ទើបទៅមុខបាន)", "sj_go": "▶ ចាប់ផ្ដើម<small>រូបថត និង «ស្នាមដែលមានតាំងពីមុនធ្វើសេវា» ផ្ញើទៅហាង</small>", "sj_edit": "💲 កែតម្លៃ (ឥឡូវ ", "sj_edit_note": "បើនិយាយជាមួយហាងហើយតម្លៃប្ដូរ អាចកែពីទីនេះភ្លាម", "sj_preview": "អ្វីដែលនឹងផ្ញើទៅក្រុមរបស់ហាង", "sj_tg_end": "✅ ការងារបញ្ចប់ហើយ (តាមការស្នើសុំ របស់ហាងអ្នក)", "sj_tg_after": "📷 រូបថតក្រោយធ្វើសេវា ↓", "sj_tg_req": "🧾 ការស្នើសុំទូទាត់ប្រាក់", "sj_tg_due": "💰 ទឹកប្រាក់ត្រូវបង់:", "sj_tg_scan": "📱 សូមស្កេន QR ខាងលើ ដើម្បីបង់ប្រាក់ឱ្យ Samurai Motors។", "sj_amt_s": "កែនៅទីនេះក៏បាន", "sj_free_q": "🎁 ប្ដូរជាការសាកល្បងឥតគិតថ្លៃ", "sj_free_btn": "ប្ដូរ", "sj_send": "📨 ផ្ញើទៅហាង<small>រូបថតក្រោយធ្វើសេវា + ការស្នើសុំទូទាត់ប្រាក់ (QR)</small>", "sj_sent_t": "បានផ្ញើហើយ", "sj_home": "ត្រឡប់ទៅផ្ទាំងការងារ", "sj_gps": "📡 កត់ត្រាទីតាំង (GPS) ជាមួយផងដែរ", "sj_fix": "✎ កែ", "sj_sent": "បានផ្ញើទៅ {shop} ហើយ", "sj_again": "+ រថយន្ត 1 គ្រឿងទៀត នៅហាងដដែល<small>ចាប់ផ្ដើមដោយមាន {shop} រួចហើយ</small>", "sj_guide_shop": "តម្លៃប្រហែល {v}$ (តម្លៃសម្រាប់ហាង)", "sj_guide_ref": "តម្លៃប្រហែល {v}$", "sj_new_name": "ឈ្មោះហាងថ្មី", "sj_none": "រកមិនឃើញទេ។ សូមចុច «ហាងថ្មី» ហើយបញ្ចូលឈ្មោះហាង", "sj_price_need": "សូមបញ្ចូលទឹកប្រាក់ដែលបានព្រមព្រៀងជាមួយហាង", "sj_no_guide": "គ្មានតម្លៃប្រហែល (សូមបញ្ចូលទឹកប្រាក់ដែលបានព្រមព្រៀងជាមួយហាង)", "sj_off_q": "{v}$ ត្រឹមត្រូវឬទេ? (តម្លៃប្រហែល {g}$)", "sj_off_yes": "ត្រឹមត្រូវ ផ្ញើ", "sj_dmg_need_photo": "សូមថតរូបស្នាម (ម្ដងមួយកន្លែង)", "sj_off_q0": "{v}$ ត្រឹមត្រូវឬទេ?", "job_cancel": "🗑 បោះបង់ការងារនេះ (ធ្វើតេស្តកម្មវិធី ឬចុចខុស)", "job_cancel_q": "បោះបង់ការងារនេះឬទេ?\nនឹងមិនមានការកត់ត្រាតម្លៃសេវា និងការស្នើសុំទូទាត់ប្រាក់ (QR) ទេ។\nបើអ្នកបានធ្វើការងារលើរថយន្តពិតប្រាកដ (រួមទាំងការងារ «ឥតគិតថ្លៃ (សាកល្បង)») សូមកុំបោះបង់ សូមបន្តធ្វើរហូតដល់ចប់។", "job_cancelled": "បានបោះបង់ការងារនេះហើយ", "job_cancel_ng": "បានផ្ញើកំណត់ត្រាបញ្ចប់នៃការងារនេះរួចហើយ ដូច្នេះមិនអាចបោះបង់បានទេ។ សូមទាក់ទងអ្នកគ្រប់គ្រង"};
 /*KM-END*/
 var LANG = 'km';
 try { LANG = localStorage.getItem('sm_field_lang') || 'km'; } catch (e) {}
@@ -603,14 +605,14 @@ function toast(msg, kind) {
 function openUrl(u) { if (!u) return; try { if (SURFACE === 'telegram' && TG.openLink) { TG.openLink(u); return; } } catch (e) {} window.open(u, '_blank'); }
 function mapUrl(place) { if (!place) return ''; return /^https?:\/\//.test(place) ? place : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(place); }
 function placeText(place) { if (!place) return '—'; return /^https?:\/\//.test(place) ? '📍 Google Maps' : place; }
-function readShrunk(file, cb) {
+function readShrunk(file, cb, maxSide, quality) {
   var fr = new FileReader();
   fr.onload = function () {
     var im = new Image();
     im.onload = function () {
-      var max = 1200, sc = Math.min(1, max / Math.max(im.width, im.height));
+      var max = maxSide || 1200, sc = Math.min(1, max / Math.max(im.width, im.height));
       var c = document.createElement('canvas'); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
-      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', 0.72));
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); cb(c.toDataURL('image/jpeg', quality || 0.72));
     };
     im.onerror = function () { cb(fr.result); }; im.src = fr.result;
   };
@@ -643,6 +645,7 @@ function mapBooking(b) {
 }
 function applyToday(res) {
   var today = ppDate(0), tom = ppDate(1);
+  S.caps = (res && res.caps) || {};   // サーバーの対応（pre_photo = 写真を先に受け取れる・2026-11-13）
   var list = (res && res.bookings || []).map(mapBooking);
   S.items = list.filter(function (i) { return i.date === today; });
   S.tomorrow = list.filter(function (i) { return i.date === tom; });
@@ -771,6 +774,7 @@ function openItem(id) {
     svc: {}, active: null, startAt: null, endAt: null, pay: '', amount: job.amount || priceOf(job), src: '', startQueued: false, test: TEST
   };
   job.menu.forEach(function (c) { S.cur.svc[c] = { acc: 0, since: 0, done: false, skip: false }; });
+  S.cur.pre = preOn(); S.cur.pc = {};   // 写真を撮ったそばから送る作業か（始めた時に決めて、途中で変えない）・枠ごとの写真の送信ID
   if (job.mode === 'shop') sjInitCur(S.cur, job);   // お店の仕事（2026-10-27）
   saveDraft();
   S.view = 'job'; render(); window.scrollTo(0, 0);
@@ -789,11 +793,47 @@ function basePayload(c) {
     vehicleType: j.size === 'SUV' ? 'SUV' : 'セダン', bookingId: j.bookingId || '', linkToken: '', surface: SURFACE
   };
 }
-function queueStart(c) {
-  var shots = shotsFor(c.job, 'before'), photos = [], slots = [];
-  shots.forEach(function (s) { if (c.photos[s.id]) { photos.push(c.photos[s.id]); slots.push(s.id.replace('before_', '')); } });
-  c.dmg.forEach(function (d, i) { if (d.img) { photos.push(d.img); slots.push('D' + (i + 1)); } });
-  if (c.mode === 'shop' && c.vinImg) { photos.push(c.vinImg); slots.push('V'); }   // 車台番号の写真（お店の仕事）
+// ── 写真を撮ったそばから送る（2026-11-13・サーバー v7/JobPhotoPre.gs）──
+//   開始を押してすぐスマホをしまっても届くように、写真は撮った時に1枚ずつ送っておき、開始・終了は写真の番号だけの軽い送信にする。
+//   サーバーと outbox.js の両方が対応している時だけ（片方が古い時は今までどおり、開始・終了に写真を入れて送る）
+function preOn() { return !!(S.caps && S.caps.pre_photo && Outbox.caps && Outbox.caps.deps); }
+var JOB_PHOTO_MAX = 1080, JOB_PHOTO_Q = 0.66;   // 作業の写真の大きさ（長辺・画質）。レシート・車台番号は今までどおり
+/** 写真1枚を送信待ち箱へ。holder[key] に送信IDを残す（撮り直しは新しいIDにして、まだ送っていない古い方は捨てる） */
+function preQueue(c, phase, slot, holder, key, img) {
+  if (!c || !c.pre || !img) return;
+  var old = holder[key], cid = Outbox.uuid();
+  holder[key] = cid; saveDraft();
+  Outbox.enqueue('job_photo', { client_id: cid, job_client_id: c.jobCid, request_id: cid, phase: phase, slot: slot, photoBase64: img })
+    .catch(function () { if (holder[key] === cid) { delete holder[key]; saveDraft(); } });   // 保存できない時は、開始・終了に写真を入れて送る（今までの形）
+  if (old) Outbox.all().then(function (list) {
+    var r = list.filter(function (x) { return x.client_id === old; })[0];
+    if (r && r.status !== 'sent' && r.status !== 'sending') Outbox.drop(old);
+  }).catch(function () {});
+}
+/**
+ * 写真の振り分け: 先に送ってある写真は番号（deps）、そうでない写真は本文（photos）へ。
+ *   box = 送信待ち箱の中身（Outbox.all）。開始・終了を箱に入れる時に決め直す（コードレビュー [H2][M2]）:
+ *     - 先送りが今は使えない（サーバーを戻した・outbox.js が古い）→ 全部を本文へ
+ *     - 写真の記録が箱に無い（端末の保存が消えた等）→ その写真は本文へ（写真を落とさない）
+ */
+function photoSplit(c, box) {
+  var o = { deps: [], photos: [], inline: [] }, pre = !!c.pre && preOn(), inBox = {};
+  (box || []).forEach(function (r) { if (r.kind === 'job_photo') inBox[r.client_id] = true; });
+  o.add = function (img, slot, pcid) {
+    if (!img) return;
+    if (pre && pcid && inBox[pcid]) o.deps.push({ slot: slot, cid: pcid }); else { o.photos.push(img); o.inline.push(slot); }
+  };
+  o.slots = function () { return o.deps.map(function (d) { return d.slot; }).concat(o.inline); };   // サーバーが並べる順（先送り → 本文）
+  return o;
+}
+function boxList() { return Outbox.all().catch(function () { return []; }); }
+function queueStart(c) { return boxList().then(function (box) { return queueStartWith(c, box); }); }
+function queueStartWith(c, box) {
+  var shots = shotsFor(c.job, 'before'), ps = photoSplit(c, box), pc = c.pc || {};
+  shots.forEach(function (s) { ps.add(c.photos[s.id], s.id.replace('before_', ''), pc[s.id]); });
+  c.dmg.forEach(function (d, i) { ps.add(d.img, 'D' + (i + 1), d.pcid); });
+  if (c.mode === 'shop') ps.add(c.vinImg, 'V', pc.vin);   // 車台番号の写真（お店の仕事）
+  var photos = ps.photos, slots = ps.slots();
   var p = basePayload(c);
   p.client_id = c.jobCid; p.job_client_id = c.jobCid; p.request_id = c.jobCid;
   p.amount = c.job.bookingId ? (c.job.amount || '') : '';
@@ -806,7 +846,15 @@ function queueStart(c) {
   if (c.mode === 'shop') {   // お店の仕事（2026-10-27）。サーバーは知らない項目を v2記録(JSON) に残すだけ
     p.v2.mode = 'shop'; p.v2.who = c.who; p.v2.agreed_price = sjNum(c.price); p.v2.repainted = c.repaint || ''; p.v2.new_shop_name = c.newShop ? c.shopName : '';
   }
-  return Outbox.enqueue('job_start', p);
+  if (!ps.deps.length) return Outbox.enqueue('job_start', p);
+  // 先に送った写真がまだ送り切れていない時だけ、文字だけの知らせを先に出す（管理グループへ「写真はあとから届きます」）
+  return Promise.resolve(box).then(function (list) {
+    var sent = {}; list.forEach(function (r) { if (r.status === 'sent') sent[r.client_id] = true; });
+    if (ps.deps.every(function (d) { return sent[d.cid]; })) return null;
+    var n = JSON.parse(JSON.stringify(p)), nid = Outbox.uuid();
+    n.client_id = nid; n.request_id = nid; n.beforePhotos = [];
+    return Outbox.enqueue('job_start_notice', n, { now: true }).catch(function () {});   // 写真の送信と並行してすぐ出す。知らせが入らなくても開始そのものは入れる
+  }).then(function () { return Outbox.enqueue('job_start', p, { deps: ps.deps }); });
 }
 // 2026-10-25 支払いの区分: 提携店の仕事（紹介客 shopref・店の車 shop）は店を選ぶと 当社の受け取り＝定価×(100−店の率)% を入れる（直せる）
 function isShopPay(pt) { return pt === 'shop' || pt === 'shopref'; }
@@ -826,9 +874,11 @@ function applyShopAmount(c) {
   } else if (!c.amount) c.amount = Number(c.job.amount) || listPriceOf(c);   // 空にした時は初期値（レジデンス等は割引後）に戻す
 }
 function canSavePay(c) { return !!c.pay && c.pay !== 'cash' && !(isShopPay(c.pay) && !c.shop) && (c.pay === 'free' || (Number(c.amount) > 0 && Number(c.amount) <= 2000)); }   // 無料以外は金額が要る
-function queueEnd(c) {
-  var shots = shotsFor(c.job, 'after'), photos = [], slots = [];
-  shots.forEach(function (s) { if (c.photos[s.id]) { photos.push(c.photos[s.id]); slots.push(s.id.replace('after_', '')); } });
+function queueEnd(c) { return boxList().then(function (box) { return queueEndWith(c, box); }); }
+function queueEndWith(c, box) {
+  var shots = shotsFor(c.job, 'after'), ps = photoSplit(c, box), pc = c.pc || {};
+  shots.forEach(function (s) { ps.add(c.photos[s.id], s.id.replace('after_', ''), pc[s.id]); });
+  var photos = ps.photos, slots = ps.slots();
   var p = basePayload(c), endId = c.endCid || (c.endCid = Outbox.uuid()), times = {};   // 同じ作業の終了は同じ client_id（2026-10-27）
   Object.keys(c.svc).forEach(function (k) { if (!c.svc[k].skip) times[k] = Math.round(svcSec(c.svc[k])); });
   p.client_id = endId; p.job_client_id = c.jobCid; p.request_id = endId;
@@ -842,7 +892,7 @@ function queueEnd(c) {
   if (c.mode === 'shop') { p.v2.mode = 'shop'; p.v2.price_mode = 'agreed'; p.v2.agreed_price = sjNum(c.price); p.v2.guide_price = sjGuide(c.job, c.who, c.rate); p.v2.new_shop_name = c.newShop ? c.shopName : ''; }
   // 先に下書きへ endCid を保存（送信待ち箱に入れた後に落ちても、同じ client_id で上書きされるだけ）
   //   下書きの保存に失敗しても、記録そのものは箱に入れる（endCid は画面の中に残っている・2026-11-09）
-  return Outbox.kvSet('draft', c).catch(function () {}).then(function () { return Outbox.enqueue('job_end', p); });
+  return Outbox.kvSet('draft', c).catch(function () {}).then(function () { return Outbox.enqueue('job_end', p, ps.deps.length ? { deps: ps.deps } : null); });
 }
 
 function getGps() {
@@ -1068,11 +1118,11 @@ function renderHead() {
   var op = $('obPill'); if (op) op.onclick = function () { Outbox.retryAll(); toast(t('ob_sending')); };
 }
 
-function stripsHtml() {
+function stripsHtml(hidePending) {
   var h = TEST ? '<div class="strip test"><div class="grow">🧪 テストモード：何も送りません（お店・お客さん・売上・請求に出ません）</div></div>' : '';
   if (S.waitingSW) h += '<div class="strip info" id="updStrip"><div class="grow">🔄 ' + t('update_ready') + '</div></div>';
   if (S.ob.review) h += '<div class="strip err"><div class="grow">⚠ ' + t('ob_review') + '</div><button type="button" data-retry="1">' + t('ob_send_now') + '</button></div>';
-  else if (S.ob.pending) h += '<div class="strip warn"><div class="grow">📥 ' + t('ob_pending', { n: S.ob.pending }) + (S.ob.sending ? ' · ' + t('ob_sending') : '') + '</div><button type="button" data-retry="1">' + t('ob_send_now') + '</button></div>';
+  else if (S.ob.pending && !hidePending) h += '<div class="strip warn"><div class="grow">📥 ' + t('ob_pending', { n: S.ob.pending }) + (S.ob.sending ? ' · ' + t('ob_sending') : '') + '</div><button type="button" data-retry="1">' + t('ob_send_now') + '</button></div>';
   if (S.load === 'failed' || S.load === 'cached') h += '<div class="strip warn"><div class="grow">📵 ' + t('load_failed') + '</div><button type="button" id="reload">' + t('refresh') + '</button></div>';
   if (S.cur && S.cur.startQueued && S.cur.step !== 'done' && S.view === 'home') h +='<div class="strip info" id="resume"><div class="grow">▶ ' + t('job_running') + '</div></div>';
   return h;
@@ -1328,7 +1378,8 @@ function jobHead() {
 function renderJob() {
   var c = S.cur, j = c.job, html = '';
   if (timerId) { clearInterval(timerId); timerId = null; }
-  html += stripsHtml();
+  html += stripsHtml(sendBnOn(c));
+  if (sendBnOn(c)) html += '<div id="sendBn">' + sendBnHtml(c) + '</div>';   // 送信の帯（2026-11-13）
 
   if (c.step === 'check' && c.mode === 'shop') {
     html += sjDamageHtml(c);
@@ -1432,6 +1483,66 @@ function renderJob() {
   var jc = $('jobCancel'); if (jc) jc.onclick = cancelCurJob;
   if (c.mode === 'shop') bindSjJob(c);
   renderBar();
+  updSendBn();
+}
+
+// ── 送信の帯（2026-11-13）: 開始・送るを押した後、「まだしまわないで」と「しまって大丈夫」を一目で ──
+//   写真を撮ったそばから送る作業（c.pre）だけ。送っている間は画面が自動で消えないようにし（対応端末のみ）、送り終えたら短い音。
+var JOB_REC = { job_start: 1, job_end: 1, job_photo: 1, job_start_notice: 1 };
+var wakeS = null, wakeAsk = false, sndCtx = null, bnWasPending = false;
+var bnSince = 0, bnTimer = null, SEND_WAIT_MS = 20000;   // 押してからこの時間で送り切れなければ「待たなくていい」に切り替える
+function sendSlow() { return navigator.onLine === false || (bnSince > 0 && Date.now() - bnSince > SEND_WAIT_MS); }
+function recPending(r) { return JOB_REC[r.kind] && (r.status === 'local' || r.status === 'sending'); }
+function jobPend(c) { return (S.obList || []).filter(function (r) { return c && r.job_client_id === c.jobCid && recPending(r); }).length; }
+function sendBnOn(c) { return !!(c && c.pre && !c.test && c.startQueued && (c.step === 'work' || c.step === 'done')); }
+function sendBnHtml(c) {
+  var n = jobPend(c);
+  // 送っている途中: 画面を開いたままに。圏外・20秒たっても送り切れない時は、待たせずに「あとで自動で送ります」
+  if (n > 0) return '<div class="strip warn sendbn">' + (sendSlow() ? '📵' : '📡') + ' <div class="grow">' + t(sendSlow() ? 'send_later' : 'send_wait', { n: n }) + '</div></div>';
+  // 送れない記録（要確認）がある時は「届きました」と出さない（上の赤い帯が「管理者に連絡」と案内する）
+  if ((S.obList || []).some(function (r) { return r.job_client_id === c.jobCid && JOB_REC[r.kind] && r.status === 'review'; })) return '';
+  // 送り終えた: 作業中の画面では開始から2分だけ出す（ずっと出すと邪魔）。完了の画面では出したまま
+  if (c.step === 'done' || (c.startAt && Date.now() - Date.parse(c.startAt) < 120000)) return '<div class="strip ok sendbn">✅ <div class="grow">' + t('send_ok') + '</div></div>';
+  return '';
+}
+function wakeOn() {
+  try {
+    if (wakeS || wakeAsk || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+    wakeAsk = true;   // 返事が来る前に重ねて頼まない（解放できない指定が残るのを防ぐ）
+    navigator.wakeLock.request('screen').then(function (s) {
+      wakeAsk = false; wakeS = s;
+      if (s.addEventListener) s.addEventListener('release', function () { if (wakeS === s) wakeS = null; });
+    }).catch(function () { wakeAsk = false; });
+  } catch (e) { wakeAsk = false; }
+}
+function wakeOff() { try { if (wakeS) { var s = wakeS; wakeS = null; s.release(); } } catch (e) {} }
+function sndArm() {
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    if (!sndCtx) sndCtx = new AC();
+    if (sndCtx.state === 'suspended') sndCtx.resume();
+  } catch (e) {}
+}
+function sndOk() {
+  try {
+    if (!sndCtx || sndCtx.state !== 'running') return;
+    var o = sndCtx.createOscillator(), g = sndCtx.createGain();
+    o.frequency.value = 880; g.gain.value = 0.15; o.connect(g); g.connect(sndCtx.destination);
+    o.start(); o.stop(sndCtx.currentTime + 0.18);
+  } catch (e) {}
+}
+function updSendBn() {
+  // 作業の記録・写真を送っている間は、画面を自動で消さない（圏外の時は電池のために消えるに任せる）
+  if ((S.obList || []).some(recPending) && !sendSlow()) wakeOn(); else wakeOff();
+  var c = S.cur, el = $('sendBn');
+  if (S.view !== 'job' || !el || !sendBnOn(c)) { bnWasPending = false; if (bnTimer) { clearInterval(bnTimer); bnTimer = null; } return; }
+  var n = jobPend(c);
+  el.innerHTML = sendBnHtml(c);
+  if (bnWasPending && n === 0) sndOk();
+  bnWasPending = n > 0;
+  // 送っている間だけ3秒おきに見直す（20秒の切り替えのため）
+  if (n > 0 && !bnTimer) bnTimer = setInterval(updSendBn, 3000);
+  if (n === 0 && bnTimer) { clearInterval(bnTimer); bnTimer = null; }
 }
 
 function bindJob() {
@@ -1440,16 +1551,18 @@ function bindJob() {
     var r = dm.getBoundingClientRect(); var x = Math.round((e.clientX - r.left) / r.width * 100), y = Math.round((e.clientY - r.top) / r.height * 100);
     if (x < 8 || x > 92 || y < 8 || y > 92) return; c.dmg.push({ x: x, y: y, img: '', memo: '' }); c.noDamage = false; saveDraft(); renderJob();
   };
-  document.querySelectorAll('[data-dmgph]').forEach(function (inp) { inp.onchange = function () { if (!inp.files[0]) return; readShrunk(inp.files[0], function (u) { c.dmg[+inp.getAttribute('data-dmgph')].img = u; saveDraft(); renderJob(); }); }; });
+  document.querySelectorAll('[data-dmgph]').forEach(function (inp) { inp.onchange = function () { if (!inp.files[0]) return; readShrunk(inp.files[0], function (u) { var d = c.dmg[+inp.getAttribute('data-dmgph')]; if (!d) return; d.img = u; preQueue(c, 'before', 'D', d, 'pcid', u); saveDraft(); renderJob(); }, JOB_PHOTO_MAX, JOB_PHOTO_Q); }; });
   document.querySelectorAll('[data-dmgmemo]').forEach(function (inp) { inp.oninput = function () { c.dmg[+inp.getAttribute('data-dmgmemo')].memo = inp.value; saveDraft(); }; });
   document.querySelectorAll('[data-dmgdel]').forEach(function (b) { b.onclick = function () { c.dmg.splice(+b.getAttribute('data-dmgdel'), 1); saveDraft(); renderJob(); }; });
   var dn = $('dmgNone'); if (dn) dn.onclick = function () { c.noDamage = !c.noDamage; saveDraft(); renderJob(); };
 
   var sh = $('shoot'); if (sh) sh.onchange = function () { if (!sh.files[0]) return; var shots = shotsFor(c.job, c.step); readShrunk(sh.files[0], function (u) {
     var id = shots[c.shotIdx].id, had = !!c.photos[id];
-    c.photos[id] = u; saveDraft();
+    c.photos[id] = u; if (!c.pc) c.pc = {};
+    preQueue(c, c.step === 'after' ? 'after' : 'before', id.replace(/^(before|after)_/, ''), c.pc, id, u);   // 撮ったそばから送る
+    saveDraft();
     if (had) renderJob(); else advanceShot();   // 撮り直しはその枠に残る・新しく撮ったら次の枠へ
-  }); };
+  }, JOB_PHOTO_MAX, JOB_PHOTO_Q); };
   var sk = $('skipShot'); if (sk) sk.onclick = function () { advanceShot(); };
   document.querySelectorAll('[data-shot]').forEach(function (b) { b.onclick = function () { c.shotIdx = +b.getAttribute('data-shot'); renderJob(); }; });
 
@@ -1524,7 +1637,7 @@ function renderBar() {
   bar.innerHTML = '<div class="in">' + html + '</div>';
   bar.hidden = false;
   $('next').onclick = function () {
-    var btn = this; btn.disabled = true;
+    var btn = this; btn.disabled = true; sndArm(); bnSince = Date.now();
     if (c.mode === 'shop' && c.step === 'before') goStep('check');
     else if (c.mode === 'shop' && c.step === 'check') sjStartWork(c, btn);
     else if (c.mode === 'shop' && c.step === 'after') goStep('confirm');
@@ -1765,7 +1878,7 @@ function sjStartJob() {
   var vin = sj.vinImg || null;
   S.sj = null;
   openItem(item.id);
-  if (S.cur && S.cur.job.id === item.id) { S.cur.vinImg = vin; saveDraft(); }
+  if (S.cur && S.cur.job.id === item.id) { S.cur.vinImg = vin; if (vin) preQueue(S.cur, 'before', 'V', S.cur.pc || (S.cur.pc = {}), 'vin', vin); saveDraft(); }
 }
 // openItem から呼ぶ: 一覧の項目（お店の仕事）から作業の状態を作る
 function sjInitCur(c, job) {
@@ -1941,7 +2054,7 @@ function boot() {
     .then(function () {
       render();
       Outbox.start({ url: GAS_URL, appVersion: APP_VERSION, onChange: function (cnt, list) {
-        S.ob = cnt;
+        S.ob = cnt; S.obList = list || [];
         S.expSent = {}; (list || []).forEach(function (r) { if (r.kind === 'expense_submit' && r.status === 'sent') S.expSent[r.client_id] = true; });
         var histChanged = false;
         S.expHist.forEach(function (h) { if (!h.sent && S.expSent[h.cid]) { h.sent = true; histChanged = true; } });
@@ -1951,6 +2064,7 @@ function boot() {
         if (S.view === 'home' && !typing && S.tab !== 'scout') { if (S.tab === 'expense') renderExpense(); else if (S.tab === 'att') renderAtt(); else renderHome(); }
         // 完了画面の「未送信 N 件」も送れたら消す（入力欄のない画面なので描き直してよい・2026-10-29）
         else if (S.view === 'job' && S.cur && S.cur.step === 'done') renderJob();
+        updSendBn();
         renderHead();
       } });
       loadData(false);
