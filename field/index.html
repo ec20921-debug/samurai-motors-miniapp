@@ -55,6 +55,9 @@ input,select,textarea{font-family:inherit;font-size:18px;color:var(--text)}
 .head .sub{font-size:13px;color:var(--sub)}
 .head .sp{flex:1;min-width:0}
 .pill{border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700;min-height:38px;display:inline-flex;align-items:center;gap:6px;background:#fff;white-space:nowrap}
+.langseg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden;background:#fff;flex:none}
+.langseg button{padding:6px 9px;font-size:13px;font-weight:700;min-height:38px;white-space:nowrap;color:var(--sub);background:transparent}
+.langseg button.on{background:var(--gold-bg);color:var(--gold)}
 .pill.q{border-color:var(--amber);color:var(--amber);background:var(--amber-bg)}
 .pill.r{border-color:var(--red);color:var(--red);background:var(--red-bg)}
 .pill.ok{border-color:var(--green);color:var(--green);background:var(--green-bg)}
@@ -347,7 +350,7 @@ body.test .bar::before{content:"🧪 TEST";position:absolute;right:12px;top:-30p
 // ═══════════════════════════════════════════════════════════════
 //  設定
 // ═══════════════════════════════════════════════════════════════
-var APP_VERSION = 'field-20261113-164416';   // stamp_build.py が同期時に書き換える
+var APP_VERSION = 'field-20261120-081731';   // stamp_build.py が同期時に書き換える
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwV8eVN6KJvfMnQLkNmbOqYsjpvQSJTCqk40kfyMFzRjxFItJ8-4VxOV4U9MojLH4U/exec';
 var OLD_APP_URL = '../job-manager.html';
 // 勤怠・経費・（今後）営業は勤務Bot側の GAS（v7-operations）。日報はこのアプリでは扱わない（2026-10-24 別管理）
@@ -941,6 +944,7 @@ var EXP_ITEMS = [
 ];
 function expItemOf(k) { return EXP_ITEMS.filter(function (i) { return i.k === k; })[0] || EXP_ITEMS[EXP_ITEMS.length - 1]; }
 var CUR_SYM = { USD: '$', KHR: '៛' };
+var EXP_ASK_USD = 100, EXP_ASK_KHR = 500;   // これ以上のドル・これ未満のリエルは「合っていますか？」を1回出す
 function renderExpense() {
   var html = stripsHtml();
   if (!canPunch()) { $('main').innerHTML = html + punchHtml(); bindStrips(); return; }
@@ -980,6 +984,8 @@ function saveExpense() {
   if (!(a > 0)) { toast(t('exp_amount_req'), 'warn'); $('expAmt').focus(); return; }
   var memo = e.item === 'it_other' ? String(e.memo || '').trim() : '';
   if (e.item === 'it_other' && !memo) { toast('✏️ ' + t('memo_required'), 'warn'); var m = $('expMemo'); if (m) m.focus(); return; }
+  // 通貨の取りちがえの確認（2026-11-20）。文は校閲済みの sj_off_q0 を使い、記号だけ入れかえる
+  if (((e.cur === 'USD' && a >= EXP_ASK_USD) || (e.cur === 'KHR' && a < EXP_ASK_KHR)) && !window.confirm(t('sj_off_q0', { v: a }).replace('$', CUR_SYM[e.cur]))) { $('expAmt').focus(); return; }
   if (!e.img && !window.confirm(t('exp_no_receipt_q'))) return;
   var cid = Outbox.uuid(), d = ppNow();
   var data = { client_id: cid, chatId: ME.chatId, transactionDate: ppDate(0),
@@ -1107,9 +1113,12 @@ function renderHead() {
     h.innerHTML = '<img src="../logo.png" alt="" id="hLogo"><div class="sp"><div class="brand">SAMURAI MOTORS' + (TEST ? ' · 🧪 TEST' : '') + '</div><div class="ttl">' + (who ? '👤 ' + esc(who) : t('tab_today')) + '</div></div>' + q +
       // 更新は右上（2026-11-05 Daisuke「更新ボタンとか普通は上だよね」）。作業タブだけ
       (S.tab === 'today' ? '<button type="button" class="iconbtn' + (S.reloading ? ' spin' : '') + '" id="hReload" aria-label="' + esc(t('refresh')) + '" title="' + esc(t('refresh')) + '"><span>🔄</span></button>' : '') +
-      '<button type="button" class="pill latin" id="hLang">' + (LANG === 'km' ? 'ខ្មែរ' : '日本語') + '</button>';
+      // 言語は2つ並び（2026-11-20: 1つのボタンだと、押すと読めない言語になり戻し方が分からない。おそうじアプリと同じ形）
+      '<div class="langseg" id="hLang"><button type="button" data-setlang="km" class="' + (LANG === 'km' ? 'on' : '') + '">ខ្មែរ</button><button type="button" class="latin ' + (LANG === 'ja' ? 'on' : '') + '" data-setlang="ja">日本語</button></div>';
     var hr = $('hReload'); if (hr) hr.onclick = manualReload;
-    $('hLang').onclick = function () { LANG = LANG === 'km' ? 'ja' : 'km'; try { localStorage.setItem('sm_field_lang', LANG); } catch (e) {} document.body.setAttribute('data-lang', LANG); render(); };
+    Array.prototype.forEach.call($('hLang').querySelectorAll('[data-setlang]'), function (b) {
+      b.onclick = function () { var l = b.getAttribute('data-setlang'); if (l === LANG) return; LANG = l; try { localStorage.setItem('sm_field_lang', LANG); } catch (e) {} document.body.setAttribute('data-lang', LANG); render(); };
+    });
     // ロゴ長押し（約1秒）で診断表示（日本語のみ・管理者用）
     var lp; $('hLogo').addEventListener('touchstart', function () { lp = setTimeout(function () { S.diag = !S.diag; render(); }, 900); });
     $('hLogo').addEventListener('touchend', function () { clearTimeout(lp); });
@@ -1206,6 +1215,7 @@ function bindHomeExtras() {
 
 function renderHome() {
   var list = allToday(), html = stripsHtml();
+  if (!canPunch()) html += punchHtml() || '';   // 専用リンクなし・鍵ちがい・未登録（2026-11-20: 出退勤タブにしか出ていなかった）
   if (S.load === 'loading' && !list.length) html += '<div class="card"><div class="body note">⏳ ' + t('loading') + '</div></div>';
   html += sjHomeHtml();   // お店の仕事（2026-10-27）
 
@@ -1220,7 +1230,7 @@ function renderHome() {
       '<div class="acts"><button type="button" class="act go" data-map="' + esc(nx.place) + '"><span class="ic">🗺</span>' + t('btn_map') + '</button>' +
       '<button type="button" class="act" data-open="' + esc(nx.id) + '"><span class="ic">🔍</span>' + t('job_precheck') + '</button></div>' +
       '<button type="button" class="btn green" data-open="' + esc(nx.id) + '">▶ ' + t('btn_start') + '</button></div></div>';
-  } else if (S.load !== 'loading' && !S.calToday.length) {
+  } else if (S.load === 'ok' && !S.calToday.length) {   // 読めた時だけ「なし」と言う（2026-11-20）
     html += '<div class="note">' + t('sj_bk_none') + '</div>';   // 予約がない日は1行だけ（2026-10-27）。カレンダーの予定がある日は下の一覧で見せる
   }
 
@@ -1394,7 +1404,8 @@ function renderJob() {
       (c.dmg.length ? '<div class="dmg-list">' + c.dmg.map(function (d, i) {
         return '<div class="dmg"><span class="no">' + (i + 1) + '</span><span class="ph">' + (d.img ? '<img src="' + d.img + '" alt="">' : '📷') + '<input type="file" accept="image/*" capture="environment" data-dmgph="' + i + '"></span><input class="memo" data-dmgmemo="' + i + '" value="' + esc(d.memo) + '" placeholder="' + esc(t('note')) + '"><button type="button" class="x" data-dmgdel="' + i + '">✕</button></div>';
       }).join('') + '</div>' : '') +
-      (c.dmg.length ? '' : '<button type="button" class="btn sm ' + (c.noDamage ? 'green' : 'ghost') + '" id="dmgNone">✓ ' + t('damage_none') + '</button>') + '</div></div>';
+      (c.dmg.length ? '' : '<button type="button" class="btn sm ' + (c.noDamage ? 'green' : 'ghost') + '" id="dmgNone">✓ ' + t('damage_none') + '</button>') +
+      (c.dmg.length || c.noDamage ? '' : '<div class="note">' + t('sj_dmg_note') + '</div>') + '</div></div>';
     // 始める前に店を選ぶカード（2026-10-25）は外した: お店の車・紹介は「お店の仕事」から（2026-10-29 Daisuke）
   }
 
